@@ -11,13 +11,18 @@
   #boot span{color:#4a5a6b;font-size:14px}
   #boot .row{display:none;gap:12px;margin-top:8px}
   #boot.err .row{display:flex}
+  #boot .prog{display:none;width:min(280px,70vw);height:12px;border-radius:6px;background:#fff;overflow:hidden}
+  #boot .prog i{display:block;height:100%;width:0;background:#2b6cb0;transition:width .15s linear}
+  #boot.upd .prog{display:block}
+  #boot.upd.unk .prog i{width:40%;animation:slide 1.1s ease-in-out infinite alternate}
+  @keyframes slide{from{margin-left:0}to{margin-left:60%}}
   #boot.err b{color:#9b2c2c}
   #boot button{font:600 16px system-ui,sans-serif;padding:12px 24px;border:0;border-radius:12px;background:#2b6cb0;color:#fff}
   #boot button.sec{background:#fff;color:#1f2a37}
 </style>
 </head>
 <body>
-<div id="boot"><b id="title">Il Rifugio</b><span id="msg">Cerco l'ultima versione…</span>
+<div id="boot"><b id="title"></b><div class="prog"><i id="bar"></i></div><span id="msg"></span>
   <div class="row"><button id="retry">Riprova</button><button id="quit" class="sec">Esci</button></div>
 </div>
 <script>
@@ -49,10 +54,59 @@
     window.close();
   }
   function start() {
+    // All'avvio normale non si mostra nulla: la schermata resta vuota finché il gioco parte.
     boot.className = '';
-    title.textContent = 'Il Rifugio';
-    msg.textContent = 'Cerco l\'ultima versione…';
+    title.textContent = '';
+    msg.textContent = '';
+    dl = 0; total = 0; bar.style.width = '0';
     getSha().then(run).catch(fail);
+  }
+  // Avanzamento dell'aggiornamento (solo se ci sono file da scaricare): byte scaricati e totali, in MB.
+  var dl = 0, total = 0, bar = document.getElementById('bar');
+  function mb(n) { return (n / 1048576).toFixed(2).replace('.', ','); }
+  function showProgress() {
+    if (total > 0) {
+      var shown = Math.min(dl, total);
+      bar.style.width = (shown / total * 100).toFixed(1) + '%';
+      msg.textContent = mb(shown) + ' / ' + mb(total) + ' MB';
+    } else msg.textContent = mb(dl) + ' MB';
+  }
+  function beginUpdate(sha, paths) {
+    boot.className = 'upd unk';
+    title.textContent = 'Aggiornamento app';
+    msg.textContent = '';
+    // Dimensioni dei file da scaricare: una sola richiesta all'elenco dei file del commit (nessuna perdita se fallisce).
+    var url = 'https://api.github.com/repos/' + REPO + '/git/trees/' + sha + '?recursive=1';
+    return withTimeout(fetch(url), 6000).then(function (r) { if (!r.ok) throw new Error('tree ' + r.status); return r.json(); })
+      .then(function (j) {
+        var size = {}; (j.tree || []).forEach(function (f) { size[f.path] = f.size; });
+        var sum = 0, ok = true;
+        paths.forEach(function (p) { if (typeof size['web/' + p] === 'number') sum += size['web/' + p]; else ok = false; });
+        if (ok && sum > 0) { total = sum; boot.className = 'upd'; }
+        showProgress();
+      }).catch(function () { showProgress(); });
+  }
+  function download(url, c) {
+    return withTimeout(fetch(url), 30000).then(function (r) {
+      if (!r.ok) throw new Error(url + ' ' + r.status);
+      if (!r.body || !r.body.getReader) return r.text().then(function (t) { dl += t.length; showProgress(); return t; });
+      var rd = r.body.getReader(), parts = [];
+      var pump = function () {
+        return rd.read().then(function (x) {
+          if (x.done) return;
+          parts.push(x.value); dl += x.value.length; showProgress(); return pump();
+        });
+      };
+      return pump().then(function () {
+        var dec = new TextDecoder('utf-8'), t = '';
+        parts.forEach(function (p) { t += dec.decode(p, { stream: true }); });
+        t += dec.decode();
+        return t;
+      });
+    }).then(function (t) {
+      if (c) c.put(url, new Response(t, { headers: { 'content-type': 'text/plain; charset=utf-8' } }));
+      return t;
+    });
   }
   function getSha() {
     // no-cache: il WebView rivalida con l'ETag, e le risposte 304 non consumano il limite di richieste di GitHub.
@@ -60,11 +114,12 @@
       .then(function (r) { if (!r.ok) throw new Error('GitHub ' + r.status); return r.json(); })
       .then(function (j) { return j.sha; });
   }
-  function getText(url) {
+  function getText(url, track) {
     var store = window.caches ? caches.open(CACHE) : Promise.resolve(null);
     return store.then(function (c) {
       return (c ? c.match(url) : Promise.resolve(null)).then(function (hit) {
         if (hit) return hit.text();
+        if (track) return download(url, c);
         return withTimeout(fetch(url), 30000).then(function (r) {
           if (!r.ok) throw new Error(url + ' ' + r.status);
           if (c) c.put(url, r.clone());
@@ -72,6 +127,10 @@
         });
       });
     });
+  }
+  function isCached(url) {
+    if (!window.caches) return Promise.resolve(false);
+    return caches.open(CACHE).then(function (c) { return c.match(url); }).then(function (h) { return !!h; }).catch(function () { return false; });
   }
   function pruneCache(sha) {
     if (!window.caches) return;
@@ -82,23 +141,32 @@
 
   function run(sha) {
     var base = 'https://raw.githubusercontent.com/' + REPO + '/' + sha + '/web/';
-    msg.textContent = 'Scarico la versione ' + sha.slice(0, 7) + '…';
     return getText(base + 'index.html').then(function (html) {
       var doc = new DOMParser().parseFromString(html, 'text/html');
       var isLocal = function (u) { return u && !/^[a-z]+:|^\/\//i.test(u); };
       var scripts = Array.prototype.slice.call(doc.querySelectorAll('script'));
       var styles = Array.prototype.slice.call(doc.querySelectorAll('link[rel="stylesheet"]')).filter(function (l) { return isLocal(l.getAttribute('href')); });
+      // File da prendere da GitHub (le librerie in lib/ vengono dalla copia nell'app).
+      var paths = [];
+      scripts.forEach(function (s) { var src = s.getAttribute('src'); if (isLocal(src) && !/^lib\//.test(src)) paths.push(src); });
+      styles.forEach(function (l) { paths.push(l.getAttribute('href')); });
+      // Solo se c'è qualcosa da scaricare compare la barra "Aggiornamento app".
+      return Promise.all(paths.map(function (p) { return isCached(base + p); })).then(function (flags) {
+        var pending = paths.filter(function (p, i) { return !flags[i]; });
+        return pending.length ? beginUpdate(sha, pending) : null;
+      }).then(function () {
       // GitHub serve i file come testo semplice: script e fogli di stile vanno scaricati e inseriti nella pagina.
       return Promise.all([
         Promise.all(scripts.map(function (s) {
           var src = s.getAttribute('src');
           if (!isLocal(src)) return Promise.resolve(null);
           // Le librerie (lib/, es. Three.js) cambiano di rado: si usa la copia nell'app invece di riscaricarle.
-          if (/^lib\//.test(src)) return fetch('game/' + src).then(function (r) { if (!r.ok) throw new Error(src); return r.text(); }).catch(function () { return getText(base + src); });
-          return getText(base + src);
+          if (/^lib\//.test(src)) return fetch('game/' + src).then(function (r) { if (!r.ok) throw new Error(src); return r.text(); }).catch(function () { return getText(base + src, true); });
+          return getText(base + src, true);
         })),
-        Promise.all(styles.map(function (l) { return getText(base + l.getAttribute('href')); }))
-      ]).then(function (res) {
+        Promise.all(styles.map(function (l) { return getText(base + l.getAttribute('href'), true); }))
+      ]);
+      }).then(function (res) {
         var codes = res[0], css = res[1];
         styles.forEach(function (l, i) { var st = doc.createElement('style'); st.textContent = css[i]; l.replaceWith(st); });
         scripts.forEach(function (s) { s.remove(); });

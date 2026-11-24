@@ -9,6 +9,26 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.5.3 · 2026-11-24 · Gioco più fluido, avvio senza scritte, barra di aggiornamento
+
+**Richiesto**
+- Il gioco era diventato un po' laggoso: ottimizzarlo.
+- All'avvio non mostrare la scritta di aggiornamento e il numero di versione; se serve aggiornare, mostrare una barra di avanzamento con i MB da scaricare e scaricati e la scritta "Aggiornamento app".
+
+**Modificato**
+| File | Cosa |
+|---|---|
+| `web/js/game.js` | Niente antialias; risoluzione massima 1,5x (prima 2x) che scende da sola (fino a 0,75x) se la media dei fotogrammi supera 26 ms; ombre `PCFShadowMap` (prima `PCFSoftShadowMap`); un solo `Vector3` riusato per la camera. |
+| `web/js/build.js` | Meno poligoni: cilindri a 16 segmenti (erano 24), chiome degli abeti a 14 (erano 20), scatole arrotondate con 5 divisioni per lato (erano 7). |
+| `web/js/hud.js` | L'interfaccia HTML si riscrive solo quando un valore cambia (testi, barre, posizione delle etichette): prima si toccava il DOM a ogni fotogramma. |
+| `web/sw.js` | `CACHE` da v5 a v6. |
+| `app/boot/index.html` | Avvio normale con schermata vuota (nessuna scritta). Se ci sono file da scaricare compare "Aggiornamento app" con barra e MB scaricati / totali (dimensioni dall'elenco file del commit; se non arrivano, barra animata e solo i MB scaricati). |
+
+**Per tornare indietro**
+- `git checkout dfc17e7 -- web/js/game.js web/js/build.js web/js/hud.js web/sw.js app/boot/index.html`
+
+---
+
 ## v0.5.2 · 2026-11-24 · L'app richiede internet per avviarsi
 
 **Richiesto**

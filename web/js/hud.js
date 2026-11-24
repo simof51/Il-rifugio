@@ -12,13 +12,17 @@
     function label(cls, html) { const d = document.createElement('div'); d.className = cls; d.innerHTML = html; labelsEl.appendChild(d); return d; }
 
     // Posiziona un'etichetta sopra un punto 3D (ancorata in basso al centro).
+    // Si tocca il DOM solo quando qualcosa cambia: scrivere ogni fotogramma gli stessi valori rallenta il telefono.
+    function hide(el) { if (el._hid !== true) { el._hid = true; el.style.display = 'none'; } }
     function put(el, x, y, z, show) {
-      if (!show || !cam) { el.style.display = 'none'; return; }
+      if (!show || !cam) { hide(el); return; }
       V.set(x, y, z).project(cam);
-      if (V.z > 1 || Math.abs(V.x) > 1.2 || Math.abs(V.y) > 1.2) { el.style.display = 'none'; return; }
-      el.style.display = '';
-      el.style.transform = `translate(${((V.x + 1) / 2 * innerWidth).toFixed(1)}px,${((1 - V.y) / 2 * innerHeight).toFixed(1)}px) translate(-50%,-100%)`;
+      if (V.z > 1 || Math.abs(V.x) > 1.2 || Math.abs(V.y) > 1.2) { hide(el); return; }
+      if (el._hid !== false) { el._hid = false; el.style.display = ''; }
+      const tr = `translate(${((V.x + 1) / 2 * innerWidth).toFixed(0)}px,${((1 - V.y) / 2 * innerHeight).toFixed(0)}px) translate(-50%,-100%)`;
+      if (el._tr !== tr) { el._tr = tr; el.style.transform = tr; }
     }
+    function setText(el, v) { v = String(v); if (el._t !== v) { el._t = v; el.textContent = v; } }
 
     function toast(msg) {
       const el = $('toast'); el.textContent = msg; el.classList.add('on');
@@ -34,13 +38,16 @@
     }
 
     // Indicatori in alto: monete, stelle, legna nello zaino e (dopo l'apertura del banco) cioccolate.
+    const E = { coinN: $('coinN'), starN: $('starN'), carryN: $('carryN'), cupChip: $('cupChip'), cupN: $('cupN'), taskN: $('taskN'), taskTxt: $('taskTxt'), taskV: $('taskV'), taskBar: $('taskBar') };
     function setStats(coins, stars, logs, logCap, cups, cupCap, showCups) {
-      $('coinN').textContent = coins; $('starN').textContent = stars.toFixed(1); $('carryN').textContent = `${logs}/${logCap}`;
-      $('cupChip').hidden = !showCups; $('cupN').textContent = `${cups}/${cupCap}`;
+      setText(E.coinN, coins); setText(E.starN, stars.toFixed(1)); setText(E.carryN, `${logs}/${logCap}`);
+      if (E.cupChip.hidden === showCups) E.cupChip.hidden = !showCups;
+      setText(E.cupN, `${cups}/${cupCap}`);
     }
     function setTask(head, text, valueTxt, ratio) {
-      $('taskN').textContent = head; $('taskTxt').textContent = text; $('taskV').textContent = valueTxt;
-      $('taskBar').style.width = (Math.max(0, Math.min(1, ratio)) * 100) + '%';
+      setText(E.taskN, head); setText(E.taskTxt, text); setText(E.taskV, valueTxt);
+      const w = (Math.max(0, Math.min(1, ratio)) * 100).toFixed(1) + '%';
+      if (E.taskBar._w !== w) { E.taskBar._w = w; E.taskBar.style.width = w; }
     }
 
     const stick = $('stick'), knob = $('knob');

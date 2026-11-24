@@ -2,7 +2,7 @@
 (function (R) {
   'use strict';
 
-  const SEG = 24; // segmenti dei cilindri: abbastanza per bordi tondi senza pesare sul telefono
+  const SEG = 16; // segmenti dei cilindri: abbastanza per bordi tondi senza pesare sul telefono
 
   R.createBuilder = function (scene) {
     const T = THREE;
@@ -29,7 +29,7 @@
     function roundBoxGeo(w, h, d, r) {
       r = Math.max(0.002, Math.min(r, w / 2 - 0.001, h / 2 - 0.001, d / 2 - 0.001));
       return cached(`rb${w}_${h}_${d}_${r.toFixed(3)}`, () => {
-        const m = 3, S = 2 * m + 1, half = [w / 2, h / 2, d / 2];
+        const m = 2, S = 2 * m + 1, half = [w / 2, h / 2, d / 2];
         const g = new T.BoxGeometry(1, 1, 1, S, S, S);
         const pos = g.attributes.position, nor = g.attributes.normal;
         const v = [0, 0, 0], inner = [0, 0, 0];
@@ -73,8 +73,8 @@
       const stump = cyl(0.22, 0.27, 0.3, tm.trunk, 0, 0.15, 0, g, 16); stump.visible = false;
       const fall = new T.Group(); g.add(fall);
       cyl(0.18, 0.25, 1, tm.trunk, 0, 0.5, 0, fall, 16);
-      [[1.3, 1.6, 1.5], [1, 1.3, 2.3], [0.7, 1, 3]].forEach(([r, h, y], i) => cyl(0.04, r, h, i % 2 ? tm.pine2 : tm.pine, 0, y, 0, fall, 20));
-      cyl(0.03, 0.36, 0.45, tm.snow, 0, 3.55, 0, fall, 20);
+      [[1.3, 1.6, 1.5], [1, 1.3, 2.3], [0.7, 1, 3]].forEach(([r, h, y], i) => cyl(0.04, r, h, i % 2 ? tm.pine2 : tm.pine, 0, y, 0, fall, 14));
+      cyl(0.03, 0.36, 0.45, tm.snow, 0, 3.55, 0, fall, 14);
       scene.add(g);
       return { g, fall, stump, mats: Object.values(tm) };
     }

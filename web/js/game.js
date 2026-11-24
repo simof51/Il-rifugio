@@ -10,9 +10,12 @@
     const T = THREE, P = level.tuning, S = state.data, objectives = level.objectives;
 
     // --- motore -------------------------------------------------------------
-    const renderer = new T.WebGLRenderer({ antialias: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
+    // Prestazioni: niente antialias (pesa molto sul telefono), risoluzione massima 1,5x che scende da sola se il gioco va a scatti,
+    // ombre PCF semplici (le "soft" costano di più).
+    const renderer = new T.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+    let pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+    renderer.setPixelRatio(pixelRatio);
+    renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFShadowMap;
     document.getElementById('game').appendChild(renderer.domElement);
     const scene = new T.Scene();
     scene.background = new T.Color(0xa9c9e6);
@@ -442,6 +445,7 @@
       saveT += dt; if (saveT > 3) { saveT = 0; save(); }
     }
 
+    const camGoal = new T.Vector3();
     function anim(dt) {
       tt += dt; const p = player.position;
       for (const r of rooms) {
@@ -463,16 +467,17 @@
       snowGeo.attributes.position.needsUpdate = true;
       // camera isometrica che segue il giocatore; si allontana in verticale (portrait)
       const asp = innerWidth / innerHeight, k = asp < 0.8 ? 1.45 : asp < 1.2 ? 1.15 : 1;
-      cam.position.lerp(new T.Vector3(p.x, 15 * k, p.z + 12 * k), Math.min(1, dt * 5));
+      camGoal.set(p.x, 15 * k, p.z + 12 * k);
+      cam.position.lerp(camGoal, Math.min(1, dt * 5));
       cam.lookAt(cam.position.x, 0, cam.position.z - 12 * k - 1);
       sun.position.set(p.x - 10, 22, p.z + 8); sun.target.position.set(p.x, 0, p.z);
     }
 
     function overlays(dt) {
-      rooms.forEach(r => { hud.put(r.el, r.cx, 2.35, -8.6, r.open); r.bar.style.width = (r.fuel / P.fuel_max * 100) + '%'; });
+      rooms.forEach(r => { hud.put(r.el, r.cx, 2.35, -8.6, r.open); const w = (r.fuel / P.fuel_max * 100).toFixed(1) + '%'; if (r.bar._w !== w) { r.bar._w = w; r.bar.style.width = w; } });
       pads.forEach(pd => {
         const v = pd.m.visible;
-        if (v) pd.sp.textContent = (pd.cost - state.paid(pd.id)) + ' monete';
+        if (v) { const t = (pd.cost - state.paid(pd.id)) + ' monete'; if (pd.sp._t !== t) { pd.sp._t = t; pd.sp.textContent = t; } }
         hud.put(pd.el, pd.x, 0.5, pd.z - 0.2, v);
       });
       guests.forEach(gu => {
@@ -491,9 +496,16 @@
     function resize() { renderer.setSize(innerWidth, innerHeight, false); cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); }
     addEventListener('resize', resize); resize();
     cam.position.set(0, 15, 12);
-    let last = performance.now();
+    let last = performance.now(), avgMs = 16, slowT = 0;
     function frame(now) {
-      const dt = Math.min(0.05, (now - last) / 1000); last = now;
+      const realMs = now - last;
+      const dt = Math.min(0.05, realMs / 1000); last = now;
+      // Risoluzione adattiva: se la media dei fotogrammi supera ~26 ms per un secondo, si abbassa la risoluzione (mai si rialza).
+      avgMs += (Math.min(realMs, 100) - avgMs) * 0.05;
+      slowT = avgMs > 26 ? slowT + dt : 0;
+      if (slowT > 1 && pixelRatio > 0.75) {
+        pixelRatio = Math.max(0.75, pixelRatio - 0.25); renderer.setPixelRatio(pixelRatio); resize(); slowT = 0; avgMs = 16;
+      }
       if (running) update(dt);
       anim(dt); renderer.render(scene, cam); overlays(dt); refreshHud();
       requestAnimationFrame(frame);
