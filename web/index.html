@@ -25,6 +25,7 @@
   <div class="chip" id="cupChip" hidden><svg viewBox="0 0 24 24"><path d="M6 7h11l-1.4 12.2a2 2 0 0 1-2 1.8H9.4a2 2 0 0 1-2-1.8z" fill="#b8452f"/><path d="M16.6 10h1.6a2.4 2.4 0 0 1 0 4.8h-2" fill="none" stroke="#b8452f" stroke-width="1.8"/><path d="M9 4.5c0-1 1-1 1-2M12.5 4.5c0-1 1-1 1-2" stroke="#9aa6b2" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg><b id="cupN">0/5</b></div>
 </div>
 <div id="task"><small><span id="taskN">Obiettivo 1</span><span id="taskV"></span></small><div id="taskTxt"></div><div class="bar"><i id="taskBar"></i></div></div>
+<button id="menuBtn" class="menuBtn" aria-label="Menu">☰</button>
 <div id="stick"><div id="knob"></div></div>
 <div id="toast"></div>
 <button id="update" class="btn" hidden>Nuova versione: tocca per aggiornare</button>
@@ -44,6 +45,12 @@
   <p class="note" id="ver"></p>
 </div></div>
 
+<div id="menu" class="modal hidden"><div class="card">
+  <h1>Menu</h1>
+  <div id="menuBody"></div>
+  <div class="row"><button class="btn" id="menuClose">Continua a giocare</button></div>
+</div></div>
+
 <div id="win" class="modal hidden"><div class="card">
   <h1 id="winTitle">Livello completato!</h1>
   <p id="winTxt"></p>
@@ -56,6 +63,7 @@
 <script src="js/levels/inverno.js"></script>
 <script src="js/levels/estate.js"></script>
 <script src="js/state.js"></script>
+<script src="js/audio.js"></script>
 <script src="js/build.js"></script>
 <script src="js/hud.js"></script>
 <script src="js/game.js"></script>

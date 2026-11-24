@@ -1,6 +1,7 @@
 // Livello 1 (Inverno): tutti i numeri, gli sblocchi, gli obiettivi e l'aspetto. Per bilanciare il gioco si modifica solo questo file.
 // unlocks.requires: {objectives: n} (dopo n obiettivi) oppure {bought: "id"} (dopo un altro sblocco).
-// unlocks.effect: "room" (apre rooms[room]), "bag", "bag2", "boots", "cocoa", "cocoa2", "helper", "helper2", "axe", "insul", "sign", "lamps", "mascot".
+// unlocks.effect: "room" (apre rooms[room]), "bag", "bag2", "boots", "cocoa", "cocoa2", "axe", "insul", "sign", "lamps", "mascot",
+// "helper" (boscaiolo della stanza `room`), "waiter" (cameriere della stanza `room`); needRoom: la piazzola compare solo a stanza aperta.
 // objectives: contano una statistica ({stat, n}: wood, fed, guests, collected, cocoa, trees, stars) oppure uno sblocco ({bought});
 // guide dice dove punta la freccia ("tree", "feed", "pile", "cocoa", "pad:<id>"). Ogni obiettivo si completa in meno di 3,5 minuti.
 (function () {
@@ -37,12 +38,16 @@
     { text: '🪙 Raccogli 380 monete', stat: 'collected', n: 380, guide: 'pile' },
     { text: '☕ Compra il banco cioccolata veloce', bought: 'cocoa2', guide: 'pad:cocoa2' },
     { text: '☕ Servi 30 cioccolate', stat: 'cocoa', n: 30, guide: 'cocoa' },
-    { text: '🧔 Assumi un secondo boscaiolo', bought: 'helper2', guide: 'pad:helper2' },
+    { text: '🧔 Assumi il boscaiolo della seconda stanza', bought: 'helper2', guide: 'pad:helper2' },
+    { text: '🤵 Assumi il cameriere della prima stanza', bought: 'waiter', guide: 'pad:waiter' },
     { text: '🧑‍🤝‍🧑 Ospita 36 escursionisti', stat: 'guests', n: 36, guide: '' },
+    { text: '🤵 Assumi il cameriere della seconda stanza', bought: 'waiter2', guide: 'pad:waiter2' },
+    { text: '🧔 Assumi il boscaiolo della terza stanza', bought: 'helper3', guide: 'pad:helper3' },
     { text: '⛄ Costruisci il pupazzo di neve', bought: 'mascot', guide: 'pad:mascot' },
+    { text: '🤵 Assumi il cameriere della terza stanza', bought: 'waiter3', guide: 'pad:waiter3' },
     { text: '⭐ Raggiungi 5 stelle di reputazione', stat: 'stars', n: 5, guide: '', decimals: 1 }
   ];
-  objectives.forEach((o, i) => { o.reward = 10 + 5 * Math.floor(i / 12); }); // 10, 15, 20 monete
+  objectives.forEach((o, i) => { o.reward = 10 + 5 * Math.floor(i / 13); }); // 10, 15, 20, 25 monete
 
   Rifugio.levels.inverno = {
     id: 'inverno',
@@ -116,7 +121,7 @@
       { id: 'bag',     title: 'Zaino grande',      cost: 50,  pos: [-3.6, 1.4],   requires: { objectives: 4 },     effect: 'bag' },
       { id: 'boots',   title: 'Scarponi veloci',   cost: 45,  pos: [6.5, -0.6],   requires: { objectives: 4 },     effect: 'boots' },
       { id: 'cocoa',   title: 'Cioccolata calda',  cost: 60,  pos: [11, -4.4],    requires: { bought: 'room1' },   effect: 'cocoa' },
-      { id: 'helper',  title: 'Boscaiolo',         cost: 150, pos: [-11, -1],     requires: { bought: 'cocoa' },   effect: 'helper' },
+      { id: 'helper',  title: 'Boscaiolo stanza 1', cost: 150, pos: [-11, -1],    requires: { bought: 'cocoa' },   effect: 'helper', room: 0 },
       { id: 'room2',   title: 'Stanza 3',          cost: 120, pos: [-6, -6.5],    requires: { bought: 'helper' },  effect: 'room', room: 2 },
       { id: 'axe',     title: 'Ascia affilata',    cost: 70,  pos: [-7.2, 1.6],   requires: { objectives: 12 },    effect: 'axe' },
       { id: 'insul',   title: 'Camini isolati',    cost: 90,  pos: [-11.5, -4.8], requires: { objectives: 14 },    effect: 'insul' },
@@ -124,8 +129,12 @@
       { id: 'sign',    title: 'Cartello',          cost: 110, pos: [9.5, 3.6],    requires: { objectives: 20 },    effect: 'sign' },
       { id: 'bag2',    title: 'Zaino gigante',     cost: 90,  pos: [-0.5, 3.4],   requires: { objectives: 22 },    effect: 'bag2' },
       { id: 'cocoa2',  title: 'Cioccolata veloce', cost: 100, pos: [14.6, -4.4],  requires: { objectives: 24 },    effect: 'cocoa2' },
-      { id: 'helper2', title: '2° boscaiolo',      cost: 200, pos: [-11, 2.8],    requires: { objectives: 26 },    effect: 'helper2' },
-      { id: 'mascot',  title: 'Pupazzo di neve',   cost: 100, pos: [-14.5, -2.5], requires: { objectives: 28 },    effect: 'mascot' }
+      { id: 'helper2', title: 'Boscaiolo stanza 2', cost: 200, pos: [-11, 2.8],    requires: { objectives: 26 },    effect: 'helper', room: 1, needRoom: 1 },
+      { id: 'waiter',  title: 'Cameriere stanza 1', cost: 90,  pos: [-2.2, -0.4], requires: { objectives: 27 },    effect: 'waiter', room: 0, needRoom: 0 },
+      { id: 'waiter2', title: 'Cameriere stanza 2', cost: 110, pos: [9.6, -1.8],  requires: { objectives: 31 },    effect: 'waiter', room: 1, needRoom: 1 },
+      { id: 'helper3', title: 'Boscaiolo stanza 3', cost: 230, pos: [-13.5, 2.4], requires: { objectives: 31 },    effect: 'helper', room: 2, needRoom: 2 },
+      { id: 'mascot',  title: 'Pupazzo di neve',   cost: 100, pos: [-14.5, -2.5], requires: { objectives: 28 },    effect: 'mascot' },
+      { id: 'waiter3', title: 'Cameriere stanza 3', cost: 130, pos: [-9.2, -2.2], requires: { objectives: 34 },    effect: 'waiter', room: 2, needRoom: 2 }
     ],
     objectives
   };

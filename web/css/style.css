@@ -55,6 +55,26 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;backgrou
 .pill{border:2px solid #fff;font-size:14px}
 .pad{border:2px solid #fff;border-radius:16px}
 .float{font-size:24px;-webkit-text-stroke:1px #fff}
+#hud{right:calc(68px + var(--safe-r))}
+.menuBtn{position:fixed;top:calc(12px + var(--safe-t));right:calc(12px + var(--safe-r));width:48px;height:48px;border-radius:50%;border:3px solid #fff;background:linear-gradient(#fff,#ffe9b0);color:var(--ink);font:700 24px/1 Fredoka,system-ui,sans-serif;box-shadow:0 4px 0 rgba(31,42,55,.2);cursor:pointer;padding:0}
+.menuBtn:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(31,42,55,.2)}
+#menu .card{max-height:calc(100dvh - 32px);overflow:auto}
+#menu h1{font-size:34px}
+#menu h2{font-size:19px;margin:16px 0 8px;color:var(--ink)}
+.lrow{background:#fff;border:3px solid #eef2f6;border-radius:18px;padding:10px 12px;margin:8px 0}
+.lrow.cur{border-color:#ffd23a;background:#fffbe8}
+.lhead{display:flex;justify-content:space-between;gap:8px;font-size:15px;margin-bottom:6px}.lhead span{color:#5b6b7c;font-weight:600}
+.lact{margin-top:8px;font-size:13px;color:#5b6b7c}
+.tag{font-weight:600}
+.mini{font:inherit;font-weight:600;font-size:15px;border:0;border-radius:12px;background:#3d8bff;color:#fff;padding:6px 16px;min-height:36px;box-shadow:0 3px 0 #2a64c2;cursor:pointer}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.stats div{background:#fff;border-radius:14px;padding:8px 4px;text-align:center;border:3px solid #eef2f6}
+.stats b{display:block;font-size:20px}.stats span{font-size:12px;color:#5b6b7c}
+.set{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0;font-weight:600}
+.set input[type=range]{flex:1;max-width:190px;accent-color:#e8452f;height:32px}
+.tg{font:inherit;font-weight:700;font-size:16px;border:0;border-radius:14px;min-width:64px;min-height:40px;background:#dde6ef;color:var(--ink);box-shadow:0 3px 0 #b8c6d4;cursor:pointer}
+.tg.on{background:#4cd964;color:#fff;box-shadow:0 3px 0 #2fa645}
+.lv:disabled{opacity:.55}
 .levels{display:flex;gap:10px;margin:0 0 14px}
 .lv{font:inherit;font-weight:600;font-size:17px;border:3px solid #fff;border-radius:16px;padding:8px 14px;background:#eef2f6;color:var(--ink);box-shadow:0 3px 0 #cfd8e2;flex:1;min-height:44px}
 .lv.on{background:#ffd23a;box-shadow:0 3px 0 #c98a00}

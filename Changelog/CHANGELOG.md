@@ -9,6 +9,38 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.5.8 · 2026-11-24 · Camerieri, un boscaiolo per stanza, menu con suoni e musica, si parte dall'inverno
+
+**Richiesto**
+- Gli aiutanti non devono attraversare i muri: devono urtare gli oggetti come il giocatore.
+- Si parte sempre dall'inverno; la stagione dopo si apre completando la precedente.
+- Camerieri assumibili (al massimo uno per stanza) dove c'è da servire bevande.
+- Un boscaiolo per stanza.
+- Barra menu con avanzamento e impostazioni (suoni, musica).
+
+**Aggiunto**
+| File | Cosa |
+|---|---|
+| `web/js/audio.js` | Suoni ed effetti creati con Web Audio (taglio, legna nel fuoco, monete, bevande, acquisto, obiettivo, ospiti, albero che cade) e due brani brevi (carillon calmo d'inverno, vivace d'estate). Nessun file audio. Impostazioni salvate in `rifugio-audio`. |
+| `web/index.html`, `css/style.css`, `js/main.js` | Pulsante ☰ in alto a destra: avanzamento di ogni stagione (barre, obiettivi, completata/bloccata), monete, ospiti, legna e bevande, interruttori e volumi di suoni e musica, "Ricomincia questo livello" (si conferma con un secondo tocco). Il gioco va in pausa mentre il menu è aperto. |
+
+**Modificato**
+| File | Cosa |
+|---|---|
+| `web/js/game.js` | Boscaioli e camerieri urtano muri, letti, alberi e lago come il giocatore (`collide`); se restano bloccati per mezzo secondo girano largo; dentro una stanza escono prima dal varco davanti; i boscaioli ignorano gli alberi dietro le casette. Un boscaiolo per stanza (alimenta solo il suo fuoco) e un cameriere per stanza (prende le bevande dal banco e le porta agli ospiti della stanza che le chiedono, con il vassoio sulla schiena). Suoni agganciati agli eventi. |
+| `web/js/levels/*.js` | Sblocchi: `helper` (stanze 1, 2, 3) e `waiter` (stanze 1, 2, 3), le piazzole compaiono solo a stanza aperta (e dopo il banco per i camerieri). Obiettivi saliti a 40 per stagione (altri 4: tre camerieri e il terzo boscaiolo). Premi 10/15/20/25 (inverno) e 15/20/25/30 (estate). |
+| `web/js/main.js` | Si parte sempre dall'inverno; l'estate è bloccata finché l'inverno non è completato (con `?debug` è tutto aperto). Il cambio di stagione vale per un avvio solo (sessionStorage); il pulsante "Nuova versione" resta nella stagione in corso. |
+| `web/sw.js` | `CACHE` v10, aggiunto `audio.js`. |
+
+**Nota**
+- Estate e inverno hanno 40 obiettivi ciascuno, sempre stimati su meno di 3,5 minuti l'uno e non misurati giocando.
+- Il suono non l'ho potuto ascoltare qui: ho controllato solo che non dia errori e che le impostazioni si salvino.
+
+**Per tornare indietro**
+- `git checkout 82611ed -- web`
+
+---
+
 ## v0.5.7 · 2026-11-24 · Livello Estate, 36 obiettivi a stagione, animazioni nuove, grafica per bambini
 
 **Richiesto**

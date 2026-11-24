@@ -8,8 +8,9 @@
   const COATS = [0x4f8cff, 0xa066ff, 0xff9a2a, 0x2ec4b6, 0xff5d8f, 0x6bcf3a];
   const CONFETTI = [0xff4d4d, 0xffd23a, 0x3d8bff, 0x4cd964, 0xff7ac6, 0xa066ff];
 
-  R.createGame = function ({ hud, level, state }) {
+  R.createGame = function ({ hud, level, state, audio }) {
     const T = THREE, P = level.tuning, S = state.data, objectives = level.objectives, TH = level.theme, TX = level.text;
+    const A = audio || { sfx() {} }; // suoni (se manca l'audio il gioco funziona lo stesso)
 
     // --- motore -------------------------------------------------------------
     // Prestazioni: niente antialias (pesa molto sul telefono) e ombre PCF semplici (le "soft" costano di più).
@@ -162,7 +163,7 @@
         if (h.at > 0) continue;
         t.hits.splice(i, 1);
         t.axis.set(h.dz, 0, -h.dx); // ruotando attorno a questo asse la cima va nella direzione del colpo
-        if (h.last) { t.state = 'falling'; t.vel = Math.max(t.vel, 0.5); t.stump.visible = true; }
+        if (h.last) { t.state = 'falling'; t.vel = Math.max(t.vel, 0.5); t.stump.visible = true; A.sfx('tree'); }
         else t.vel += 1.2 + 0.45 * h.n; // ogni colpo spinge un po' di più
       }
       if (t.state === 'up') {
@@ -309,40 +310,84 @@
     cocoa.g.visible = false;
     function openCocoa() { if (cocoa.open) return; cocoa.open = true; cocoa.g.visible = true; cols.push([9.9, 12.1, -7.35, -6.25]); }
 
-    // --- aiutanti (boscaioli) -----------------------------------------------
-    const helpers = [];
-    function spawnHelper(n) {
-      if (helpers[n]) return;
-      const g = B.person(n ? 0x2f7bd6 : 0x3fae6e, 0xb07848, true); g.position.set(-11, 0, n ? 2.8 : -1);
+    // --- aiutanti: boscaioli e camerieri ------------------------------------
+    // Come l'omino del giocatore, urtano contro muri, letti, alberi e lago (collide). Se restano bloccati per mezzo secondo
+    // fanno una deviazione laterale e riprovano. Un boscaiolo e un cameriere al massimo per ogni stanza.
+    const helpers = [], waiters = [];
+    const HCOL = [0x3fae6e, 0x2f7bd6, 0xd0883a];
+    // Cammina verso (tx, tz) evitando gli ostacoli; true quando è arrivato.
+    function nav(h, tx, tz, sp, dt, stop) {
+      const g = h.g, p = g.position, bx = p.x, bz = p.z;
+      let detouring = false;
+      if (h.detour > 0) { h.detour -= dt; tx = h.dx; tz = h.dz; stop = 0.3; detouring = true; }
+      else {
+        const t0 = tx, z0 = tz;
+        // Dentro una stanza si esce prima dal varco davanti (fra i letti), come farebbe il giocatore: andare dritto contro letti e camino lo blocca.
+        for (const r of rooms) {
+          if (r.open && p.z < -4.2 && Math.abs(p.x - r.cx) < RW / 2 + 0.3 && !(tz < -4.2 && Math.abs(tx - r.cx) < RW / 2 + 0.3)) { tx = Math.max(r.cx - 0.4, Math.min(r.cx + 0.4, p.x)); tz = -3.2; stop = 0.2; break; }
+        }
+        if (tx !== t0 || tz !== z0) detouring = true; // la tappa intermedia non conta come arrivo
+      }
+      const arrived = B.moveTo(g, tx, tz, sp, dt, stop);
+      collide(p);
+      if (!arrived) {
+        if (Math.hypot(p.x - bx, p.z - bz) < sp * dt * 0.35) h.stuck = (h.stuck || 0) + dt; else h.stuck = 0;
+        if (h.stuck > 0.5) {
+          h.stuck = 0;
+          const a = Math.atan2(tx - p.x, tz - p.z) + (Math.random() < 0.5 ? 1 : -1) * (1.2 + Math.random() * 0.6);
+          h.dx = p.x + Math.sin(a) * 2.5; h.dz = p.z + Math.cos(a) * 2.5; h.detour = 0.9;
+        }
+      } else h.stuck = 0;
+      return arrived && !detouring;
+    }
+    function navPath(h, sp, dt) {
+      if (!h.path.length) return true;
+      if (nav(h, h.path[0][0], h.path[0][1], sp, dt, 0.15)) h.path.shift();
+      return !h.path.length;
+    }
+    const needFuel = r => r.open && r.fuel + r.pend < 8;
+
+    // Gli aiutanti scelgono solo alberi raggiungibili camminando: quelli dietro le casette li lasciano al giocatore.
+    const behindCabin = t => t.z < -4 && level.rooms.some(r => Math.abs(t.x - r.x) < RW / 2 + 0.6);
+    function treeForHelper(p) {
+      let best = null, bd = 99;
+      for (const t of trees) { if (t.logs <= 0 || behindCabin(t)) continue; const d = Math.hypot(t.x - p.x, t.z - p.z); if (d < bd) { bd = d; best = t; } }
+      return best;
+    }
+    function spawnHelper(ri) {
+      if (helpers[ri]) return;
+      const g = B.person(HCOL[ri % 3], 0xb07848, true); g.position.set(-11, 0, ri * 2 - 1);
       const sg = new T.Group(); sg.position.set(0, 0.75, -0.32); g.add(sg);
-      helpers[n] = { g, sg, logs: 0, state: 'idle', cd: 0, path: [], tree: null, room: null };
+      helpers[ri] = { g, sg, ri, logs: 0, inb: 0, state: 'idle', cd: 0, path: [], tree: null };
     }
     function updateHelper(h, dt) {
-      const g = h.g; h.cd -= dt;
-      if (h.state === 'idle') { B.walk(g, 0, dt); const t = nearTree(g.position, 99); if (t) { h.tree = t; h.state = 'toTree'; } }
-      else if (h.state === 'toTree') { if (h.tree.logs <= 0) h.state = h.logs ? 'pick' : 'idle'; else if (B.moveTo(g, h.tree.x, h.tree.z, 3.2, dt, 1.1)) h.state = 'chop'; }
+      const g = h.g, r = rooms[h.ri]; h.cd -= dt;
+      if (h.state === 'idle') {
+        B.walk(g, 0, dt);
+        if (h.logs > 0 && needFuel(r) && (h.logs >= P.helper_load || r.fuel < 5)) h.state = 'pick';
+        else if (h.logs < P.helper_load) { const t = treeForHelper(g.position); if (t) { h.tree = t; h.state = 'toTree'; } }
+      }
+      else if (h.state === 'toTree') { if (h.tree.logs <= 0) h.state = 'idle'; else if (nav(h, h.tree.x, h.tree.z, 3.2, dt, 1.1)) h.state = 'chop'; }
       else if (h.state === 'chop') {
         B.walk(g, 0, dt);
-        if (h.tree.logs <= 0 || h.logs >= P.helper_load) h.state = h.logs ? 'pick' : 'idle';
+        if (h.tree.logs <= 0 || h.logs >= P.helper_load) h.state = 'idle';
         else if (h.cd <= 0) {
-          const tr = h.tree, dur = 0.45, ci = chopInterval() * 1.3;
-          h.cd = ci; g.rotation.y = Math.atan2(tr.x - g.position.x, tr.z - g.position.z); B.swing(g, dur);
-          chopTree(tr, g.position.x, g.position.z, dur * B.HIT_AT); h.logs++; h.inb = (h.inb || 0) + 1;
+          const tr = h.tree, dur = 0.45;
+          h.cd = chopInterval() * 1.3; g.rotation.y = Math.atan2(tr.x - g.position.x, tr.z - g.position.z); B.swing(g, dur);
+          chopTree(tr, g.position.x, g.position.z, dur * B.HIT_AT); h.logs++; h.inb++;
           after(dur * B.HIT_AT, () => {
-            burst(tr.x, 1.2, tr.z, 4, [0xb07848, 0xe6b27a], 2.2, 3, 0.5, 0.1);
+            burst(tr.x, 1.2, tr.z, 4, [0xb07848, 0xe6b27a], 2.2, 3, 0.5, 0.1); A.sfx('chop');
             _v.set(tr.x, 1.1, tr.z);
-            fly('log', _v, o => h.sg.getWorldPosition(o), 0.3, 0.5, () => { h.inb--; B.drawStack(h.sg, h.logs - (h.inb || 0), 0); });
+            fly('log', _v, o => h.sg.getWorldPosition(o), 0.3, 0.5, () => { h.inb--; B.drawStack(h.sg, h.logs - h.inb, 0); });
           });
         }
       }
       else if (h.state === 'pick') {
         B.walk(g, 0, dt);
-        const r = rooms.filter(r => r.open && r.fuel + r.pend < 8).sort((a, b) => a.fuel - b.fuel)[0];
-        if (r) { h.room = r; h.path = [[r.cx, -3], [r.cx, -7.5]]; h.state = 'deliver'; }
+        if (needFuel(r)) { h.path = [[r.cx, -3], [r.cx, -7.2]]; h.state = 'deliver'; } else h.state = 'idle';
       }
-      else if (h.state === 'deliver') { if (B.follow(g, h.path, 3.2, dt)) h.state = 'feed'; }
+      else if (h.state === 'deliver') { if (navPath(h, 3.2, dt)) h.state = 'feed'; }
       else if (h.state === 'feed') {
-        const r = h.room;
         if (h.logs > 0 && r.fuel + r.pend + 1 <= P.fuel_max) {
           if (h.cd <= 0) {
             h.cd = 0.25; h.logs--; r.pend++; B.toss(g, 0.22); g.rotation.y = Math.PI; B.drawStack(h.sg, h.logs, 0);
@@ -351,11 +396,57 @@
           }
         } else { h.path = [[r.cx, -3]]; h.state = 'leave'; }
       }
-      else if (h.state === 'leave') { if (B.follow(g, h.path, 3.2, dt)) h.state = h.logs ? 'pick' : 'idle'; }
+      else if (h.state === 'leave') { if (navPath(h, 3.2, dt)) h.state = 'idle'; }
+    }
+
+    // Cameriere: prende le bevande dal banco e le porta agli ospiti della sua stanza che le chiedono.
+    function spawnWaiter(ri) {
+      if (waiters[ri]) return;
+      const r = rooms[ri], g = B.person(0xffffff, 0x2f3a4d); g.position.set(r.cx - 1.6, 0, -2.2);
+      const sg = new T.Group(); sg.position.set(0, 0.75, -0.32); g.add(sg);
+      waiters[ri] = { g, sg, ri, cup: 0, state: 'idle', cd: 0, target: null, home: [r.cx - 1.6, -2.2], path: [] };
+    }
+    const wantsDrink = (gu, ri) => gu.state === 'bed' && gu.want && !gu.served && gu.r === rooms[ri];
+    function updateWaiter(h, dt) {
+      const g = h.g, p = g.position; h.cd -= dt;
+      if (h.state === 'idle') {
+        const gu = guests.find(x => wantsDrink(x, h.ri) && !x.taken);
+        if (h.cup > 0 && gu) { h.target = gu; gu.taken = true; h.state = 'toGuest'; }
+        else if (gu && cocoa.open && cocoa.cups > 0) { h.target = gu; gu.taken = true; h.state = 'toStand'; }
+        else if (nav(h, h.home[0], h.home[1], 3.2, dt, 0.3)) { B.walk(g, 0, dt); g.rotation.y = 0; }
+      }
+      else if (h.state === 'toStand') {
+        if (!h.target || h.target.state !== 'bed' || h.target.served) { if (h.target) h.target.taken = false; h.target = null; h.state = 'idle'; }
+        else if (nav(h, COCOA_PICK[0], COCOA_PICK[1] + 0.3, 3.4, dt, 0.9)) {
+          const take = Math.min(cocoa.cups, 2, cupCapW() - h.cup);
+          if (take > 0) {
+            cocoa.cups -= take; h.cup += take; B.toss(g, 0.2); A.sfx('pickup');
+            for (let k = 0; k < take; k++) { _v.set(10.55 + Math.min(5, cocoa.cups + k) * 0.28, 1.3, -6.55); fly('cup', _v, o => h.sg.getWorldPosition(o), 0.35, 0.7, () => { B.drawStack(h.sg, 0, h.cup); }, k * 0.1); }
+            h.state = 'toGuest';
+          } else { h.target.taken = false; h.target = null; h.state = 'idle'; }
+        }
+      }
+      else if (h.state === 'toGuest') {
+        const gu = h.target;
+        if (!gu || gu.state !== 'bed' || gu.served) { if (gu) gu.taken = false; h.target = null; h.state = h.cup > 0 ? 'idle' : 'idle'; }
+        else if (nav(h, gu.b.x, -4.5, 3.4, dt, 0.4) || Math.hypot(p.x - gu.b.x, p.z + 6.6) < 2.6) {
+          if (h.cd <= 0) { h.cd = 0.3; h.cup--; B.toss(g, 0.22); g.rotation.y = Math.PI; B.drawStack(h.sg, 0, h.cup); serveGuest(gu, h.sg); gu.taken = false; h.target = null; h.state = 'idle'; }
+        }
+      }
+    }
+    const cupCapW = () => 2;
+    // Una bevanda vola dallo zaino (o dal vassoio) all'ospite: quando arriva paga la mancia e fa festa.
+    function serveGuest(gu, fromObj) {
+      gu.served = true;
+      fromObj.getWorldPosition(_v);
+      fly('cup', _v, o => o.set(gu.b.x, 1.1, -6.4), 0.45, 1.0, () => {
+        S.cocoa++; gu.cold = 0; hud.floatText(TX.thanks, gu.b.x, 1.6, -6.4); A.sfx('cup');
+        burst(gu.b.x, 1.3, -6.4, 6, [0xff7ac6, 0xff4d4d], 1.4, 3, 0.9, 0.12, 1.5);
+      });
     }
     // Un pezzo di legna arriva nel camino: il fuoco sale e fa scintille.
     function landLog(r) {
-      r.pend--; r.fuel = Math.min(P.fuel_max, r.fuel + 1); S.fed++; r.flare = 1;
+      r.pend--; r.fuel = Math.min(P.fuel_max, r.fuel + 1); S.fed++; r.flare = 1; A.sfx('log');
       burst(r.cx, 0.8, -8.1, 5, [0xffa233, 0xffd23a, 0xff6a2a], 1.6, 4, 0.55, 0.09, 6);
     }
 
@@ -367,6 +458,8 @@
       return Object.assign({}, u, { x: u.pos[0], z: u.pos[1], m, el, sp: el.querySelector('span'), cd: 0 });
     });
     function padShown(pd) {
+      if (pd.needRoom != null && !rooms[pd.needRoom].open) return false; // camerieri e boscaioli solo per le stanze già aperte
+      if (pd.effect === 'waiter' && !state.isBought('cocoa')) return false; // il cameriere serve solo se c'è il banco
       const r = pd.requires || {};
       if (r.objectives != null) return S.done >= r.objectives;
       if (r.bought) return state.isBought(r.bought);
@@ -399,11 +492,12 @@
     function applyEffect(pd) {
       if (pd.effect === 'room') openRoom(rooms[pd.room]);
       else if (pd.effect === 'cocoa') openCocoa();
-      else if (pd.effect === 'helper') spawnHelper(0);
-      else if (pd.effect === 'helper2') spawnHelper(1);
+      else if (pd.effect === 'helper') spawnHelper(pd.room);
+      else if (pd.effect === 'waiter') spawnWaiter(pd.room);
       else if (pd.effect === 'lamps') buildLamps();
       else if (pd.effect === 'mascot') buildMascot(pd);
       // "bag", "bag2", "boots", "axe", "insul", "sign" e "cocoa2" sono letti da hasEffect()
+      // (un aiutante è un oggetto "helper" o "waiter" legato alla stanza pd.room: rooms[pd.room] deve esistere)
     }
     const hasEffect = e => pads.some(p => p.effect === e && state.isBought(p.id));
 
@@ -463,7 +557,7 @@
         burst(gu.r.cx + 1.7, 0.6, PILE_Z, 8, [0xffd23a, 0xfff2a8], 2.2, 4, 0.7, 0.1);
       } else {
         S.happy = Math.max(0, S.happy - P.cold_penalty);
-        hud.toast(TX.coldLeave);
+        hud.toast(TX.coldLeave); A.sfx('cold');
       }
     }
 
@@ -529,7 +623,7 @@
     addEventListener('pagehide', save);
 
     // --- ciclo di gioco -----------------------------------------------------
-    let running = false, tt = 0, saveT = 0, chopCd = 0, feedCd = 0, cupCd = 0, hopT = 0;
+    let running = false, paused = false, tt = 0, saveT = 0, chopCd = 0, feedCd = 0, cupCd = 0, hopT = 0;
     function update(dt) {
       const p = player.position;
       let mx = (keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0), mz = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
@@ -550,7 +644,7 @@
         B.swing(player, swingDur);
         // All'impatto: scheggie di legno e il pezzo di legna vola dall'albero allo zaino.
         after(delay, () => {
-          burst(tr.x, 1.2, tr.z, 5, [0xb07848, 0xe6b27a, 0x7a4a30], 2.4, 3.2, 0.5, 0.1);
+          burst(tr.x, 1.2, tr.z, 5, [0xb07848, 0xe6b27a, 0x7a4a30], 2.4, 3.2, 0.5, 0.1); A.sfx('chop');
           _v.set(tr.x, 1.1, tr.z);
           fly('log', _v, o => stackG.getWorldPosition(o), 0.32, 0.6, () => { inLogs--; refreshStack(); });
         });
@@ -568,13 +662,13 @@
           // le monete volano verso l'omino
           _v.set(r.cx + 1.7, 0.4, PILE_Z);
           for (let k = 0; k < Math.min(n, 8); k++) fly('coin', _v, o => o.set(player.position.x, 1.3, player.position.z), 0.4, 0.8, null, k * 0.045);
-          burst(r.cx + 1.7, 0.6, PILE_Z, 6, [0xffd23a, 0xfff2a8], 2, 4, 0.6, 0.1);
+          burst(r.cx + 1.7, 0.6, PILE_Z, 6, [0xffd23a, 0xfff2a8], 2, 4, 0.6, 0.1); A.sfx('coin');
         }
       }
       if (cocoa.open) {
         cocoa.t += dt; if (cocoa.t > cocoaInterval() && cocoa.cups < cocoaMax()) { cocoa.cups++; cocoa.t = 0; }
         if (cocoa.cups > 0 && carry.cups < cupCap() && cupCd <= 0 && Math.hypot(p.x - COCOA_PICK[0], p.z - COCOA_PICK[1]) < 1.5) {
-          cupCd = 0.22; cocoa.cups--; carry.cups++; inCups++; changed = true;
+          cupCd = 0.22; cocoa.cups--; carry.cups++; inCups++; changed = true; A.sfx('pickup');
           _v.set(10.55 + Math.min(5, cocoa.cups) * 0.28, 1.3, -6.55);
           fly('cup', _v, o => stackG.getWorldPosition(o), 0.4, 0.8, () => { inCups--; refreshStack(); });
         }
@@ -582,13 +676,9 @@
       }
       for (const gu of guests) {
         if (gu.state === 'bed' && gu.want && !gu.served && carry.cups > 0 && Math.hypot(p.x - gu.b.x, p.z + 6.6) < 2) {
-          gu.served = true; carry.cups--; changed = true; refreshStack();
+          carry.cups--; changed = true; refreshStack();
           B.toss(player, 0.26); if (!moving) player.rotation.y = Math.atan2(gu.b.x - p.x, -6.6 - p.z);
-          stackG.getWorldPosition(_v);
-          fly('cup', _v, o => o.set(gu.b.x, 1.1, -6.4), 0.45, 1.0, () => {
-            S.cocoa++; gu.cold = 0; hud.floatText(TX.thanks, gu.b.x, 1.6, -6.4);
-            burst(gu.b.x, 1.3, -6.4, 6, [0xff7ac6, 0xff4d4d], 1.4, 3, 0.9, 0.12, 1.5);
-          });
+          serveGuest(gu, stackG);
         }
       }
       // piazzole: pagamento graduale, i parziali restano salvati
@@ -601,7 +691,7 @@
           S.coins -= step; S.paid[pd.id] = paid + step;
           if (S.paid[pd.id] >= pd.cost) {
             S.bought[pd.id] = true; applyEffect(pd); hud.toast(pd.title + ' sbloccato! ✨'); save();
-            burst(pd.x, 0.8, pd.z, 26, CONFETTI, 4, 7, 1.1, 0.16); hopT = 0.5;
+            burst(pd.x, 0.8, pd.z, 26, CONFETTI, 4, 7, 1.1, 0.16); hopT = 0.5; A.sfx('buy');
           }
         }
       }
@@ -617,7 +707,7 @@
         const gu = guests[i];
         if (gu.state === 'in') {
           if (B.follow(gu.g, gu.path, 2.6, dt)) {
-            gu.state = 'bed'; gu.g.rotation.set(-Math.PI / 2, 0, 0); gu.g.position.set(gu.b.x, 0.62, -5.7);
+            gu.state = 'bed'; gu.g.rotation.set(-Math.PI / 2, 0, 0); gu.g.position.set(gu.b.x, 0.62, -5.7); A.sfx('guest');
             gu.want = cocoa.open && Math.random() < P.cocoa_chance;
           }
         } else if (gu.state === 'bed') {
@@ -626,12 +716,13 @@
         } else if (B.follow(gu.g, gu.path, 2.8, dt)) { scene.remove(gu.g); gu.el.remove(); guests.splice(i, 1); }
       }
       helpers.forEach(h => h && updateHelper(h, dt));
+      waiters.forEach(h => h && updateWaiter(h, dt));
 
       // obiettivi
       while (S.done < objectives.length && objValue(objectives[S.done]) >= objTarget(objectives[S.done])) {
         const rw = objectives[S.done].reward || 10;
         S.done++; S.coins += rw; hud.toast(`Obiettivo completato! +${rw} monete 🎉`); save();
-        burst(p.x, 1.6, p.z, 34, CONFETTI, 4.5, 8, 1.2, 0.17); hopT = 0.5;
+        burst(p.x, 1.6, p.z, 34, CONFETTI, 4.5, 8, 1.2, 0.17); hopT = 0.5; A.sfx('goal');
       }
       if (S.done >= objectives.length && !S.won) {
         S.won = true; save(); running = false; endJoy();
@@ -716,8 +807,7 @@
     let last = performance.now();
     function frame(now) {
       const dt = Math.min(0.05, (now - last) / 1000); last = now;
-      if (running) update(dt);
-      tickLater(dt); updateFlyers(dt); updateParts(dt);
+      if (running && !paused) { update(dt); tickLater(dt); updateFlyers(dt); updateParts(dt); }
       anim(dt); renderer.render(scene, cam); overlays(dt); refreshHud();
       requestAnimationFrame(frame);
     }
@@ -726,9 +816,10 @@
     return {
       start() { running = true; if (S.done === 0) hud.toast('Vai verso il bosco: segui la freccia gialla ➜'); },
       resume() { running = true; },
+      pause(on) { paused = !!on; if (on) { endJoy(); save(); } },
       save,
       // Solo per le prove (si attiva aprendo la pagina con ?debug): sposta l'omino e dà monete.
-      debug: { player, S, carry, trees, rooms, tp(x, z) { player.position.x = x; player.position.z = z; }, coins(n) { S.coins += n; } }
+      debug: { player, S, carry, trees, rooms, helpers, waiters, guests, cocoa, openRoom, openCocoa, spawnHelper, spawnWaiter, spawnGuest, tp(x, z) { player.position.x = x; player.position.z = z; }, coins(n) { S.coins += n; } }
     };
   };
 })(window.Rifugio);

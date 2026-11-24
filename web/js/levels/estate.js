@@ -35,12 +35,16 @@
     { text: '🪙 Raccogli 430 monete', stat: 'collected', n: 430, guide: 'pile' },
     { text: '🍋 Compra il banco limonata veloce', bought: 'cocoa2', guide: 'pad:cocoa2' },
     { text: '🍋 Servi 30 limonate', stat: 'cocoa', n: 30, guide: 'cocoa' },
-    { text: '🧔 Assumi un secondo aiutante', bought: 'helper2', guide: 'pad:helper2' },
+    { text: '🧔 Assumi l\'aiutante della seconda casetta', bought: 'helper2', guide: 'pad:helper2' },
+    { text: '🤵 Assumi il cameriere della prima casetta', bought: 'waiter', guide: 'pad:waiter' },
     { text: '🧑‍🤝‍🧑 Ospita 40 campeggiatori', stat: 'guests', n: 40, guide: '' },
+    { text: '🤵 Assumi il cameriere della seconda casetta', bought: 'waiter2', guide: 'pad:waiter2' },
+    { text: '🧔 Assumi l\'aiutante della terza casetta', bought: 'helper3', guide: 'pad:helper3' },
     { text: '🦆 Porta al lago la paperella gigante', bought: 'mascot', guide: 'pad:mascot' },
+    { text: '🤵 Assumi il cameriere della terza casetta', bought: 'waiter3', guide: 'pad:waiter3' },
     { text: '⭐ Raggiungi 5 stelle di reputazione', stat: 'stars', n: 5, guide: '', decimals: 1 }
   ];
-  objectives.forEach((o, i) => { o.reward = 15 + 5 * Math.floor(i / 12); }); // 15, 20, 25 monete
+  objectives.forEach((o, i) => { o.reward = 15 + 5 * Math.floor(i / 13); }); // 15, 20, 25, 30 monete
 
   Rifugio.levels.estate = {
     id: 'estate',
@@ -114,7 +118,7 @@
       { id: 'bag',     title: 'Zaino grande',      cost: 55,  pos: [-3.6, 1.4],   requires: { objectives: 4 },     effect: 'bag' },
       { id: 'boots',   title: 'Sandali veloci',    cost: 50,  pos: [6.5, -0.6],   requires: { objectives: 4 },     effect: 'boots' },
       { id: 'cocoa',   title: 'Banco limonata',    cost: 65,  pos: [11, -4.4],    requires: { bought: 'room1' },   effect: 'cocoa' },
-      { id: 'helper',  title: 'Aiutante',          cost: 160, pos: [-11, -1],     requires: { bought: 'cocoa' },   effect: 'helper' },
+      { id: 'helper',  title: 'Aiutante casetta 1', cost: 160, pos: [-11, -1],    requires: { bought: 'cocoa' },   effect: 'helper', room: 0 },
       { id: 'room2',   title: 'Casetta 3',         cost: 130, pos: [-6, -6.5],    requires: { bought: 'helper' },  effect: 'room', room: 2 },
       { id: 'axe',     title: 'Ascia affilata',    cost: 75,  pos: [-7.2, 1.6],   requires: { objectives: 12 },    effect: 'axe' },
       { id: 'insul',   title: 'Griglie potenti',   cost: 95,  pos: [-11.5, -4.8], requires: { objectives: 14 },    effect: 'insul' },
@@ -122,8 +126,12 @@
       { id: 'sign',    title: 'Cartello del lago', cost: 115, pos: [9.5, 3.6],    requires: { objectives: 20 },    effect: 'sign' },
       { id: 'bag2',    title: 'Zaino gigante',     cost: 95,  pos: [-0.5, 3.4],   requires: { objectives: 22 },    effect: 'bag2' },
       { id: 'cocoa2',  title: 'Limonata veloce',   cost: 105, pos: [14.6, -4.4],  requires: { objectives: 24 },    effect: 'cocoa2' },
-      { id: 'helper2', title: '2° aiutante',       cost: 210, pos: [-11, 2.8],    requires: { objectives: 26 },    effect: 'helper2' },
-      { id: 'mascot',  title: 'Paperella gigante', cost: 110, pos: [-12.6, 7.2],  requires: { objectives: 28 },    effect: 'mascot' }
+      { id: 'helper2', title: 'Aiutante casetta 2', cost: 210, pos: [-11, 2.8],    requires: { objectives: 26 },    effect: 'helper', room: 1, needRoom: 1 },
+      { id: 'waiter',  title: 'Cameriere casetta 1', cost: 95, pos: [-2.2, -0.4], requires: { objectives: 27 },    effect: 'waiter', room: 0, needRoom: 0 },
+      { id: 'waiter2', title: 'Cameriere casetta 2', cost: 115, pos: [9.6, -1.8], requires: { objectives: 31 },    effect: 'waiter', room: 1, needRoom: 1 },
+      { id: 'helper3', title: 'Aiutante casetta 3', cost: 240, pos: [-13.5, 2.4], requires: { objectives: 31 },    effect: 'helper', room: 2, needRoom: 2 },
+      { id: 'mascot',  title: 'Paperella gigante', cost: 110, pos: [-12.6, 7.2],  requires: { objectives: 28 },    effect: 'mascot' },
+      { id: 'waiter3', title: 'Cameriere casetta 3', cost: 135, pos: [-9.2, -2.2], requires: { objectives: 34 },    effect: 'waiter', room: 2, needRoom: 2 }
     ],
     objectives
   };
