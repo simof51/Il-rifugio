@@ -1,10 +1,27 @@
-// Avvio: carica il salvataggio, collega i pulsanti, avvia il livello e registra il service worker (uso offline).
+// Avvio: sceglie il livello, carica il salvataggio, collega i pulsanti, avvia il livello e registra il service worker (uso offline).
 (function (R) {
   'use strict';
   const $ = id => document.getElementById(id);
-  const state = R.createState('rifugio-v2');
+
+  // Livello scelto (ricordato fra un avvio e l'altro): ogni livello ha il suo salvataggio.
+  const LEVEL_KEY = 'rifugio-level', ORDER = ['inverno', 'estate'];
+  const readLevel = () => { try { return localStorage.getItem(LEVEL_KEY); } catch (e) { return null; } };
+  const setLevel = id => { try { localStorage.setItem(LEVEL_KEY, id); } catch (e) { /* ignorato */ } location.reload(); };
+  const level = R.levels[readLevel()] || R.levels.inverno;
+  const state = R.createState(level.saveKey);
   // Chiede al sistema di non cancellare i dati del gioco quando manca spazio.
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* ignorato */ }
+
+  // Testi del livello nella finestra iniziale e scelta della stagione.
+  $('introMsg').textContent = level.text.intro;
+  $('introList').innerHTML = level.text.help.map(t => `<li>${t}</li>`).join('');
+  $('levelNote').textContent = `${level.emoji} ${level.name}: ${level.objectives.length} obiettivi. I progressi restano salvati sul dispositivo.`;
+  $('levels').innerHTML = ORDER.filter(id => R.levels[id]).map(id => {
+    const l = R.levels[id];
+    return `<button class="lv${l === level ? ' on' : ''}" data-level="${id}">${l.emoji} ${l.name}</button>`;
+  }).join('');
+  $('levels').onclick = e => { const b = e.target.closest('button[data-level]'); if (b && R.levels[b.dataset.level] !== level) setLevel(b.dataset.level); };
+  $('nextLevel').onclick = () => setLevel($('nextLevel').dataset.level);
 
   const reset = () => { state.reset(); location.reload(); };
   $('reset1').onclick = reset; $('reset2').onclick = reset;
@@ -27,7 +44,8 @@
   else if (inApp) $('ver').textContent = 'Versione inclusa nell\'app (offline)';
 
   const hud = R.createHud();
-  const game = R.createGame({ hud, level: R.levels.inverno, state });
+  const game = R.createGame({ hud, level, state });
+  if (location.search.indexOf('debug') >= 0) window.rifugioDebug = game.debug;
   $('start').onclick = () => { hud.hideIntro(); game.start(); };
   $('keep').onclick = () => { hud.hideWin(); game.resume(); };
 

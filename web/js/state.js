@@ -4,7 +4,7 @@
 (function (R) {
   'use strict';
   const defaults = () => ({
-    coins: 0, wood: 0, fed: 0, guests: 0, collected: 0, cocoa: 0, happy: 0, done: 0,
+    coins: 0, wood: 0, fed: 0, guests: 0, collected: 0, cocoa: 0, happy: 0, done: 0, trees: 0,
     bought: {}, paid: {}, piles: [0, 0, 0], won: false
   });
   // Quanto è avanzata una partita: obiettivi, cose sbloccate, ospiti serviti, legna tagliata.

@@ -31,28 +31,30 @@
 
 <div id="intro" class="modal"><div class="card">
   <h1>Il Rifugio</h1>
+  <div class="levels" id="levels"></div>
   <p id="introMsg">Una baita sotto la neve da far crescere. Tieni accesi i camini, accogli gli escursionisti e trasformala nel rifugio più famoso della valle.</p>
-  <ul>
+  <ul id="introList">
     <li>Trascina il dito sullo schermo per muoverti (o WASD e frecce).</li>
     <li>Fermati vicino a un abete per tagliare la legna.</li>
     <li>Porta la legna ai camini: gli ospiti pagano solo se stanno al caldo.</li>
     <li>Fermati sulle piazzole bianche per spendere le monete e sbloccare nuove cose.</li>
   </ul>
   <div class="row"><button class="btn" id="start">Inizia</button><button class="btn ghost" id="reset1" hidden>Ricomincia da capo</button></div>
-  <p class="note">Livello 1, Inverno. I progressi restano salvati sul dispositivo.</p>
+  <p class="note" id="levelNote">I progressi restano salvati sul dispositivo.</p>
   <p class="note" id="ver"></p>
 </div></div>
 
 <div id="win" class="modal hidden"><div class="card">
-  <h1>Inverno completato!</h1>
+  <h1 id="winTitle">Livello completato!</h1>
   <p id="winTxt"></p>
-  <p>Il prossimo livello sarà l'estate al lago: barche, campeggio e grigliate.</p>
-  <div class="row"><button class="btn" id="keep">Continua a giocare</button><button class="btn ghost" id="reset2">Ricomincia</button></div>
+  <p id="winNext"></p>
+  <div class="row"><button class="btn" id="nextLevel" hidden>Vai al prossimo livello</button><button class="btn ghost" id="keep">Continua a giocare</button><button class="btn ghost" id="reset2">Ricomincia</button></div>
 </div></div>
 
 <script src="lib/three.min.js"></script>
 <script src="js/namespace.js"></script>
 <script src="js/levels/inverno.js"></script>
+<script src="js/levels/estate.js"></script>
 <script src="js/state.js"></script>
 <script src="js/build.js"></script>
 <script src="js/hud.js"></script>

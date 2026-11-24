@@ -41,5 +41,23 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;backgrou
 .note{font-size:13px;color:#6b7a89;margin-top:14px}
 @media(max-width:600px){.chip{font-size:16px;padding:4px 12px 4px 6px}.chip svg{width:22px;height:22px}#task{top:calc(56px + var(--safe-t))}.card h1{font-size:34px}}
 @media(prefers-reduced-motion:reduce){.bar i,#toast{transition:none}}
+/* Aspetto più allegro per i più piccoli: indicatori colorati che rimbalzano, scheda obiettivo e pulsanti più tondi e vivaci */
+.chip{border:3px solid #fff;background:linear-gradient(#fff,#fff6d6);box-shadow:0 4px 0 rgba(31,42,55,.2)}
+.chip:nth-child(2){background:linear-gradient(#fff,#fff0c2)}.chip:nth-child(3){background:linear-gradient(#fff,#ffe9d6)}.chip:nth-child(4){background:linear-gradient(#fff,#ffe0e0)}
+.chip.pop{animation:pop .35s ease-out}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.22) rotate(-3deg)}100%{transform:scale(1)}}
+#task{border:3px solid #fff;border-radius:20px;background:linear-gradient(#fff,#eaf6ff);box-shadow:0 4px 0 rgba(31,42,55,.2)}
+#taskTxt{font-size:17px}
+.bar{height:12px;border:2px solid #fff;background:#cfe3f5}.bar i{background:linear-gradient(90deg,#4cd964,#ffd23a)}
+.btn{border-radius:18px;box-shadow:0 5px 0 #a9382a}
+.card{border-radius:30px;border:4px solid #fff;background:linear-gradient(#fff,#fff8ec)}
+.card h1{color:#e8452f;text-shadow:0 3px 0 #ffd23a}
+.pill{border:2px solid #fff;font-size:14px}
+.pad{border:2px solid #fff;border-radius:16px}
+.float{font-size:24px;-webkit-text-stroke:1px #fff}
+.levels{display:flex;gap:10px;margin:0 0 14px}
+.lv{font:inherit;font-weight:600;font-size:17px;border:3px solid #fff;border-radius:16px;padding:8px 14px;background:#eef2f6;color:var(--ink);box-shadow:0 3px 0 #cfd8e2;flex:1;min-height:44px}
+.lv.on{background:#ffd23a;box-shadow:0 3px 0 #c98a00}
+@media(prefers-reduced-motion:reduce){.chip.pop{animation:none}}
 #update{position:fixed;left:50%;bottom:calc(76px + var(--safe-b));transform:translateX(-50%);z-index:30;white-space:nowrap;font-size:15px;padding:10px 18px}
 #update:active{transform:translate(-50%,2px)}

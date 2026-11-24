@@ -9,6 +9,38 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.5.7 · 2026-11-24 · Livello Estate, 36 obiettivi a stagione, animazioni nuove, grafica per bambini
+
+**Richiesto**
+- Taglio più naturale e fluido, con i gomiti alle braccia dell'omino.
+- Legna e bevande non devono sparire: devono volare verso il camino o l'ospite.
+- Aggiungere il livello Estate e portare gli obiettivi a 30-40 per stagione, ognuno sotto i 3,5 minuti.
+- Grafica più accattivante per un pubblico di bassa età.
+
+**Aggiunto**
+| File | Cosa |
+|---|---|
+| `web/js/levels/estate.js` | Livello 2: estate al lago (prato, lago con spiaggia, paperelle e barchetta, fiori, farfalle, alberi da frutto, griglie, limonata, campeggiatori) con 36 obiettivi. |
+| `web/js/levels/inverno.js` | Riscritto: 36 obiettivi (erano 10), 14 sblocchi (erano 6), tema e testi del livello. Nuovi sblocchi: ascia affilata, camini isolati, cartello (più ospiti), zaino gigante, cioccolata veloce, 2° boscaiolo, lanterne, pupazzo di neve. |
+| `web/js/main.js`, `index.html` | Scelta Inverno/Estate nella finestra iniziale (ogni livello ha il suo salvataggio: `rifugio-v2` per l'inverno, `rifugio-estate-v1` per l'estate); tasto "Vai al prossimo livello" a fine livello. |
+
+**Modificato**
+| File | Cosa |
+|---|---|
+| `web/js/build.js` | Braccia con spalla, gomito e avambraccio; busto su perno (si inclina e ruota); colpo d'ascia in un ciclo continuo (carica sopra la testa, pausa, colpo, seguito) che si fonde con camminata e respiro; lancio con le braccia. Faccia con occhioni, sorriso e guanciotte; sciarpa. Alberi da frutto per l'estate. Colori più vivaci. |
+| `web/js/game.js` | Legna, tazze e monete volano ad arco (dall'albero allo zaino, dallo zaino al camino o all'ospite, dalle monete all'omino); il fuoco sale quando il pezzo arriva. Scheggie di legno, scintille, coriandoli e cuoricini; salto di gioia a ogni obiettivo. Bandierine sulle casette, monete che girano. Nuove statistiche (`trees`) e premio per obiettivo (10/15/20 monete d'inverno, 15/20/25 d'estate). Taglio ogni 0,45 s (era 0,35) per avere un colpo leggibile. |
+| `web/css/style.css`, `web/js/hud.js` | Indicatori colorati che rimbalzano, schede più tonde, barra a gradiente. |
+| `web/sw.js` | `CACHE` v9, aggiunto `estate.js`. |
+
+**Nota sui tempi**
+- La durata massima di 3,5 minuti per obiettivo è stimata sui numeri del gioco (flusso di ospiti, consumo del fuoco, taglio), non misurata giocando.
+- Estate sbloccata fin dall'inizio, per poterla provare.
+
+**Per tornare indietro**
+- `git checkout 7a9e0ff -- web CLAUDE.md`
+
+---
+
 ## v0.5.6 · 2026-11-24 · Abeti morbidi, niente lampeggio sul sentiero, salvataggio più sicuro
 
 **Richiesto**

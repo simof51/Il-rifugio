@@ -6,7 +6,7 @@ Gioco 3D progressivo per Android (arcade tycoon in un rifugio di montagna).
 
 - `rifugio-design.md`: meccaniche, numeri, sblocchi, obiettivi e stile. È la fonte di verità per il gameplay.
 - `rifugio-prototipo.html`: prototipo originale in un solo file (Three.js r128). Resta come riferimento, non si modifica.
-- `web/`: il gioco vero e proprio. HTML + JavaScript semplice con Three.js r128 (in `web/lib/`), senza strumenti di build. Numeri, sblocchi e obiettivi del livello stanno in `web/js/levels/inverno.js`.
+- `web/`: il gioco vero e proprio. HTML + JavaScript semplice con Three.js r128 (in `web/lib/`), senza strumenti di build. Numeri, sblocchi, obiettivi, colori e testi di ogni livello stanno in `web/js/levels/inverno.js` e `estate.js` (36 obiettivi a stagione, ognuno da completare in meno di 3,5 minuti; ogni livello ha il suo salvataggio). Aprendo il gioco con `?debug` si ha `window.rifugioDebug` per le prove.
 - `app/`: l'app Android (Capacitor). Il caricatore `app/boot/index.html` a ogni avvio scarica da GitHub i file di `web/` dell'ultimo commit del branch di sviluppo; la copia di `web/` dentro l'APK serve solo senza rete.
 - `.github/workflows/apk.yml`: costruisce l'APK su GitHub Actions e lo pubblica nella release `apk-test`.
 - `Changelog/CHANGELOG.md`: registro delle aggiunte e modifiche.

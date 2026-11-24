@@ -22,7 +22,12 @@
       const tr = `translate(${((V.x + 1) / 2 * innerWidth).toFixed(0)}px,${((1 - V.y) / 2 * innerHeight).toFixed(0)}px) translate(-50%,-100%)`;
       if (el._tr !== tr) { el._tr = tr; el.style.transform = tr; }
     }
-    function setText(el, v) { v = String(v); if (el._t !== v) { el._t = v; el.textContent = v; } }
+    function setText(el, v, pop) {
+      v = String(v);
+      if (el._t === v) return;
+      const first = el._t === undefined; el._t = v; el.textContent = v;
+      if (pop && !first) { const c = el.parentElement; c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); } // rimbalzo dell'indicatore
+    }
 
     function toast(msg) {
       const el = $('toast'); el.textContent = msg; el.classList.add('on');
@@ -40,9 +45,9 @@
     // Indicatori in alto: monete, stelle, legna nello zaino e (dopo l'apertura del banco) cioccolate.
     const E = { coinN: $('coinN'), starN: $('starN'), carryN: $('carryN'), cupChip: $('cupChip'), cupN: $('cupN'), taskN: $('taskN'), taskTxt: $('taskTxt'), taskV: $('taskV'), taskBar: $('taskBar') };
     function setStats(coins, stars, logs, logCap, cups, cupCap, showCups) {
-      setText(E.coinN, coins); setText(E.starN, stars.toFixed(1)); setText(E.carryN, `${logs}/${logCap}`);
+      setText(E.coinN, coins, true); setText(E.starN, stars.toFixed(1), true); setText(E.carryN, `${logs}/${logCap}`, true);
       if (E.cupChip.hidden === showCups) E.cupChip.hidden = !showCups;
-      setText(E.cupN, `${cups}/${cupCap}`);
+      setText(E.cupN, `${cups}/${cupCap}`, true);
     }
     function setTask(head, text, valueTxt, ratio) {
       setText(E.taskN, head); setText(E.taskTxt, text); setText(E.taskV, valueTxt);
@@ -59,7 +64,11 @@
       label, put, toast, floatText, updateFloats, setStats, setTask, showStick, moveKnob, hideStick,
       setCamera(c) { cam = c; },
       hideIntro() { $('intro').classList.add('hidden'); },
-      showWin(text) { $('winTxt').textContent = text; $('win').classList.remove('hidden'); },
+      showWin(title, text, next, nextId) {
+        $('winTitle').textContent = title; $('winTxt').textContent = text; $('winNext').textContent = next;
+        $('nextLevel').hidden = !nextId; if (nextId) $('nextLevel').dataset.level = nextId;
+        $('win').classList.remove('hidden');
+      },
       hideWin() { $('win').classList.add('hidden'); }
     };
   };
