@@ -10,10 +10,10 @@
     const T = THREE, P = level.tuning, S = state.data, objectives = level.objectives;
 
     // --- motore -------------------------------------------------------------
-    // Prestazioni: niente antialias (pesa molto sul telefono), risoluzione massima 1,5x che scende da sola se il gioco va a scatti,
-    // ombre PCF semplici (le "soft" costano di più).
+    // Prestazioni: niente antialias (pesa molto sul telefono) e ombre PCF semplici (le "soft" costano di più).
+    // La risoluzione resta piena (fino a 2x) e non viene mai abbassata da sola.
     const renderer = new T.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
-    let pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
     renderer.setPixelRatio(pixelRatio);
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFShadowMap;
     document.getElementById('game').appendChild(renderer.domElement);
@@ -202,7 +202,7 @@
     function spawnHelper() {
       if (helper.g) return;
       helper.g = B.person(0x3d8460, 0x9a6a45, true); helper.g.position.set(-11, 0, -1);
-      helper.sg = new T.Group(); helper.sg.position.set(0, 0.75, -0.42); helper.g.add(helper.sg);
+      helper.sg = new T.Group(); helper.sg.position.set(0, 0.75, -0.32); helper.g.add(helper.sg);
     }
     function updateHelper(dt) {
       const h = helper, g = h.g; h.cd -= dt;
@@ -253,7 +253,7 @@
 
     // --- giocatore ----------------------------------------------------------
     const player = B.person(0xd94f3d, 0xf2b632, true); player.position.set(0, 0, 0);
-    const stackG = new T.Group(); stackG.position.set(0, 0.75, -0.42); player.add(stackG);
+    const stackG = new T.Group(); stackG.position.set(0, 0.75, -0.32); player.add(stackG);
     const carry = { logs: 0, cups: 0 };
     // Lo zaino ha due scomparti separati: legna e cioccolate.
     const logCap = () => hasEffect('bag') ? P.bag_big_logs : P.bag_logs;
@@ -496,16 +496,9 @@
     function resize() { renderer.setSize(innerWidth, innerHeight, false); cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); }
     addEventListener('resize', resize); resize();
     cam.position.set(0, 15, 12);
-    let last = performance.now(), avgMs = 16, slowT = 0;
+    let last = performance.now();
     function frame(now) {
-      const realMs = now - last;
-      const dt = Math.min(0.05, realMs / 1000); last = now;
-      // Risoluzione adattiva: se la media dei fotogrammi supera ~26 ms per un secondo, si abbassa la risoluzione (mai si rialza).
-      avgMs += (Math.min(realMs, 100) - avgMs) * 0.05;
-      slowT = avgMs > 26 ? slowT + dt : 0;
-      if (slowT > 1 && pixelRatio > 0.75) {
-        pixelRatio = Math.max(0.75, pixelRatio - 0.25); renderer.setPixelRatio(pixelRatio); resize(); slowT = 0; avgMs = 16;
-      }
+      const dt = Math.min(0.05, (now - last) / 1000); last = now;
       if (running) update(dt);
       anim(dt); renderer.render(scene, cam); overlays(dt); refreshHud();
       requestAnimationFrame(frame);

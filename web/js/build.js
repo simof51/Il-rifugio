@@ -9,7 +9,7 @@
     // Luce calcolata per pixel (Phong): le superfici curve restano lisce invece di mostrare le sfaccettature.
     const M = (c, extra) => new T.MeshPhongMaterial(Object.assign({ color: c, shininess: 6, specular: 0x111111 }, extra));
     const mats = {
-      snow: M(0xf4f7fb), pine: M(0x2f6b4f), pine2: M(0x3d8460), trunk: M(0x6b4430), wood: M(0x9a6a45),
+      snow: M(0xf4f7fb), foliage: M(0xffffff, { vertexColors: true }), pine: M(0x2f6b4f), pine2: M(0x3d8460), trunk: M(0x6b4430), wood: M(0x9a6a45),
       plank: M(0xc89b6d), stone: M(0x8d939c), red: M(0xd94f3d), skin: M(0xf2c9a0), dark: M(0x2d3440),
       bed: M(0xe9e2d0), blanket: M(0x4f7cc4), gold: M(0xf2b632, { shininess: 40, specular: 0x665522 }), cup: M(0xb8452f),
       path: M(0xd8ccb8), rock: M(0x8fa6bf), cocoa: M(0x5a3220), steel: M(0xb9c2cc, { shininess: 50, specular: 0x555555 }),
@@ -68,16 +68,40 @@
     // Abete. "fall" contiene tronco e chioma e può inclinarsi o cadere ruotando attorno alla base;
     // "stump" è il ceppo che resta dopo l'abbattimento. Ogni abete ha materiali propri per poter diventare trasparente.
     function tree(x, z, sc) {
-      const tm = { trunk: mats.trunk.clone(), pine: mats.pine.clone(), pine2: mats.pine2.clone(), snow: mats.snow.clone() };
+      const tm = { trunk: mats.trunk.clone(), foliage: mats.foliage.clone(), snow: mats.snow.clone() };
       const g = new T.Group(); g.position.set(x, 0, z); if (sc) g.scale.setScalar(sc);
       const stump = cyl(0.22, 0.27, 0.3, tm.trunk, 0, 0.15, 0, g, 16); stump.visible = false;
       const fall = new T.Group(); g.add(fall);
-      cyl(0.18, 0.25, 1, tm.trunk, 0, 0.5, 0, fall, 16);
-      [[1.3, 1.6, 1.5], [1, 1.3, 2.3], [0.7, 1, 3]].forEach(([r, h, y], i) => cyl(0.04, r, h, i % 2 ? tm.pine2 : tm.pine, 0, y, 0, fall, 14));
-      cyl(0.03, 0.36, 0.45, tm.snow, 0, 3.55, 0, fall, 14);
+      const part = (geo, m) => { const o = new T.Mesh(geo, m); o.castShadow = o.receiveShadow = true; fall.add(o); return o; };
+      part(cached('treeTrunk', () => new T.CylinderGeometry(0.15, 0.25, 1.4, 10).translate(0, 0.7, 0)), tm.trunk);
+      part(foliageGeo(), tm.foliage);
+      part(snowCapsGeo(), tm.snow);
       scene.add(g);
       return { g, fall, stump, mats: Object.values(tm) };
     }
+
+    // Chioma dell'abete: sei piani di cono sovrapposti e ruotati l'uno rispetto all'altro (due verdi che si alternano),
+    // ognuno con un cappello di neve. Tutti i piani sono fusi in una sola mesh (la neve in un'altra) e condivisi da tutti gli abeti.
+    const TIERS = [[1.4, 1.0, 0.8], [1.2, 0.95, 1.4], [1.0, 0.9, 1.95], [0.8, 0.85, 2.45], [0.6, 0.8, 2.9], [0.38, 0.8, 3.3]]; // raggio, altezza, base
+    function mergeParts(parts) {
+      const pos = [], nor = [], col = [], idx = []; let off = 0;
+      parts.forEach(p => {
+        const g = p.geo.clone().rotateY(p.ry || 0).translate(0, p.y, 0), pa = g.attributes.position, na = g.attributes.normal, c = new T.Color(p.color || 0xffffff);
+        for (let i = 0; i < pa.count; i++) { pos.push(pa.getX(i), pa.getY(i), pa.getZ(i)); nor.push(na.getX(i), na.getY(i), na.getZ(i)); col.push(c.r, c.g, c.b); }
+        for (let i = 0; i < g.index.count; i++) idx.push(g.index.getX(i) + off);
+        off += pa.count; g.dispose();
+      });
+      const m = new T.BufferGeometry();
+      m.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); m.setAttribute('normal', new T.Float32BufferAttribute(nor, 3));
+      m.setAttribute('color', new T.Float32BufferAttribute(col, 3)); m.setIndex(idx);
+      return m;
+    }
+    const foliageGeo = () => cached('treeFoliage', () => mergeParts(TIERS.map(([r, h, y], i) => ({
+      geo: new T.CylinderGeometry(0.03, r, h, 9), y: y + h / 2, ry: i * 0.45, color: i % 2 ? 0x3d8460 : 0x2f6b4f
+    }))));
+    const snowCapsGeo = () => cached('treeSnow', () => mergeParts(TIERS.map(([r, h, y], i) => ({
+      geo: new T.CylinderGeometry(0.03, r * 0.62, h * 0.55, 9), y: y + h + 0.06 - h * 0.275, ry: i * 0.45
+    }))));
 
     // Arto con perno in alto (anca o spalla). Ordine di rotazione YXZ: prima si alza (x), poi ruota sul piano orizzontale (y).
     function limb(parent, x, y, r, len, m) {
@@ -99,17 +123,18 @@
     // Omino con cappotto, cappello a pon pon, braccia e gambe animabili. withAxe: porta l'ascia (giocatore, boscaiolo).
     function person(coat, hat, withAxe) {
       const g = new T.Group();
-      cyl(0.3, 0.38, 0.85, tint(coat), 0, 0.82, 0, g);
-      ball(0.3, tint(coat), 0, 1.22, 0, g).scale.y = 0.25; // spalle arrotondate
-      ball(0.27, mats.skin, 0, 1.48, 0, g);
-      cyl(0.29, 0.31, 0.12, tint(hat), 0, 1.66, 0, g); cyl(0.02, 0.28, 0.4, tint(hat), 0, 1.9, 0, g);
-      const pom = new T.Mesh(cached('pom', () => new T.SphereGeometry(0.09, 12, 10)), mats.snow); pom.position.y = 2.12; g.add(pom);
-      [-0.09, 0.09].forEach(ex => { const e = new T.Mesh(cached('eye', () => new T.SphereGeometry(0.035, 8, 6)), mats.dark); e.position.set(ex, 1.5, 0.25); g.add(e); });
-      const legs = [limb(g, -0.14, 0.42, 0.1, 0.38, mats.dark), limb(g, 0.14, 0.42, 0.1, 0.38, mats.dark)];
+      // Stile "omino": busto stretto, testa grande e tonda, berretto basso con pon pon, arti sottili.
+      cyl(0.19, 0.21, 0.74, tint(coat), 0, 0.8, 0, g);
+      ball(0.19, tint(coat), 0, 1.17, 0, g).scale.y = 0.35; // spalle arrotondate
+      ball(0.3, mats.skin, 0, 1.52, 0, g);
+      const cap = new T.Mesh(cached('cap', () => new T.SphereGeometry(0.32, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.42)), tint(hat)); cap.position.y = 1.56; cap.castShadow = true; g.add(cap);
+      const pom = new T.Mesh(cached('pom', () => new T.SphereGeometry(0.085, 12, 10)), mats.snow); pom.position.y = 1.93; g.add(pom);
+      [-0.1, 0.1].forEach(ex => { const e = new T.Mesh(cached('eye', () => new T.SphereGeometry(0.035, 8, 6)), mats.dark); e.position.set(ex, 1.5, 0.275); g.add(e); });
+      const legs = [limb(g, -0.1, 0.42, 0.07, 0.38, mats.dark), limb(g, 0.1, 0.42, 0.07, 0.38, mats.dark)];
       const arms = [-1, 1].map(side => {
-        const arm = limb(g, side * 0.37, 1.15, 0.085, 0.45, tint(coat));
+        const arm = limb(g, side * 0.27, 1.15, 0.06, 0.45, tint(coat));
         arm.rotation.z = side * 0.12; // leggermente aperte
-        ball(0.1, mats.skin, 0, -0.52, 0, arm, 12, 10);
+        ball(0.08, mats.skin, 0, -0.5, 0, arm, 12, 10);
         return arm;
       });
       Object.assign(g.userData, { legs, arms, axe: withAxe ? axe(arms[1]) : null, ph: 0, chopT: 0, chopDur: 1 });

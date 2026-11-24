@@ -9,6 +9,25 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.5.5 · 2026-11-24 · Risoluzione piena, abeti più veri, omini stickman
+
+**Richiesto**
+- La risoluzione era calata: ripristinarla.
+- Gli alberi devono sembrare più alberi che coni verdi.
+- Gli omini devono essere più umani e meno conici, in stile stickman senza esagerare.
+
+**Modificato**
+| File | Cosa |
+|---|---|
+| `web/js/game.js` | Risoluzione di nuovo piena (fino a 2x) e mai abbassata da sola: tolta la risoluzione adattiva della v0.5.3. Restano niente antialias e ombre PCF semplici. Zaino di legna più vicino alla schiena (più stretta). |
+| `web/js/build.js` | Abete: tronco più alto e sei piani di cono sovrapposti e ruotati, con due verdi alternati e un cappello di neve su ogni piano; chioma e neve sono due mesh fuse e condivise da tutti gli abeti (3 mesh per albero invece di 6). Omino: busto stretto, testa grande e tonda, berretto basso con pon pon al posto del cono, braccia e gambe sottili. |
+| `web/sw.js` | `CACHE` da v6 a v7. |
+
+**Per tornare indietro**
+- `git checkout ea9cbbb -- web/js/game.js web/js/build.js web/sw.js`
+
+---
+
 ## v0.5.4 · 2026-11-24 · Firma fissa dell'APK
 
 **Problema**
