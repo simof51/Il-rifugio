@@ -1,6 +1,6 @@
 # Il Rifugio (versione web / app Android)
 
-Il gioco è fatto solo di file HTML, CSS e JavaScript: non serve installare nessun programma.
+Il gioco è fatto solo di file HTML, CSS e JavaScript: non serve installare nessun programma. Three.js e il font sono dentro la cartella (`lib/`, `fonts/`): il gioco non contatta server esterni.
 
 ## Giocare sul PC
 - Il modo più rapido è aprire `index.html` con doppio clic. Funziona tutto tranne l'uso offline.
@@ -12,7 +12,10 @@ powershell -ExecutionPolicy Bypass -File web\serve.ps1
 
 Comandi: trascina con il mouse (o il dito) per muoverti, oppure WASD e frecce.
 
-## Installarlo su Android
+## Installarlo su Android (APK di prova)
+L'APK si scarica da https://github.com/simof51/Il-rifugio/releases/download/apk-test/il-rifugio.apk (vedi `app/README.md`). Si aggiorna da solo a ogni avvio.
+
+## Installarlo su Android come app web
 Android installa un'app web solo se è servita in HTTPS. Una volta pubblicata:
 1. Apri l'indirizzo con Chrome sul telefono.
 2. Menu ⋮ → "Installa app" (o "Aggiungi a schermata Home").
@@ -22,7 +25,7 @@ Modi semplici per pubblicare la cartella `web/` in HTTPS, senza programmi:
 - **Netlify Drop**: trascini la cartella `web` nella pagina e ottieni un indirizzo.
 - **GitHub Pages**: carichi i file in un repository e attivi Pages.
 
-Se un giorno serve un vero APK/AAB per il Play Store, si può generare dall'indirizzo pubblicato con PWABuilder (pwabuilder.com), sempre senza installare nulla.
+Per il Play Store la strada scelta è Capacitor (cartella `app/`).
 
 ## Struttura
 | File | Contenuto |
@@ -35,7 +38,9 @@ Se un giorno serve un vero APK/AAB per il Play Store, si può generare dall'indi
 | `js/hud.js` | Interfaccia: indicatori, obiettivo, joystick, avvisi, etichette sopra la scena. |
 | `js/game.js` | Ciclo di gioco: taglio, camini, ospiti, cioccolata, boscaiolo, piazzole, obiettivi, camera. |
 | `js/main.js` | Avvio e pulsanti. |
-| `manifest.webmanifest`, `sw.js`, `icons/` | Installazione come app e uso offline. |
+| `lib/three.min.js` | Three.js r128. |
+| `fonts/` | Font Fredoka (licenza OFL). |
+| `manifest.webmanifest`, `sw.js`, `icons/` | Installazione come app web e uso offline. |
 | `serve.ps1` | Server locale di prova. |
 
-Quando modifichi un file del gioco, aumenta `CACHE` in `sw.js` (es. `rifugio-cache-v2`): così i telefoni scaricano la versione nuova.
+Quando modifichi un file del gioco, aumenta `CACHE` in `sw.js` (es. `rifugio-cache-v5`): così i telefoni scaricano la versione nuova.

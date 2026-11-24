@@ -1,0 +1,10 @@
+{
+  "appId": "it.ilrifugio.gioco",
+  "appName": "Il Rifugio",
+  "webDir": "www",
+  "backgroundColor": "#a9c9e6",
+  "android": {
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": true
+  }
+}

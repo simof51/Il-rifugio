@@ -1,0 +1,78 @@
+# Costruisce l'APK di prova di Il Rifugio e lo pubblica nella release "apk-test".
+# Link fisso per scaricarlo dal telefono:
+#   https://github.com/simof51/Il-rifugio/releases/download/apk-test/il-rifugio.apk
+# Il gioco vero e proprio (cartella web/) NON richiede un nuovo APK: l'app lo scarica da GitHub a ogni avvio.
+# Serve un APK nuovo solo quando cambia la cartella app/ (caricatore, configurazione, icona).
+name: APK Android
+
+on:
+  push:
+    branches: [claude/il-rifugio-old-branch-d4kcaa]
+    paths: ['app/**', '.github/workflows/apk.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Progetto Capacitor
+        working-directory: app
+        run: |
+          npm install --no-audit --no-fund
+          npm run www
+          npx cap add android
+          npx cap sync android
+
+      - name: Icona e numero di versione
+        working-directory: app/android/app
+        run: |
+          rm -f src/main/res/mipmap-anydpi-v26/ic_launcher*.xml
+          for d in src/main/res/mipmap-*dpi; do
+            cp ../../../web/icons/icon-192.png "$d/ic_launcher.png"
+            cp ../../../web/icons/icon-192.png "$d/ic_launcher_round.png"
+            rm -f "$d/ic_launcher_foreground.png"
+          done
+          # Schermata di avvio: tinta unita color cielo invece del logo di Capacitor.
+          find src/main/res -name splash.png -exec cp ../../res/splash.png {} \;
+          sed -i -E "s/versionCode [0-9]+/versionCode ${{ github.run_number }}/; s/versionName \"[^\"]*\"/versionName \"0.5.${{ github.run_number }}\"/" build.gradle
+          grep -E "versionCode|versionName" build.gradle
+
+      - name: Compila l'APK
+        working-directory: app/android
+        run: |
+          # Chiave di prova fissa: così ogni nuovo APK si installa sopra il precedente senza disinstallare.
+          mkdir -p ~/.android && cp ../debug.keystore ~/.android/debug.keystore
+          ./gradlew assembleDebug --no-daemon --stacktrace
+          cp app/build/outputs/apk/debug/app-debug.apk ../../il-rifugio.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: il-rifugio-apk
+          path: il-rifugio.apk
+
+      - name: Pubblica nella release apk-test
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete apk-test --yes --cleanup-tag || true
+          gh release create apk-test il-rifugio.apk --target "$GITHUB_SHA" --prerelease \
+            --title "APK di prova" \
+            --notes "APK di prova costruito dal commit ${GITHUB_SHA::7}. Il gioco si aggiorna da solo a ogni avvio dell'app."

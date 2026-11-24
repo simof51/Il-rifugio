@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Il Rifugio</title>
+<style>
+  html,body{margin:0;height:100%;background:#a9c9e6;font:16px/1.4 system-ui,sans-serif;color:#1f2a37}
+  #boot{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:0 24px;box-sizing:border-box}
+  #boot b{font-size:28px}
+  #boot span{color:#4a5a6b;font-size:14px}
+</style>
+</head>
+<body>
+<div id="boot"><b>Il Rifugio</b><span id="msg">Cerco l'ultima versione…</span></div>
+<script>
+// Caricatore dell'app Android.
+// All'avvio chiede a GitHub qual è l'ultimo commit del branch di sviluppo e scarica da lì i file del gioco (cartella web/),
+// così ogni modifica pubblicata arriva sul telefono senza reinstallare l'APK. I file scaricati restano in cache per commit:
+// senza rete si usa l'ultima versione scaricata, e se non c'è nemmeno quella la copia del gioco inclusa nell'APK (game/).
+(function () {
+  'use strict';
+  var REPO = 'simof51/Il-rifugio';
+  var BRANCH = 'claude/il-rifugio-old-branch-d4kcaa';
+  var API = 'https://api.github.com/repos/' + REPO + '/commits/' + encodeURIComponent(BRANCH);
+  var SHA_KEY = 'rifugio-remote-sha', CACHE = 'rifugio-remote';
+  var msg = document.getElementById('msg');
+
+  function withTimeout(p, ms) {
+    return Promise.race([p, new Promise(function (_, no) { setTimeout(function () { no(new Error('timeout')); }, ms); })]);
+  }
+  function local(why) {
+    try { console.warn('Uso la copia inclusa nell\'app:', why); } catch (e) {}
+    location.replace('game/index.html');
+  }
+  function getSha() {
+    // no-cache: il WebView rivalida con l'ETag, e le risposte 304 non consumano il limite di richieste di GitHub.
+    return withTimeout(fetch(API, { cache: 'no-cache' }), 6000)
+      .then(function (r) { if (!r.ok) throw new Error('GitHub ' + r.status); return r.json(); })
+      .then(function (j) { return j.sha; })
+      .catch(function (e) {
+        var last = null; try { last = localStorage.getItem(SHA_KEY); } catch (err) {}
+        if (!last) throw e;
+        return last;
+      });
+  }
+  function getText(url) {
+    var store = window.caches ? caches.open(CACHE) : Promise.resolve(null);
+    return store.then(function (c) {
+      return (c ? c.match(url) : Promise.resolve(null)).then(function (hit) {
+        if (hit) return hit.text();
+        return withTimeout(fetch(url), 30000).then(function (r) {
+          if (!r.ok) throw new Error(url + ' ' + r.status);
+          if (c) c.put(url, r.clone());
+          return r.text();
+        });
+      });
+    });
+  }
+  function pruneCache(sha) {
+    if (!window.caches) return;
+    caches.open(CACHE).then(function (c) {
+      return c.keys().then(function (keys) { keys.forEach(function (k) { if (k.url.indexOf('/' + sha + '/') < 0) c.delete(k); }); });
+    }).catch(function () {});
+  }
+
+  function run(sha) {
+    var base = 'https://raw.githubusercontent.com/' + REPO + '/' + sha + '/web/';
+    msg.textContent = 'Scarico la versione ' + sha.slice(0, 7) + '…';
+    return getText(base + 'index.html').then(function (html) {
+      var doc = new DOMParser().parseFromString(html, 'text/html');
+      var isLocal = function (u) { return u && !/^[a-z]+:|^\/\//i.test(u); };
+      var scripts = Array.prototype.slice.call(doc.querySelectorAll('script'));
+      var styles = Array.prototype.slice.call(doc.querySelectorAll('link[rel="stylesheet"]')).filter(function (l) { return isLocal(l.getAttribute('href')); });
+      // GitHub serve i file come testo semplice: script e fogli di stile vanno scaricati e inseriti nella pagina.
+      return Promise.all([
+        Promise.all(scripts.map(function (s) {
+          var src = s.getAttribute('src');
+          if (!isLocal(src)) return Promise.resolve(null);
+          // Le librerie (lib/, es. Three.js) cambiano di rado: si usa la copia nell'app invece di riscaricarle.
+          if (/^lib\//.test(src)) return fetch('game/' + src).then(function (r) { if (!r.ok) throw new Error(src); return r.text(); }).catch(function () { return getText(base + src); });
+          return getText(base + src);
+        })),
+        Promise.all(styles.map(function (l) { return getText(base + l.getAttribute('href')); }))
+      ]).then(function (res) {
+        var codes = res[0], css = res[1];
+        styles.forEach(function (l, i) { var st = doc.createElement('style'); st.textContent = css[i]; l.replaceWith(st); });
+        scripts.forEach(function (s) { s.remove(); });
+        // Il resto (font, icone) si prende dalla copia inclusa nell'app, così funziona anche offline.
+        // Un'immagine o un font nuovi arrivano quindi solo con un nuovo APK.
+        var b = doc.createElement('base'); b.href = new URL('game/', location.href).href; doc.head.insertBefore(b, doc.head.firstChild);
+        window.RIFUGIO_REMOTE = { repo: REPO, branch: BRANCH, sha: sha, api: API };
+        document.title = doc.title;
+        document.head.innerHTML = doc.head.innerHTML;
+        document.body.innerHTML = doc.body.innerHTML;
+        scripts.forEach(function (s, i) {
+          var el = document.createElement('script');
+          el.text = codes[i] != null ? codes[i] + '\n//# sourceURL=' + s.getAttribute('src') : s.text;
+          document.body.appendChild(el); // uno script inline inserito così viene eseguito subito, in ordine
+        });
+        try { localStorage.setItem(SHA_KEY, sha); } catch (e) {}
+        pruneCache(sha);
+      });
+    });
+  }
+
+  getSha().then(run).catch(local);
+})();
+</script>
+</body>
+</html>

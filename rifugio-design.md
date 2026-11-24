@@ -40,6 +40,7 @@ Il gioco è destinato al Google Play Store, con pubblicità e un eventuale shop 
 
 ## Prossimi passi
 - ~~Portare il gioco su Godot 4~~: scelta cambiata il 2026-11-24. Il gioco resta in HTML + Three.js ed è un'app web installabile su Android (cartella `web/`), con sblocchi e obiettivi guidati da dati e salvataggio sul dispositivo.
-- Impacchettare `web/` come app Android per il Play Store. Con pubblicità AdMob e acquisti in-app la strada consigliata è Capacitor (il codice del gioco resta lo stesso; servono Android Studio e Node solo per creare l'AAB). Un pacchetto TWA da PWABuilder supporta gli acquisti, ma è più limitato per la pubblicità.
+- App Android con Capacitor (cartella `app/`): fatto il 2026-11-24 un APK di prova costruito da GitHub Actions, che scarica il gioco aggiornato a ogni avvio. Per il Play Store serviranno: un AAB firmato con una chiave vera, il gioco incluso nell'app invece che scaricato (Google non ammette codice scaricato che cambia l'app in modo sostanziale senza revisione), AdMob, Play Billing, consenso e privacy policy.
+- Verificare le prestazioni su un telefono vero (molti abeti con ombre e materiali propri).
 - Sostituire le primitive con asset low-poly (per esempio Kenney o Quaternius, CC0).
 - Livello 2: estate al lago (barche, campeggio, grigliate).

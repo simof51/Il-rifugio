@@ -12,8 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>@font-face{font-family:Fredoka;font-style:normal;font-display:swap;font-weight:300 700;src:url(fonts/fredoka.woff2) format("woff2")}</style>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -28,6 +27,7 @@
 <div id="task"><small><span id="taskN">Obiettivo 1</span><span id="taskV"></span></small><div id="taskTxt"></div><div class="bar"><i id="taskBar"></i></div></div>
 <div id="stick"><div id="knob"></div></div>
 <div id="toast"></div>
+<button id="update" class="btn" hidden>Nuova versione: tocca per aggiornare</button>
 
 <div id="intro" class="modal"><div class="card">
   <h1>Il Rifugio</h1>
@@ -40,6 +40,7 @@
   </ul>
   <div class="row"><button class="btn" id="start">Inizia</button><button class="btn ghost" id="reset1" hidden>Ricomincia da capo</button></div>
   <p class="note">Livello 1, Inverno. I progressi restano salvati sul dispositivo.</p>
+  <p class="note" id="ver"></p>
 </div></div>
 
 <div id="win" class="modal hidden"><div class="card">
@@ -49,7 +50,7 @@
   <div class="row"><button class="btn" id="keep">Continua a giocare</button><button class="btn ghost" id="reset2">Ricomincia</button></div>
 </div></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous"></script>
+<script src="lib/three.min.js"></script>
 <script src="js/namespace.js"></script>
 <script src="js/levels/inverno.js"></script>
 <script src="js/state.js"></script>

@@ -1,0 +1,17 @@
+{
+  "name": "il-rifugio-app",
+  "private": true,
+  "version": "0.5.0",
+  "description": "Il Rifugio impacchettato come app Android con Capacitor",
+  "scripts": {
+    "www": "node prepare-www.js",
+    "sync": "node prepare-www.js && cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.6.2",
+    "@capacitor/core": "8.6.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.6.2"
+  }
+}

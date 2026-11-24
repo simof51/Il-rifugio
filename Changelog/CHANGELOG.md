@@ -5,9 +5,45 @@ Le voci più recenti stanno in cima.
 
 ## Come usare questo registro
 - Ogni voce ha una versione, una data, cosa è cambiato e una sezione **Per tornare indietro**.
-- Prima di modificare un file esistente, la sua versione precedente viene copiata in `Changelog/backup/<data>_<descrizione>/`. Per annullare una modifica, ricopia il file dal backup al suo posto.
-- I file e le cartelle **nuovi** di una voce si annullano cancellandoli.
-- Il progetto non usa git. Se un giorno lo installiamo, questo registro resta valido e i backup diventano commit.
+- Dalla v0.5 il progetto è su git (GitHub, `simof51/Il-rifugio`): per tornare indietro si recuperano i file dal commit indicato (`git checkout <commit> -- <file>`). Le copie in `Changelog/backup/` delle voci fino alla v0.4 non ci sono più: quelle versioni stanno nel commit `a7e0cd4` (branch `Old`).
+
+---
+
+## v0.5 · 2026-11-24 · Progetto su git, tutto dentro il progetto, APK Android che si aggiorna da solo
+
+**Richiesto**
+- Ricostruire la struttura del progetto su git (il caricamento dal sito di GitHub aveva appiattito le cartelle: `web-js-game.js` invece di `web/js/game.js`, e il gioco non partiva).
+- Un APK da installare sul telefono, che riceva le modifiche in tempo reale.
+
+**Riorganizzato**
+- Cartelle `web/` e `Changelog/` ripristinate come erano sul PC.
+- Tolti i 17 file di backup: le versioni precedenti stanno nella storia di git (commit `a7e0cd4`, branch `Old`).
+- `CLAUDE.md`: regole aggiornate per git e per l'app Android.
+
+**Aggiunto**
+| File | Cosa |
+|---|---|
+| `web/lib/three.min.js` | Three.js r128 dentro il progetto (prima veniva da cdnjs). |
+| `web/fonts/fredoka.woff2`, `web/fonts/OFL.txt` | Font Fredoka dentro il progetto (prima da Google Fonts, che trasmetteva l'IP del giocatore a Google senza consenso). Licenza OFL. |
+| `app/` | App Android con Capacitor 8: `boot/index.html` (caricatore), `capacitor.config.json` (id `it.ilrifugio.gioco`), `prepare-www.js`, `debug.keystore` (chiave **di prova**, non per il Play Store), `res/splash.png`. |
+| `.github/workflows/apk.yml` | Costruisce l'APK su GitHub Actions e lo pubblica nella release `apk-test`. |
+
+**Come funziona l'aggiornamento in tempo reale:** a ogni avvio il caricatore chiede a GitHub l'ultimo commit del branch `claude/il-rifugio-old-branch-d4kcaa` e scarica da lì HTML, CSS e script di `web/` (Three.js, font e icone li prende dalla copia nell'APK). Mentre si gioca, ogni 90 s controlla se c'è un commit nuovo e mostra il pulsante "Nuova versione: tocca per aggiornare". Senza rete usa l'ultima versione scaricata; se non c'è nemmeno quella, la copia di `web/` inclusa nell'APK. Nella finestra iniziale si vede la versione in uso.
+
+**Modificato**
+- `web/index.html`: font e Three.js locali, riga della versione, pulsante di aggiornamento.
+- `web/js/main.js`: niente service worker dentro l'app, versione in uso, controllo degli aggiornamenti.
+- `web/css/style.css`: stile del pulsante di aggiornamento.
+- `web/sw.js`: cache `rifugio-cache-v4`, mette in cache anche `lib/` e `fonts/`, non tocca più richieste esterne.
+
+**Verificato** nel browser di prova (Chromium), con GitHub simulato:
+- Il gioco parte senza nessuna richiesta a server esterni.
+- Caricatore: versione scaricata, uso offline con la versione in cache, ripiego sulla copia interna senza rete né cache, pulsante di aggiornamento che ricarica la versione nuova.
+- Il progetto Android si genera (`cap add android`, `cap sync`).
+
+**Non verificato:** la compilazione dell'APK e l'installazione su un telefono vero (qui non c'è l'Android SDK: l'APK lo costruisce GitHub Actions).
+
+**Per tornare indietro a v0.4:** i file della v0.4 sono nel commit `a7e0cd4` (branch `Old`).
 
 ---
 
