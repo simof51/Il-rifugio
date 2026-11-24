@@ -9,6 +9,31 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.6.0 · 2026-11-25 · Colpo orizzontale, motosega, camerieri in smoking, lido d'estate, bordi della mappa
+
+**Richiesto**
+- Colpo d'ascia orizzontale come una vera ascia; lama più affilata; obiettivo motosega.
+- Camerieri in smoking nero con camicia bianca e vassoio quando portano il cibo.
+- Estate: niente rifugio con letti e camino, qualcosa di più estivo; vestiti estivi (pantaloncini, maglietta, berretto con visiera).
+- Inverno: sentiero di ghiaia; bordi della mappa più definiti (montagne alte d'inverno, foresta fitta d'estate).
+
+**Modificato**
+| File | Cosa |
+|---|---|
+| `web/js/build.js` | Colpo orizzontale: le braccia vanno avanti, si caricano di lato e colpiscono in un piano orizzontale, con il busto che ruota; nuova ascia con lama larga e testa. Gomito che si piega anche di lato. Nuovo attrezzo: motosega (corpo arancione, barra con catena, braccia tese con piccolo dondolio e vibrazione). Tre guardaroba: invernale (giaccone, sciarpa, pon pon), estivo (maglietta a maniche corte, pantaloncini, sneakers, berretto con visiera) e cameriere (smoking nero, camicia e colletto bianchi, papillon, polsini bianchi, capelli neri, vassoio d'argento con le bevande che compare solo quando le porta, tenuto con due mani). Texture a puntini per ghiaia e sabbia (disegnata al volo). |
+| `web/js/game.js` | Sentieri come piani con texture, senza deformazioni. Bordi: catena di montagne alte con cime innevate (inverno) o foresta fitta di quattro file di alberi tondi più colline (estate), fuse in pochi pezzi. Bosco interno più fitto (120 alberi d'estate). Stazioni "lido": ombrellone, due lettini con telo e asciugamano, barbecue al posto del camino, staccionata di bambù e parapetti bassi al posto dei muri. Motosega: taglio ogni 0,18 s (0,4 volte), sostituisce l'ascia per giocatore e boscaioli. Suono della motosega. |
+| `web/js/levels/inverno.js` | Sentiero di ghiaia grigia; bordo a montagne; nuova piazzola Motosega (220) e obiettivo "Compra la motosega" (41 obiettivi). |
+| `web/js/levels/estate.js` | Riscritta come lido sul lago: postazioni, bagnanti, chiosco della limonata, barbecue; sentiero di sabbia; foresta di bordo; motosega (230); 41 obiettivi. |
+| `web/js/audio.js`, `main.js`, `sw.js` | Suono "saw" (e nel menu Debug); `CACHE` v12. |
+
+**Nota**
+- Il colpo orizzontale e la motosega li ho guardati solo in immagini fisse, non in movimento.
+
+**Per tornare indietro**
+- `git checkout f1bad1e -- web`
+
+---
+
 ## v0.5.9 · 2026-11-24 · Percorsi senza intoppi, menu Debug, stagione automatica, omini più umani
 
 **Richiesto**

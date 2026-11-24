@@ -12,8 +12,18 @@
     const T = THREE;
     // Luce calcolata per pixel (Phong): le superfici curve restano lisce invece di mostrare le sfaccettature.
     const M = (c, extra) => new T.MeshPhongMaterial(Object.assign({ color: c, shininess: 6, specular: 0x111111 }, extra));
+    // Texture a puntini (ghiaia, sabbia) disegnata al volo: nessun file da scaricare.
+    function speckle(o) {
+      const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');
+      x.fillStyle = o.base; x.fillRect(0, 0, 128, 128);
+      for (let i = 0; i < o.n; i++) {
+        x.fillStyle = o.cols[i % o.cols.length]; const s = o.min + Math.random() * (o.max - o.min);
+        x.beginPath(); x.ellipse(Math.random() * 128, Math.random() * 128, s, s * 0.75, Math.random() * 3, 0, 6.3); x.fill();
+      }
+      const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; return t;
+    }
     const mats = {
-      snow: M(0xf6f9ff), ground: M(theme.ground || 0xf6f9ff), path: M(theme.path || 0xe8dcc4),
+      snow: M(0xf6f9ff), ground: M(theme.ground || 0xf6f9ff), path: theme.pathTex ? M(0xffffff, { map: speckle(theme.pathTex) }) : M(theme.path || 0xe8dcc4),
       hill: M(theme.hill || 0x8fb0d8), peak: M(theme.peak || 0xf6f9ff),
       foliage: M(0xffffff, { vertexColors: true }), accent: M(0xffffff, { vertexColors: true }), face: M(0xffffff, { vertexColors: true, shininess: 0, specular: 0x000000 }),
       trunk: M(0x7a4a30), wood: M(0xb07848),
@@ -21,7 +31,7 @@
       bed: M(0xfff1da), blanket: M(0x3d8bff), gold: M(0xffc83a, { shininess: 60, specular: 0x887733 }), cup: M(theme.cup || 0xd0502e),
       cocoa: M(theme.cupLiquid || 0x5a3220), steel: M(0xc4ccd6, { shininess: 50, specular: 0x555555 }),
       water: M(theme.water || 0x4fc3f7, { shininess: 80, specular: 0xaaddff, transparent: true, opacity: 0.88 }), sand: M(0xf1dca0),
-      pants: M(0x38487a), boots: M(0x5a3b2a), belt: M(0x3a2a20),
+      pants: M(0x38487a), boots: M(0x5a3b2a), belt: M(0x3a2a20), tux: M(0x17171d, { shininess: 25, specular: 0x333333 }),
       white: M(0xffffff), pink: M(0xff9bb5), yellow: M(0xffd23a), orange: M(0xff9a2a),
       pad: new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 }),
       ghost: M(0xe6b27a, { transparent: true, opacity: 0.3 }),
@@ -149,26 +159,42 @@
       return pivot;
     }
     // Braccio con gomito: spalla (sh) → braccio → gomito (el) → avambraccio → mano.
+    // o.short: maniche corte (braccio nudo con una manica di maglietta); o.cuffM: polsino; o.handM: guanto (senza: mano nuda).
     const UP = 0.24, FORE = 0.24;
-    function arm(parent, x, y, r, m, handM) {
+    function arm(parent, x, y, r, m, o) {
+      o = o || {};
+      const upM = o.short ? mats.skin : m, handM = o.handM || mats.skin;
       const sh = new T.Group(); sh.position.set(x, y, 0); sh.rotation.order = 'YXZ'; parent.add(sh);
-      cyl(r, r * 0.95, UP, m, 0, -UP / 2, 0, sh, 10);
-      ball(r * 1.05, m, 0, -UP, 0, sh, 10, 8); // gomito
+      cyl(r, r * 0.95, UP, upM, 0, -UP / 2, 0, sh, 10);
+      if (o.short) cyl(r * 1.2, r * 1.15, 0.13, m, 0, -0.065, 0, sh, 10); // manica corta
+      ball(r * 1.05, upM, 0, -UP, 0, sh, 10, 8); // gomito
       const el = new T.Group(); el.position.y = -UP; sh.add(el);
-      cyl(r * 0.95, r * 0.85, FORE, m, 0, -FORE / 2, 0, el, 10);
-      cyl(r * 1.05, r * 1.05, 0.04, handM || mats.skin, 0, -FORE + 0.01, 0, el, 10); // polsino
-      ball(r * 1.45, handM || mats.skin, 0, -FORE - 0.03, 0, el, 10, 8); // mano (guanto)
+      cyl(r * 0.95, r * 0.85, FORE, o.short ? mats.skin : m, 0, -FORE / 2, 0, el, 10);
+      if (o.cuffM) cyl(r * 1.08, r * 1.08, 0.05, o.cuffM, 0, -FORE + 0.015, 0, el, 10); // polsino
+      ball(r * 1.45, handM, 0, -FORE - 0.03, 0, el, 10, 8); // mano
       return { sh, el };
     }
-    // Ascia nella mano destra: il manico prosegue l'avambraccio, la lama guida il colpo.
+    // Attrezzi nella mano: il manico prosegue l'avambraccio. Il colpo è orizzontale (come un'ascia vera), quindi la lama
+    // sta in un piano orizzontale e guida il movimento verso il lato (x negativo dell'avambraccio).
     function axe(el) {
       const g = new T.Group(); el.add(g);
-      cyl(0.03, 0.03, 0.62, mats.trunk, 0, -0.4, 0, g, 10);
-      box(0.05, 0.22, 0.26, mats.steel, 0, -0.66, -0.1, g, 0.02);
+      cyl(0.03, 0.03, 0.64, mats.trunk, 0, -0.4, 0, g, 10);
+      box(0.28, 0.22, 0.04, mats.steel, -0.14, -0.68, 0, g, 0.015); // lama affilata
+      box(0.07, 0.1, 0.07, mats.dark, 0, -0.66, 0, g, 0.02);         // testa dell'ascia
       g.visible = false;
       return g;
     }
-    // Faccia (una sola mesh condivisa, colori per vertice): occhioni bianchi con pupilla e riflesso, sorriso, guanciotte rosa.
+    // Motosega: corpo arancione, barra d'acciaio con catena, impugnatura.
+    function chainsaw(el) {
+      const g = new T.Group(); el.add(g);
+      box(0.15, 0.24, 0.17, mats.orange, 0, -0.3, 0, g, 0.03);
+      box(0.1, 0.05, 0.1, mats.dark, 0, -0.16, 0, g, 0.02);
+      box(0.12, 0.62, 0.05, mats.steel, 0, -0.74, 0, g, 0.015);
+      box(0.135, 0.64, 0.03, mats.dark, 0, -0.74, 0, g, 0.01);
+      g.visible = false;
+      return g;
+    }
+    // Faccia (una sola mesh condivisa, colori per vertice): occhioni bianchi con pupilla e riflesso, sorriso, guanciotte rosa, naso, orecchie.
     const faceGeo = () => cached('face', () => mergeParts([
       { geo: cached('eyeW', () => new T.SphereGeometry(0.075, 10, 8)), x: -0.11, y: 0.03, z: 0.235, color: 0xffffff },
       { geo: cached('eyeW', () => new T.SphereGeometry(0.075, 10, 8)), x: 0.11, y: 0.03, z: 0.235, color: 0xffffff },
@@ -187,58 +213,120 @@
     const torsoGeo = () => cached('torso', () => new T.LatheGeometry([
       [0.001, 0], [0.17, 0.01], [0.215, 0.1], [0.2, 0.2], [0.165, 0.34], [0.19, 0.5], [0.225, 0.64], [0.2, 0.72], [0.1, 0.78], [0.001, 0.79]
     ].map(p => new T.Vector2(p[0], p[1])), 20).scale(1, 1, 0.78));
-    // Omino stile "stickman": busto stretto, testa grande, sciarpa, berretto con pon pon, arti sottili con gomiti.
+
+    // Omino stile "stickman" con tre guardaroba:
+    //  'winter': giaccone con cintura e bottoni, sciarpa, berretto con pon pon, guanti, scarponcini;
+    //  'summer': maglietta a maniche corte, pantaloncini, sneakers, berretto con visiera;
+    //  'waiter': smoking nero, camicia bianca con papillon, pantaloni e scarpe nere, capelli neri, vassoio per le bevande.
     // Il busto (up) sta su un perno all'altezza dei fianchi: si inclina e ruota quando taglia o lancia.
     const HIP = 0.42;
     const roundBootGeo = () => roundBoxGeo(0.14, 0.1, 0.24, 0.04);
-    function person(coat, hat, withAxe) {
+    const roundShoeGeo = () => roundBoxGeo(0.13, 0.08, 0.24, 0.035);
+    function person(coat, hat, withTool, style, opt) {
+      style = style || 'winter'; opt = opt || {};
       const g = new T.Group();
-      const coatM = tint(coat), hatM = tint(hat);
-      // gambe con pantaloni e scarponcini
+      const summer = style === 'summer', waiter = style === 'waiter';
+      const coatM = waiter ? mats.tux : tint(coat), hatM = tint(hat);
+      const pantsM = waiter ? mats.tux : summer ? tint(opt.shorts || 0x3b6fd4) : mats.pants;
+      // gambe
       const legs = [-1, 1].map(s => {
-        const leg = limb(g, s * 0.09, HIP, 0.075, 0.4, mats.pants);
-        const boot = new T.Mesh(roundBootGeo(), mats.boots); boot.position.set(0, -0.375, 0.05); boot.castShadow = true; leg.add(boot);
+        const leg = new T.Group(); leg.position.set(s * 0.09, HIP, 0); leg.rotation.order = 'YXZ'; g.add(leg);
+        if (summer) {
+          cyl(0.088, 0.085, 0.23, pantsM, 0, -0.115, 0, leg, 10);          // pantaloncini
+          cyl(0.058, 0.052, 0.2, mats.skin, 0, -0.3, 0, leg, 10);          // polpaccio nudo
+          cyl(0.062, 0.062, 0.04, mats.white, 0, -0.345, 0, leg, 10);      // calzino
+          const shoe = new T.Mesh(roundShoeGeo(), tint(opt.shoes || 0xffffff)); shoe.position.set(0, -0.385, 0.05); shoe.castShadow = true; leg.add(shoe);
+        } else {
+          cyl(0.075, 0.07, 0.4, pantsM, 0, -0.2, 0, leg, 12); ball(0.075, pantsM, 0, -0.4, 0, leg, 12, 8);
+          const shoe = new T.Mesh(roundBootGeo(), waiter ? mats.tux : mats.boots); shoe.position.set(0, -0.375, 0.05); shoe.castShadow = true; leg.add(shoe);
+        }
         return leg;
       });
       const up = new T.Group(); up.position.y = HIP; g.add(up);
-      // giaccone: busto tornito, cintura con fibbia, bottoni e sciarpa al collo
       const torso = new T.Mesh(torsoGeo(), coatM); torso.castShadow = true; up.add(torso);
-      const belt = new T.Mesh(cached('belt', () => new T.TorusGeometry(0.172, 0.022, 6, 18).rotateX(Math.PI / 2)), mats.belt); belt.position.y = 0.34; belt.scale.z = 0.78; up.add(belt);
-      box(0.07, 0.06, 0.03, mats.gold, 0, 0.34, 0.138, up, 0.01);
-      [0.47, 0.57, 0.67].forEach((by, k) => ball(0.022, mats.gold, 0, by, 0.148 + k * 0.007, up, 6, 5));
-      const scarf = new T.Mesh(cached('scarf', () => new T.TorusGeometry(0.15, 0.062, 8, 16).rotateX(Math.PI / 2)), hatM); scarf.position.y = 0.76; scarf.castShadow = true; up.add(scarf);
+      if (waiter) {
+        box(0.17, 0.32, 0.05, mats.white, 0, 0.56, 0.118, up, 0.02);                  // pettorina della camicia
+        box(0.2, 0.05, 0.06, mats.white, 0, 0.745, 0.1, up, 0.02);                    // colletto
+        [0.62, 0.52, 0.42].forEach(by => ball(0.014, mats.tux, 0, by, 0.147, up, 6, 5)); // bottoni
+        [-1, 1].forEach(s => { const w = new T.Mesh(B_cone(), mats.tux); w.rotation.z = s * Math.PI / 2; w.position.set(s * 0.045, 0.725, 0.15); up.add(w); });
+        ball(0.026, mats.tux, 0, 0.725, 0.15, up, 8, 6);                              // papillon
+        const hair = new T.Mesh(cached('hairW', () => new T.SphereGeometry(0.315, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.5)), mats.tux); hair.position.y = 1.56 - HIP; hair.castShadow = true; up.add(hair);
+      } else if (summer) {
+        const col = new T.Mesh(cached('tcol', () => new T.TorusGeometry(0.105, 0.02, 6, 14).rotateX(Math.PI / 2)), mats.white); col.position.y = 0.77; up.add(col); // scollo
+        const str = new T.Mesh(cached('tstr', () => new T.TorusGeometry(0.196, 0.016, 6, 18).rotateX(Math.PI / 2)), mats.white); str.position.y = 0.47; str.scale.z = 0.78; up.add(str); // riga
+      } else {
+        const belt = new T.Mesh(cached('belt', () => new T.TorusGeometry(0.172, 0.022, 6, 18).rotateX(Math.PI / 2)), mats.belt); belt.position.y = 0.34; belt.scale.z = 0.78; up.add(belt);
+        box(0.07, 0.06, 0.03, mats.gold, 0, 0.34, 0.138, up, 0.01);
+        [0.47, 0.57, 0.67].forEach((by, k) => ball(0.022, mats.gold, 0, by, 0.148 + k * 0.007, up, 6, 5));
+        const scarf = new T.Mesh(cached('scarf', () => new T.TorusGeometry(0.15, 0.062, 8, 16).rotateX(Math.PI / 2)), hatM); scarf.position.y = 0.76; scarf.castShadow = true; up.add(scarf);
+      }
       ball(0.3, mats.skin, 0, 1.52 - HIP, 0, up);
       const face = new T.Mesh(faceGeo(), mats.face); face.position.y = 1.52 - HIP; up.add(face);
-      const cap = new T.Mesh(cached('cap', () => new T.SphereGeometry(0.32, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.42)), hatM); cap.position.y = 1.57 - HIP; cap.castShadow = true; up.add(cap);
-      const pom = new T.Mesh(cached('pom', () => new T.SphereGeometry(0.085, 12, 10)), mats.white); pom.position.y = 1.94 - HIP; up.add(pom);
-      const arms = [-1, 1].map(side => arm(up, side * 0.255, 1.15 - HIP, 0.062, coatM, hatM));
+      if (!waiter) {
+        const cap = new T.Mesh(cached('cap', () => new T.SphereGeometry(0.32, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.42)), hatM); cap.position.y = 1.57 - HIP; cap.castShadow = true; up.add(cap);
+        if (summer) {
+          const brim = new T.Mesh(cached('brim', () => new T.CylinderGeometry(0.31, 0.31, 0.03, 14, 1, false, -Math.PI / 2, Math.PI)), hatM); // visiera davanti
+          brim.position.set(0, 1.585 - HIP, 0.13); brim.rotation.x = 0.18; brim.castShadow = true; up.add(brim);
+          ball(0.03, hatM, 0, 1.89 - HIP, 0, up, 6, 5);
+        } else {
+          const pom = new T.Mesh(cached('pom', () => new T.SphereGeometry(0.085, 12, 10)), mats.white); pom.position.y = 1.94 - HIP; up.add(pom);
+        }
+      }
+      const armOpt = waiter ? { cuffM: mats.white } : summer ? { short: true } : { cuffM: hatM, handM: hatM };
+      const arms = [-1, 1].map(side => arm(up, side * 0.255, 1.15 - HIP, 0.062, coatM, armOpt));
+      // vassoio d'argento con le bevande (solo camerieri): compare quando portano qualcosa
+      let tray = null, trayCups = null;
+      if (waiter) {
+        tray = new T.Group(); tray.position.set(0, 0.5, 0.45); tray.visible = false; up.add(tray);
+        cyl(0.3, 0.3, 0.03, mats.steel, 0, 0, 0, tray, 18); cyl(0.32, 0.32, 0.02, mats.steel, 0, -0.005, 0, tray, 18);
+        trayCups = new T.Group(); tray.add(trayCups);
+      }
       Object.assign(g.userData, {
-        legs, up, arms: arms.map(a => a.sh), elbows: arms.map(a => a.el), axe: withAxe ? axe(arms[1].el) : null,
+        legs, up, arms: arms.map(a => a.sh), elbows: arms.map(a => a.el),
+        axe: withTool ? axe(arms[1].el) : null, saw: withTool ? chainsaw(arms[1].el) : null, tool: 'axe',
+        tray, trayCups, hold: false, hb: 0,
         ph: 0, t: Math.random() * 6, mv: 0, chopT: 0, chopDur: 1, ck: 1, cb: 0, tossT: 0, tossDur: 1, tk: 1, tb: 0
       });
       scene.add(g);
       return g;
     }
+    const B_cone = () => cached('bow', () => new T.ConeGeometry(0.05, 0.1, 6));
+    // Attrezzo in uso: 'axe' (ascia) o 'saw' (motosega).
+    function setTool(o, tool) { o.userData.tool = tool; }
+    // Bevande sul vassoio del cameriere (0-2): se ce ne sono si regge il vassoio con due mani.
+    function setTray(o, n) {
+      const u = o.userData; if (!u.tray) return;
+      clear(u.trayCups);
+      for (let i = 0; i < n; i++) { const c = new T.Mesh(cupGeo, mats.cup); c.position.set(n > 1 ? (i ? 0.1 : -0.1) : 0, 0.115, 0); c.castShadow = true; u.trayCups.add(c); }
+      u.tray.visible = n > 0; u.hold = n > 0;
+    }
 
-    // Pose del colpo d'ascia lungo un ciclo continuo k = 0 → 1: carica (sopra la testa), pausa, colpo veloce, seguito.
-    // A fine ciclo la posa coincide con quella di inizio: colpi uno dopo l'altro scorrono senza scatti.
-    const FOLLOW = { sh: -0.95, el: -0.15, lean: 0.18, tw: 0.12 }, READY = { sh: -2.55, el: -1.0, lean: -0.14, tw: -0.2 }, HIT = { sh: -1.3, el: -0.3, lean: 0.36, tw: 0.2 };
-    const pose = { sh: 0, el: 0, lean: 0, tw: 0 };
-    function lerpPose(a, b, t) { pose.sh = mix(a.sh, b.sh, t); pose.el = mix(a.el, b.el, t); pose.lean = mix(a.lean, b.lean, t); pose.tw = mix(a.tw, b.tw, t); }
+    // Pose del colpo d'ascia lungo un ciclo continuo k = 0 → 1: carica (braccia indietro sul fianco), pausa, colpo orizzontale veloce
+    // verso l'albero, seguito. Il tronco ruota con le braccia. A fine ciclo la posa coincide con quella di inizio: i colpi uno dopo l'altro scorrono.
+    // sh = alzata in avanti, yaw = rotazione sul piano orizzontale (colpo), el/elz = gomito (su-giù / di lato), lean = inclinazione, tw = rotazione del busto.
+    const FOLLOW = { sh: -1.45, yaw: -0.9, el: -0.15, elz: -0.1, lean: 0.12, tw: -0.6 }, READY = { sh: -1.4, yaw: 1.25, el: -0.1, elz: 0.9, lean: -0.05, tw: 0.8 }, HIT = { sh: -1.5, yaw: 0.05, el: -0.1, elz: 0.1, lean: 0.25, tw: 0 };
+    const pose = { sh: 0, yaw: 0, el: 0, elz: 0, lean: 0, tw: 0 };
+    function lerpPose(a, b, t) { for (const k in pose) pose[k] = mix(a[k], b[k], t); }
     function chopPose(k) {
       if (k < 0.3) lerpPose(FOLLOW, READY, sm(k / 0.3));
       else if (k < 0.4) lerpPose(READY, READY, 0);
       else if (k < 0.7) { const t = (k - 0.4) / 0.3; lerpPose(READY, HIT, t * t * (0.4 + 0.6 * t)); }
       else { const t = (k - 0.7) / 0.3; lerpPose(HIT, FOLLOW, 1 - (1 - t) * (1 - t)); }
     }
+    // Motosega: braccia tese in avanti, piccolo dondolio laterale e vibrazione.
+    function sawPose(t) {
+      pose.sh = -1.4 + Math.sin(t * 70) * 0.025; pose.yaw = Math.sin(t * 5) * 0.28; pose.el = -0.2; pose.elz = 0.2 + Math.sin(t * 60) * 0.03; pose.lean = 0.22; pose.tw = Math.sin(t * 5) * 0.18;
+    }
     // Lancio (legna al camino, tazza all'ospite): le braccia vanno avanti e indietro con un piccolo affondo.
     function tossPose(k) {
       const a = Math.sin(Math.min(1, k) * Math.PI);
-      pose.sh = -1.0 - 0.7 * a; pose.el = -0.7 + 0.55 * a; pose.lean = 0.28 * a; pose.tw = 0;
+      pose.sh = -1.0 - 0.7 * a; pose.yaw = 0; pose.el = -0.7 + 0.55 * a; pose.elz = 0; pose.lean = 0.28 * a; pose.tw = 0;
     }
+    // Vassoio retto con due mani davanti al petto.
+    function holdPose() { pose.sh = -1.15; pose.yaw = 0; pose.el = -0.55; pose.elz = 0; pose.lean = 0.04; pose.tw = 0; }
 
     // Posa del personaggio, da chiamare ogni fotogramma: camminata (gambe e braccia opposte, gomiti piegati),
-    // respiro quando sta fermo, colpo d'ascia e lancio che si fondono con la posa di base (niente scatti).
+    // respiro quando sta fermo, colpo d'ascia, motosega, lancio e vassoio che si fondono con la posa di base (niente scatti).
     function walk(o, moving, dt) {
       const u = o.userData;
       u.t += dt;
@@ -246,15 +334,18 @@
       u.mv += ((moving ? 1 : 0) - u.mv) * Math.min(1, dt * 10);
       const s = Math.sin(u.ph) * 0.55 * u.mv;
       u.legs[0].rotation.x = s; u.legs[1].rotation.x = -s;
-      let sh0 = [-s * 0.85, s * 0.85], el0 = -0.2 - 0.25 * u.mv, lean = 0.05 * u.mv, tw = Math.sin(u.ph) * 0.07 * u.mv, armIn = 0.12;
-      let sh = sh0.slice(), el = [el0, el0];
+      const el0 = -0.2 - 0.25 * u.mv;
+      let lean = 0.05 * u.mv, tw = Math.sin(u.ph) * 0.07 * u.mv, armIn = 0.12;
+      const sh = [-s * 0.85, s * 0.85], el = [el0, el0], yaw = [0, 0], elz = [0, 0];
 
       if (u.chopT > 0) { u.chopT = Math.max(0, u.chopT - dt); u.ck = 1 - u.chopT / u.chopDur; }
       u.cb += ((u.chopT > 0 ? 1 : 0) - u.cb) * Math.min(1, dt * 14);
       if (u.cb > 0.01) {
-        chopPose(u.ck); const b = u.cb;
-        sh[0] = mix(sh[0], pose.sh + 0.1, b); sh[1] = mix(sh[1], pose.sh, b); el[0] = mix(el[0], pose.el, b); el[1] = mix(el[1], pose.el, b);
-        lean = mix(lean, pose.lean, b); tw = mix(tw, pose.tw, b); armIn = mix(armIn, -0.05, b);
+        if (u.tool === 'saw') sawPose(u.t); else chopPose(u.ck);
+        const b = u.cb;
+        sh[0] = mix(sh[0], pose.sh, b); sh[1] = mix(sh[1], pose.sh, b); el[0] = mix(el[0], pose.el, b); el[1] = mix(el[1], pose.el, b);
+        yaw[0] = yaw[1] = pose.yaw * b; elz[1] = pose.elz * b; elz[0] = pose.elz * 0.4 * b;
+        lean = mix(lean, pose.lean, b); tw = mix(tw, pose.tw, b); armIn = mix(armIn, -0.4, b);
       }
       if (u.tossT > 0) { u.tossT = Math.max(0, u.tossT - dt); u.tk = 1 - u.tossT / u.tossDur; }
       u.tb += ((u.tossT > 0 ? 1 : 0) - u.tb) * Math.min(1, dt * 16);
@@ -262,12 +353,21 @@
         tossPose(u.tk); const b = u.tb;
         sh[0] = mix(sh[0], pose.sh, b); sh[1] = mix(sh[1], pose.sh, b); el[0] = mix(el[0], pose.el, b); el[1] = mix(el[1], pose.el, b); lean = mix(lean, pose.lean, b);
       }
+      u.hb += ((u.hold ? 1 : 0) - u.hb) * Math.min(1, dt * 10);
+      if (u.hb > 0.01) {
+        holdPose(); const b = u.hb;
+        sh[0] = mix(sh[0], pose.sh, b); sh[1] = mix(sh[1], pose.sh, b); el[0] = mix(el[0], pose.el, b); el[1] = mix(el[1], pose.el, b); lean = mix(lean, pose.lean, b); armIn = mix(armIn, -0.5, b);
+      }
       u.arms[0].rotation.x = sh[0]; u.arms[1].rotation.x = sh[1];
+      u.arms[0].rotation.y = yaw[0]; u.arms[1].rotation.y = yaw[1];
       u.arms[0].rotation.z = -armIn; u.arms[1].rotation.z = armIn;
       u.elbows[0].rotation.x = el[0]; u.elbows[1].rotation.x = el[1];
+      u.elbows[0].rotation.z = elz[0]; u.elbows[1].rotation.z = elz[1];
       u.up.rotation.x = lean; u.up.rotation.y = tw;
       u.up.position.y = HIP + Math.abs(Math.sin(u.ph)) * 0.05 * u.mv + Math.sin(u.t * 2.4) * 0.008 * (1 - u.mv);
-      if (u.axe) u.axe.visible = u.cb > 0.15;
+      const show = u.cb > 0.15;
+      if (u.axe) u.axe.visible = show && u.tool === 'axe';
+      if (u.saw) u.saw.visible = show && u.tool === 'saw';
     }
     // Avvia un colpo d'ascia o un lancio della durata indicata (secondi).
     function swing(o, dur) { o.userData.chopT = o.userData.chopDur = dur; }
@@ -305,6 +405,6 @@
       }
     }
 
-    return { T, M, mats, tint, add, box, cyl, ball, clear, tree, person, walk, swing, toss, HIT_AT, moveTo, follow, drawStack, cupGeo, coinGeo, logGeo, mergeParts, cached, sm };
+    return { T, M, mats, tint, add, box, cyl, ball, clear, tree, person, setTool, setTray, walk, swing, toss, HIT_AT, moveTo, follow, drawStack, cupGeo, coinGeo, logGeo, mergeParts, cached, sm };
   };
 })(window.Rifugio);

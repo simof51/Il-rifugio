@@ -1,6 +1,6 @@
 // Livello 1 (Inverno): tutti i numeri, gli sblocchi, gli obiettivi e l'aspetto. Per bilanciare il gioco si modifica solo questo file.
 // unlocks.requires: {objectives: n} (dopo n obiettivi) oppure {bought: "id"} (dopo un altro sblocco).
-// unlocks.effect: "room" (apre rooms[room]), "bag", "bag2", "boots", "cocoa", "cocoa2", "axe", "insul", "sign", "lamps", "mascot",
+// unlocks.effect: "room" (apre rooms[room]), "bag", "bag2", "boots", "cocoa", "cocoa2", "axe", "saw", "insul", "sign", "lamps", "mascot",
 // "helper" (boscaiolo della stanza `room`), "waiter" (cameriere della stanza `room`); needRoom: la piazzola compare solo a stanza aperta.
 // objectives: contano una statistica ({stat, n}: wood, fed, guests, collected, cocoa, trees, stars) oppure uno sblocco ({bought});
 // guide dice dove punta la freccia ("tree", "feed", "pile", "cocoa", "pad:<id>"). Ogni obiettivo si completa in meno di 3,5 minuti.
@@ -31,6 +31,7 @@
     { text: '🪙 Raccogli 220 monete', stat: 'collected', n: 220, guide: 'pile' },
     { text: '🏮 Appendi le lanterne colorate', bought: 'lamps', guide: 'pad:lamps' },
     { text: '☕ Servi 18 cioccolate', stat: 'cocoa', n: 18, guide: 'cocoa' },
+    { text: '🪚 Compra la motosega: taglia ancora più in fretta', bought: 'saw', guide: 'pad:saw' },
     { text: '🔥 Porta 110 pezzi di legna ai camini', stat: 'fed', n: 110, guide: 'feed' },
     { text: '🪧 Pianta il cartello: arrivano più ospiti', bought: 'sign', guide: 'pad:sign' },
     { text: '🧑‍🤝‍🧑 Ospita 24 escursionisti', stat: 'guests', n: 24, guide: '' },
@@ -56,7 +57,9 @@
     saveKey: 'rifugio-v2',
     next: 'estate',
     theme: {
-      sky: 0xbfe0ff, fog: [38, 95], ground: 0xf6f9ff, path: 0xe8dcc4, hill: 0x8fb0d8, peak: 0xf6f9ff,
+      sky: 0xbfe0ff, fog: [48, 110], ground: 0xf6f9ff, path: 0x8c8b87, hill: 0x7f9bc2, peak: 0xf6f9ff,
+      pathTex: { base: '#8c8b87', cols: ['#a9a8a3', '#6d6c68', '#bcbbb5', '#5b5a56'], n: 1100, min: 0.8, max: 2.8 }, // ghiaia
+      edge: 'mountains', room: 'cabin', outfit: 'winter',
       tree: 'pine', fall: 'snow', deco: 'snowman', cup: 0xd0502e, cupLiquid: 0x5a3220,
       hemi: [0xe4f1ff, 0x8597ad, 0.85], sun: [0xfff1d6, 0.85]
     },
@@ -79,6 +82,7 @@
       chop_range: 1.6,
       chop_interval: 0.45,
       axe_mul: 0.7,          // con l'ascia affilata
+      saw_mul: 0.4,          // con la motosega (sostituisce l'ascia)
       logs_per_tree: 4,
       tree_regrow: 14,
       bag_logs: 15,          // zaino iniziale: legna
@@ -124,6 +128,7 @@
       { id: 'helper',  title: 'Boscaiolo stanza 1', cost: 150, pos: [-11, -1],    requires: { bought: 'cocoa' },   effect: 'helper', room: 0 },
       { id: 'room2',   title: 'Stanza 3',          cost: 120, pos: [-6, -6.5],    requires: { bought: 'helper' },  effect: 'room', room: 2 },
       { id: 'axe',     title: 'Ascia affilata',    cost: 70,  pos: [-7.2, 1.6],   requires: { objectives: 12 },    effect: 'axe' },
+      { id: 'saw',     title: 'Motosega',          cost: 220, pos: [-3.2, 4.6],   requires: { objectives: 22 },    effect: 'saw' },
       { id: 'insul',   title: 'Camini isolati',    cost: 90,  pos: [-11.5, -4.8], requires: { objectives: 14 },    effect: 'insul' },
       { id: 'lamps',   title: 'Lanterne',          cost: 60,  pos: [15, 3.6],     requires: { objectives: 14 },    effect: 'lamps' },
       { id: 'sign',    title: 'Cartello',          cost: 110, pos: [9.5, 3.6],    requires: { objectives: 20 },    effect: 'sign' },

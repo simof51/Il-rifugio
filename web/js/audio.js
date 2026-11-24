@@ -57,9 +57,10 @@
       tree() { noise(0.5, 0.45, 500); tone(95, 0.4, 'sine', 0.5, 0, 45); },
       buy() { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.16, 'triangle', 0.3, ctx.currentTime + i * 0.07)); },
       goal() { [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) => tone(f, 0.22, 'square', 0.14, ctx.currentTime + i * 0.09)); },
+      saw() { tone(110, 0.14, 'sawtooth', 0.22, 0, 95); noise(0.13, 0.35, 3200, 'bandpass'); },
       click() { tone(620, 0.05, 'sine', 0.25); }
     };
-    const GAP = { chop: 0.05, log: 0.05, coin: 0.04, cup: 0.08, pickup: 0.08, tree: 0.2 };
+    const GAP = { chop: 0.05, saw: 0.1, log: 0.05, coin: 0.04, cup: 0.08, pickup: 0.08, tree: 0.2 };
 
     // Musica: arpeggio a ottavi sull'accordo di turno, basso sul primo e terzo quarto, ogni tanto una nota di melodia.
     function playStep(s, n, t) {

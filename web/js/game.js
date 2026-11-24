@@ -7,10 +7,12 @@
   const SPAWN = [17, 1.2];
   const COATS = [0x4f8cff, 0xa066ff, 0xff9a2a, 0x2ec4b6, 0xff5d8f, 0x6bcf3a];
   const CONFETTI = [0xff4d4d, 0xffd23a, 0x3d8bff, 0x4cd964, 0xff7ac6, 0xa066ff];
+  const SHORTS = [0x3b6fd4, 0xe8c66a, 0xf2f2f2, 0x2ec4b6, 0xff8a65];
 
   R.createGame = function ({ hud, level, state, audio }) {
     const T = THREE, P = level.tuning, S = state.data, objectives = level.objectives, TH = level.theme, TX = level.text;
     const A = audio || { sfx() {} }; // suoni (se manca l'audio il gioco funziona lo stesso)
+    const OUTFIT = TH.outfit || 'winter'; // guardaroba degli omini: 'winter' o 'summer'
 
     // --- motore -------------------------------------------------------------
     // Prestazioni: niente antialias (pesa molto sul telefono) e ombre PCF semplici (le "soft" costano di più).
@@ -41,14 +43,49 @@
 
     // --- paesaggio ----------------------------------------------------------
     const ground = new T.Mesh(new T.PlaneGeometry(160, 160), mats.ground); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
-    // Tratti di sentiero sovrapposti: altezze leggermente diverse, altrimenti le facce piatte coincidono e lampeggiano (z-fighting).
+    // Sentieri: piani con la texture della ghiaia (inverno) o della sabbia (estate), a quote leggermente diverse
+    // (altrimenti le facce piatte coincidono e lampeggiano, z-fighting) e senza ombre proprie.
     mats.path.polygonOffset = true; mats.path.polygonOffsetFactor = -1; mats.path.polygonOffsetUnits = -1;
-    const pathBox = (...a) => { const m = box(...a); m.castShadow = false; return m; }; // il sentiero non proietta ombre (sono solo un velo sul terreno)
-    pathBox(15, 0.02, 1.6, mats.path, 10, 0.01, 1.2); pathBox(24, 0.02, 1.4, mats.path, 2, 0.013, -2.9); pathBox(1.4, 0.02, 4, mats.path, 3, 0.016, -0.6);
-    for (let i = 0; i < 8; i++) {
-      const h = 14 + rnd() * 10, r = 9 + rnd() * 6, x = -52 + i * 15 + rnd() * 4, z = -50 - rnd() * 8;
-      const m = new T.Mesh(new T.ConeGeometry(r, h, 16), mats.hill); m.position.set(x, h / 2, z); scene.add(m);
-      const c = new T.Mesh(new T.ConeGeometry(r * 0.38, h * 0.38, 16), mats.peak); c.position.set(x, h - h * 0.19, z); scene.add(c);
+    function pathPlane(w, d, x, z, y) {
+      const geo = new T.PlaneGeometry(w, d).rotateX(-Math.PI / 2), uv = geo.attributes.uv;
+      for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * w / 2.4, uv.getY(i) * d / 2.4); // la texture non si deforma
+      const m = new T.Mesh(geo, mats.path); m.position.set(x, y, z); m.receiveShadow = true; scene.add(m);
+    }
+    pathPlane(15, 1.6, 10, 1.2, 0.02); pathPlane(24, 1.4, 2, -2.9, 0.026); pathPlane(1.4, 4, 3, -0.6, 0.032);
+
+    // Bordi della mappa ben definiti: d'inverno una catena di montagne alte con la cima innevata, d'estate una foresta fitta.
+    // Sono pochi pezzi fusi (uno per lato): le montagne e gli alberi di bordo non si tagliano e non proiettano ombre.
+    const bx0 = P.world_min[0], bx1 = P.world_max[0], bz0 = P.world_min[1], bz1 = P.world_max[1];
+    function ringPoints(off, step, jit) { // punti lungo il perimetro, spostati fuori dal mondo di "off"; lato: 0 nord, 1 sud, 2 ovest, 3 est
+      const out = [], j = () => (rnd() - 0.5) * jit;
+      for (let x = bx0 - off; x <= bx1 + off; x += step) { out.push([0, x + j(), bz0 - off + j()]); out.push([1, x + j(), bz1 + off + j()]); }
+      for (let z = bz0 - off + step; z < bz1 + off - step * 0.5; z += step) { out.push([2, bx0 - off + j(), z + j()]); out.push([3, bx1 + off + j(), z + j()]); }
+      return out;
+    }
+    if (TH.edge === 'mountains') {
+      const cone = new T.ConeGeometry(1, 1, 7, 1, true), rock = [[], [], [], []], snow = [[], [], [], []], base = new T.Color(TH.hill);
+      ringPoints(12.5, 7, 2).forEach(([side, x, z]) => {
+        const h = 26 + rnd() * 16, r = 8 + rnd() * 2.5, ry = rnd() * 6;
+        const col = (k) => base.clone().multiplyScalar(0.8 + rnd() * 0.35).getHex() + 0 * k;
+        rock[side].push({ geo: cone, x, y: h / 2, z, s: [r, h, r], ry, color: col(0) });
+        [[-0.55, 0.3, 0.55, 0.72], [0.6, -0.25, 0.5, 0.68]].forEach(([dx, dz, hs, rs]) => rock[side].push({ geo: cone, x: x + dx * r, y: h * hs / 2, z: z + dz * r, s: [r * rs, h * hs, r * rs], ry: ry + 1, color: col(1) }));
+        snow[side].push({ geo: cone, x, y: h - h * 0.24, z, s: [r * 0.5, h * 0.48, r * 0.5], ry, color: 0xffffff });
+      });
+      for (let s = 0; s < 4; s++) {
+        const a = new T.Mesh(B.mergeParts(rock[s]), mats.accent); scene.add(a);
+        const b = new T.Mesh(B.mergeParts(snow[s]), mats.accent); scene.add(b);
+      }
+    } else {
+      // Foresta fitta di bordo: tre file di alberi tondi (solo decorazione), più qualche collina verde dietro.
+      const blob = new T.SphereGeometry(1, 9, 6), trunk = new T.CylinderGeometry(0.15, 0.25, 1.4, 6).translate(0, 0.7, 0), forest = [[], [], [], []];
+      const BL = [[0, 2.45, 0, 1.2], [0.75, 2.15, 0.3, 0.85], [-0.7, 2.2, -0.2, 0.9], [0.1, 3.25, -0.1, 0.85], [-0.25, 2.2, 0.75, 0.75]];
+      [[1, 2.2, 1.6], [4.5, 2.3, 2], [8, 2.6, 2.4], [12, 3, 2.8]].forEach(([off, step, sc0]) => ringPoints(off, step, 1.6).forEach(([side, x, z]) => {
+        const sc = sc0 * (0.85 + rnd() * 0.5) / 1.6 + 0.4;
+        forest[side].push({ geo: trunk, x, y: 0, z, s: sc, color: 0x7a4a30 });
+        BL.forEach(([bx, by, bz, br], k) => forest[side].push({ geo: blob, x: x + bx * sc, y: by * sc, z: z + bz * sc, s: [br * sc, br * 0.88 * sc, br * sc], color: (k + side) % 2 ? 0x57c455 : 0x34a448 }));
+      }));
+      for (let s = 0; s < 4; s++) scene.add(new T.Mesh(B.mergeParts(forest[s]), mats.accent));
+      ringPoints(24, 16, 6).forEach(([, x, z]) => { const h = 12 + rnd() * 10, r = 12 + rnd() * 5, m = new T.Mesh(new T.ConeGeometry(r, h, 14), mats.hill); m.position.set(x, h / 2, z); scene.add(m); });
     }
     const moundGeo = new T.SphereGeometry(1, 24, 16);
     for (let i = 0; i < 14; i++) {
@@ -125,12 +162,12 @@
       if (trees.some(t => Math.hypot(t.x - x, t.z - z) < 2.5) || inLake(x, z, 1.5)) continue;
       plantTree(x, z, 1); near++;
     }
-    for (let i = 0; i < P.forest_trees; i++) {
-      const x = -30 + rnd() * 60, z = -20 + rnd() * 46, sc = 0.8 + rnd() * 0.7;
+    for (let i = 0, planted = 0; i < P.forest_trees * 8 && planted < P.forest_trees; i++) {
+      const x = bx0 + rnd() * (bx1 - bx0), z = bz0 + rnd() * (bz1 - bz0), sc = 0.8 + rnd() * 0.7;
       if (x > -16 && x < 18 && z > -11 && z < 15) continue;
       if (inLake(x, z, 2)) continue;
       if (trees.some(t => Math.hypot(t.x - x, t.z - z) < 1.4)) continue; // lascia sempre un passaggio fra gli alberi
-      plantTree(x, z, sc);
+      plantTree(x, z, sc); planted++;
     }
     function nearTree(p, maxD) {
       let best = null, bd = maxD;
@@ -253,28 +290,65 @@
     // e diventano un unico ambiente.
     const RW = 6;
     const flagGeo = B.cached('flag', () => new T.ConeGeometry(0.15, 0.3, 3).rotateX(Math.PI));
+    // Due stili: 'cabin' (baita con muri, camino e letti, per l'inverno) e 'lido' (postazione sul lago con ombrellone,
+    // lettini e barbecue, senza muri: bassi parapetti bianchi e una staccionata di bambù). Cambiano solo l'aspetto: ostacoli e regole sono gli stessi.
+    const lido = TH.room === 'lido';
+    const bambooM = B.tint(0xd9b36c), railM = B.tint(0xf4f1e6), TOWELS = [0xff6b6b, 0x4fa3ff, 0xffd23a, 0x4cd964, 0xff9a2a, 0xc084fc];
     const rooms = level.rooms.map((def, i) => {
       const cx = def.x, g = new T.Group(); scene.add(g);
-      box(RW, 0.2, 5, mats.plank, cx, 0.1, -6.5, g, 0.015); box(RW, 1.2, 0.3, mats.wood, cx, 0.6, -9.1, g, 0.03);
-      const wallL = box(0.3, 1.2, 5, mats.wood, cx - RW / 2 + 0.15, 0.6, -6.5, g);
-      const wallR = box(0.3, 1.2, 5, mats.wood, cx + RW / 2 - 0.15, 0.6, -6.5, g);
-      box(1.8, 0.03, 1.1, mats.red, cx, 0.21, -7.6, g);
-      box(1.5, 1.7, 0.8, mats.stone, cx, 0.85, -8.6, g); box(0.9, 0.65, 0.1, mats.dark, cx, 0.55, -8.17, g); box(1.7, 0.15, 0.9, mats.stone, cx, 1.75, -8.6, g);
-      // festone di bandierine colorate sulla parete di fondo
-      const bun = B.mergeParts(Array.from({ length: 9 }, (_, k) => ({ geo: flagGeo, x: cx - 2.5 + k * 0.625, y: 1.2, z: -8.93, color: CONFETTI[(k + i) % CONFETTI.length] })));
+      box(RW, 0.2, 5, mats.plank, cx, 0.1, -6.5, g, 0.015);
+      let wallL, wallR, flame, fireY, fireZ;
+      if (lido) {
+        box(RW, 0.9, 0.16, bambooM, cx, 0.65, -9.1, g, 0.04); // staccionata sul retro
+        for (let k = 0; k < 7; k++) box(0.1, 1.05, 0.2, bambooM, cx - 2.7 + k * 0.9, 0.72, -9.1, g, 0.04); // canne
+        wallL = box(0.12, 0.55, 5, railM, cx - RW / 2 + 0.06, 0.47, -6.5, g, 0.03);
+        wallR = box(0.12, 0.55, 5, railM, cx + RW / 2 - 0.06, 0.47, -6.5, g, 0.03);
+        box(1.8, 0.03, 1.1, B.tint(0xffe08a), cx, 0.21, -7.6, g);
+        // barbecue: ciotola nera su tre gambe, griglia, carbone e ripiano
+        [-0.35, 0.35].forEach(dx => cyl(0.05, 0.05, 0.55, mats.dark, cx + dx, 0.47, -8.55, g, 8));
+        const bowl = ball(0.62, mats.dark, cx, 0.95, -8.55, g, 18, 12); bowl.scale.set(1, 0.5, 1);
+        cyl(0.6, 0.6, 0.03, mats.steel, cx, 1.12, -8.55, g, 20); cyl(0.5, 0.5, 0.06, mats.orange, cx, 1.04, -8.55, g, 16);
+        box(0.5, 0.06, 0.5, mats.plank, cx + 0.95, 0.9, -8.55, g, 0.02);
+        // ombrellone: palo e cappello a spicchi nei colori del lido
+        cyl(0.05, 0.05, 2.9, mats.white, cx - 2.35, 1.45, -8.3, g, 8);
+        const can = new T.Mesh(B.cached('umb', () => new T.ConeGeometry(1.75, 0.65, 12)), B.tint([0xff4d4d, 0x3d8bff, 0xffd23a][i % 3])); can.position.set(cx - 2.35, 3.0, -8.3); can.castShadow = true; g.add(can);
+        ball(0.07, mats.white, cx - 2.35, 3.35, -8.3, g, 8, 6);
+        // due pali per il festone di bandierine
+        cyl(0.04, 0.04, 1.7, bambooM, cx - 2.9, 0.85, -8.95, g, 6); cyl(0.04, 0.04, 1.7, bambooM, cx + 2.9, 0.85, -8.95, g, 6);
+        flame = new T.Mesh(new T.ConeGeometry(0.22, 0.5, 16), mats.flame); flame.position.set(cx, 1.3, -8.55); g.add(flame);
+        fireY = 1.25; fireZ = -8.5;
+      } else {
+        box(RW, 1.2, 0.3, mats.wood, cx, 0.6, -9.1, g, 0.03);
+        wallL = box(0.3, 1.2, 5, mats.wood, cx - RW / 2 + 0.15, 0.6, -6.5, g);
+        wallR = box(0.3, 1.2, 5, mats.wood, cx + RW / 2 - 0.15, 0.6, -6.5, g);
+        box(1.8, 0.03, 1.1, mats.red, cx, 0.21, -7.6, g);
+        box(1.5, 1.7, 0.8, mats.stone, cx, 0.85, -8.6, g); box(0.9, 0.65, 0.1, mats.dark, cx, 0.55, -8.17, g); box(1.7, 0.15, 0.9, mats.stone, cx, 1.75, -8.6, g);
+        flame = new T.Mesh(new T.ConeGeometry(0.25, 0.6, 16), mats.flame); flame.position.set(cx, 0.55, -8.25); g.add(flame);
+        fireY = 0.7; fireZ = -8.1;
+      }
+      // festone di bandierine colorate sul retro
+      const bun = B.mergeParts(Array.from({ length: 9 }, (_, k) => ({ geo: flagGeo, x: cx - 2.5 + k * 0.625, y: lido ? 1.55 : 1.2, z: -8.93, color: CONFETTI[(k + i) % CONFETTI.length] })));
       g.add(new T.Mesh(bun, mats.accent));
-      const flame = new T.Mesh(new T.ConeGeometry(0.25, 0.6, 16), mats.flame); flame.position.set(cx, 0.55, -8.25); g.add(flame);
       const light = new T.PointLight(0xff8a3d, 0, 8); light.position.set(cx, 1.3, -7.4); scene.add(light);
-      const beds = [-1.4, 1.4].map(o => {
+      const beds = [-1.4, 1.4].map((o, k) => {
         const bx = cx + o;
-        box(1.1, 0.4, 2.1, mats.bed, bx, 0.4, -6.7, g); box(1.12, 0.1, 1.3, mats.blanket, bx, 0.62, -6.3, g); box(0.8, 0.14, 0.45, mats.white, bx, 0.66, -7.45, g);
+        if (lido) {
+          // lettino: telaio bianco, schienale inclinato, telo colorato e asciugamano arrotolato come cuscino
+          box(1.05, 0.2, 2.1, mats.white, bx, 0.45, -6.7, g, 0.05);
+          const back = box(1.05, 0.12, 0.85, mats.white, bx, 0.72, -7.65, g, 0.04); back.rotation.x = -0.55;
+          box(0.98, 0.04, 1.25, B.tint(TOWELS[(i * 2 + k) % TOWELS.length]), bx, 0.57, -6.3, g, 0.01);
+          box(0.85, 0.04, 0.7, B.tint(TOWELS[(i * 2 + k) % TOWELS.length]), bx, 0.8, -7.62, g, 0.01).rotation.x = -0.55;
+          const roll = cyl(0.08, 0.08, 0.6, mats.white, bx, 0.66, -7.35, g, 10); roll.rotation.z = Math.PI / 2;
+        } else {
+          box(1.1, 0.4, 2.1, mats.bed, bx, 0.4, -6.7, g); box(1.12, 0.1, 1.3, mats.blanket, bx, 0.62, -6.3, g); box(0.8, 0.14, 0.45, mats.white, bx, 0.66, -7.45, g);
+        }
         return { x: bx, guest: null };
       });
       const pile = new T.Group(); pile.position.set(cx + 1.7, 0, PILE_Z); scene.add(pile);
       const ghost = box(RW, 0.05, 5, mats.ghost, cx, 0.03, -6.5, null, 0.02); ghost.castShadow = false;
       const el = hud.label('fuel', '<i></i>');
       g.visible = false;
-      return { i, cx, g, flame, light, beds, pile, pileN: 0, fuel: 0, pend: 0, flare: 0, open: false, ghost, el, bar: el.firstChild, wallL, wallR, colL: null, colR: null };
+      return { i, cx, g, flame, light, beds, pile, pileN: 0, fuel: 0, pend: 0, flare: 0, open: false, ghost, el, bar: el.firstChild, wallL, wallR, colL: null, colR: null, fireY, fireZ };
     });
     const removeCol = c => { const k = cols.indexOf(c); if (k >= 0) cols.splice(k, 1); };
     function openRoom(r) {
@@ -299,7 +373,7 @@
       for (let i = 0; i < n; i++) { const c = new T.Mesh(B.coinGeo, mats.gold); c.position.set((i % 3) * 0.4 - 0.4, 0.04 + Math.floor(i / 3) * 0.07, 0); add(c, r.pile); }
     }
     const busy = r => r.beds.some(b => b.guest && b.guest.state === 'bed');
-    const firePos = (r, v) => v.set(r.cx, 0.7, -8.1);
+    const firePos = (r, v) => v.set(r.cx, r.fireY, r.fireZ);
 
     // --- banco bevande ------------------------------------------------------
     const cocoa = { g: new T.Group(), cups: 0, t: 0, open: false }; scene.add(cocoa.g);
@@ -430,7 +504,8 @@
     }
     function spawnHelper(ri) {
       if (helpers[ri]) return;
-      const g = B.person(HCOL[ri % 3], 0xb07848, true); g.position.set(-11, 0, ri * 2 - 1);
+      const g = B.person(HCOL[ri % 3], 0xb07848, true, OUTFIT, { shorts: SHORTS[(ri + 1) % SHORTS.length] }); g.position.set(-11, 0, ri * 2 - 1);
+      B.setTool(g, hasEffect('saw') ? 'saw' : 'axe');
       const sg = new T.Group(); sg.position.set(0, 0.75, -0.32); g.add(sg);
       helpers[ri] = { g, sg, ri, logs: 0, inb: 0, state: 'idle', cd: 0, path: [], tree: null };
     }
@@ -450,7 +525,7 @@
           h.cd = chopInterval() * 1.3; g.rotation.y = Math.atan2(tr.x - g.position.x, tr.z - g.position.z); B.swing(g, dur);
           chopTree(tr, g.position.x, g.position.z, dur * B.HIT_AT); h.logs++; h.inb++;
           after(dur * B.HIT_AT, () => {
-            burst(tr.x, 1.2, tr.z, 4, [0xb07848, 0xe6b27a], 2.2, 3, 0.5, 0.1); A.sfx('chop');
+            burst(tr.x, 1.2, tr.z, 4, [0xb07848, 0xe6b27a], 2.2, 3, 0.5, 0.1); A.sfx(hasEffect('saw') ? 'saw' : 'chop');
             _v.set(tr.x, 1.1, tr.z);
             fly('log', _v, o => h.sg.getWorldPosition(o), 0.3, 0.5, () => { h.inb--; B.drawStack(h.sg, h.logs - h.inb, 0); });
           });
@@ -476,7 +551,7 @@
     // Cameriere: prende le bevande dal banco e le porta agli ospiti della sua stanza che le chiedono.
     function spawnWaiter(ri) {
       if (waiters[ri]) return;
-      const r = rooms[ri], g = B.person(0xffffff, 0x2f3a4d); g.position.set(r.cx - 1.6, 0, -2.2);
+      const r = rooms[ri], g = B.person(0x17171d, 0x17171d, false, 'waiter'); g.position.set(r.cx - 1.6, 0, -2.2);
       const sg = new T.Group(); sg.position.set(0, 0.75, -0.32); g.add(sg);
       waiters[ri] = { g, sg, ri, cup: 0, state: 'idle', cd: 0, target: null, home: [r.cx - 1.6, -2.2], path: [] };
     }
@@ -495,7 +570,7 @@
           const take = Math.min(cocoa.cups, 2, cupCapW() - h.cup);
           if (take > 0) {
             cocoa.cups -= take; h.cup += take; B.toss(g, 0.2); A.sfx('pickup');
-            for (let k = 0; k < take; k++) { _v.set(10.55 + Math.min(5, cocoa.cups + k) * 0.28, 1.3, -6.55); fly('cup', _v, o => h.sg.getWorldPosition(o), 0.35, 0.7, () => { B.drawStack(h.sg, 0, h.cup); }, k * 0.1); }
+            for (let k = 0; k < take; k++) { _v.set(10.55 + Math.min(5, cocoa.cups + k) * 0.28, 1.3, -6.55); fly('cup', _v, o => g.userData.tray.getWorldPosition(o), 0.35, 0.7, () => B.setTray(g, h.cup), k * 0.1); }
             h.state = 'toGuest';
           } else { h.target.taken = false; h.target = null; h.state = 'idle'; }
         }
@@ -504,7 +579,7 @@
         const gu = h.target;
         if (!gu || gu.state !== 'bed' || gu.served) { if (gu) gu.taken = false; h.target = null; h.state = h.cup > 0 ? 'idle' : 'idle'; }
         else if (nav(h, gu.b.x, -4.5, 3.4, dt, 0.4) || Math.hypot(p.x - gu.b.x, p.z + 6.6) < 2.6) {
-          if (h.cd <= 0) { h.cd = 0.3; h.cup--; B.toss(g, 0.22); g.rotation.y = Math.PI; B.drawStack(h.sg, 0, h.cup); serveGuest(gu, h.sg); gu.taken = false; h.target = null; h.state = 'idle'; }
+          if (h.cd <= 0) { h.cd = 0.3; h.cup--; B.toss(g, 0.22); g.rotation.y = Math.PI; B.setTray(g, h.cup); serveGuest(gu, g.userData.tray); gu.taken = false; h.target = null; h.state = 'idle'; }
         }
       }
     }
@@ -521,7 +596,7 @@
     // Un pezzo di legna arriva nel camino: il fuoco sale e fa scintille.
     function landLog(r) {
       r.pend--; r.fuel = Math.min(P.fuel_max, r.fuel + 1); S.fed++; r.flare = 1; A.sfx('log');
-      burst(r.cx, 0.8, -8.1, 5, [0xffa233, 0xffd23a, 0xff6a2a], 1.6, 4, 0.55, 0.09, 6);
+      burst(r.cx, r.fireY + 0.1, r.fireZ, 5, [0xffa233, 0xffd23a, 0xff6a2a], 1.6, 4, 0.55, 0.09, 6);
     }
 
     // --- piazzole di sblocco (da level.unlocks) -----------------------------
@@ -568,6 +643,7 @@
       else if (pd.effect === 'cocoa') openCocoa();
       else if (pd.effect === 'helper') spawnHelper(pd.room);
       else if (pd.effect === 'waiter') spawnWaiter(pd.room);
+      else if (pd.effect === 'saw') refreshTools();
       else if (pd.effect === 'lamps') buildLamps();
       else if (pd.effect === 'mascot') buildMascot(pd);
       // "bag", "bag2", "boots", "axe", "insul", "sign" e "cocoa2" sono letti da hasEffect()
@@ -590,7 +666,7 @@
     }
 
     // --- giocatore ----------------------------------------------------------
-    const player = B.person(0xf0503a, 0xffd23a, true); player.position.set(0, 0, 0);
+    const player = B.person(0xf0503a, 0xffd23a, true, OUTFIT, { shorts: 0x2d6cdf }); player.position.set(0, 0, 0);
     const stackG = new T.Group(); stackG.position.set(0, 0.75, -0.32); player.add(stackG);
     const carry = { logs: 0, cups: 0 };
     let inLogs = 0, inCups = 0; // pezzi ancora in volo verso lo zaino: compaiono sulla schiena solo quando arrivano
@@ -598,7 +674,9 @@
     const logCap = () => hasEffect('bag2') ? P.bag_huge_logs : hasEffect('bag') ? P.bag_big_logs : P.bag_logs;
     const cupCap = () => hasEffect('bag2') ? P.bag_huge_cups : hasEffect('bag') ? P.bag_big_cups : P.bag_cups;
     const speed = () => (hasEffect('boots') ? P.speed_fast : P.speed_base) * speedMul;
-    const chopInterval = () => P.chop_interval * (hasEffect('axe') ? P.axe_mul : 1);
+    const chopInterval = () => P.chop_interval * (hasEffect('saw') ? P.saw_mul : hasEffect('axe') ? P.axe_mul : 1);
+    // Attrezzo in mano a giocatore e boscaioli: ascia, o motosega dopo l'acquisto.
+    function refreshTools() { const t = hasEffect('saw') ? 'saw' : 'axe'; B.setTool(player, t); helpers.forEach(h => h && B.setTool(h.g, t)); }
     const burnMul = () => hasEffect('insul') ? P.insul_mul : 1;
     const cocoaInterval = () => hasEffect('cocoa2') ? P.cocoa2_interval : P.cocoa_interval;
     const cocoaMax = () => hasEffect('cocoa2') ? P.cocoa2_max : P.cocoa_max;
@@ -631,7 +709,7 @@
       for (const r of rooms) if (r.open) for (const b of r.beds) if (!b.guest && !fb) fb = [r, b];
       if (!fb) return;
       const [r, b] = fb;
-      const g = B.person(COATS[Math.floor(Math.random() * COATS.length)], CONFETTI[Math.floor(Math.random() * CONFETTI.length)]); g.scale.setScalar(0.88); g.position.set(SPAWN[0], 0, SPAWN[1]);
+      const g = B.person(COATS[Math.floor(Math.random() * COATS.length)], CONFETTI[Math.floor(Math.random() * CONFETTI.length)], false, OUTFIT, { shorts: SHORTS[Math.floor(Math.random() * SHORTS.length)], shoes: Math.random() < 0.5 ? 0xffffff : 0x3d8bff }); g.scale.setScalar(0.88); g.position.set(SPAWN[0], 0, SPAWN[1]);
       const gu = { g, r, b, state: 'in', path: [[r.cx, -2.8], [b.x, -4.6]], stay: P.guest_stay, cold: 0, want: false, served: false, el: hud.label('pill', '') };
       b.guest = gu; guests.push(gu);
     }
@@ -732,7 +810,7 @@
         B.swing(player, swingDur);
         // All'impatto: scheggie di legno e il pezzo di legna vola dall'albero allo zaino.
         after(delay, () => {
-          burst(tr.x, 1.2, tr.z, 5, [0xb07848, 0xe6b27a, 0x7a4a30], 2.4, 3.2, 0.5, 0.1); A.sfx('chop');
+          burst(tr.x, 1.2, tr.z, 5, [0xb07848, 0xe6b27a, 0x7a4a30], 2.4, 3.2, 0.5, 0.1); A.sfx(hasEffect('saw') ? 'saw' : 'chop');
           _v.set(tr.x, 1.1, tr.z);
           fly('log', _v, o => stackG.getWorldPosition(o), 0.32, 0.6, () => { inLogs--; refreshStack(); });
         });

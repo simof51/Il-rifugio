@@ -83,7 +83,7 @@
     ['Vai a…', [['Casetta', () => dbg.go('casetta')], ['Bosco', () => dbg.go('bosco')], ['Banco', () => dbg.go('banco')], ['Sentiero', () => dbg.go('sentiero')], ['Lago', () => dbg.go('lago')]]],
     ['Strumenti', [['Velocità x2', () => dbg.fast(!nowOn().fast), () => nowOn().fast], ['Mostra FPS', () => dbg.showFps(!nowOn().fps), () => nowOn().fps]]],
     ['Stagioni', [['Inverno', () => forceLevel('inverno')], ['Estate', () => forceLevel('estate')], ['Segna inverno completato', () => markWon('inverno')], ['Segna estate completata', () => markWon('estate')]]],
-    ['Suoni', ['chop', 'log', 'coin', 'cup', 'buy', 'goal', 'guest', 'cold', 'tree'].map(n => [n, () => audio.sfx(n)])],
+    ['Suoni', ['chop', 'saw', 'log', 'coin', 'cup', 'buy', 'goal', 'guest', 'cold', 'tree'].map(n => [n, () => audio.sfx(n)])],
     ['Pericolo', [['Azzera TUTTO', () => { if (dbgMsg === 'Tocca ancora per azzerare tutto') { R.levels && ORDER.forEach(id => { try { localStorage.removeItem(R.levels[id].saveKey); localStorage.removeItem(R.levels[id].saveKey + '-bak'); } catch (e) { /* ignorato */ } }); location.reload(); } else dbgMsg = 'Tocca ancora per azzerare tutto'; }]]]
   ];
   const dbgActs = [];
