@@ -20,11 +20,13 @@
     const scene = new T.Scene();
     scene.background = new T.Color(0xa9c9e6);
     scene.fog = new T.Fog(0xa9c9e6, 38, 95);
-    const cam = new T.PerspectiveCamera(45, 1, 0.1, 200);
+    // near/far stretti: la camera sta sempre ad almeno ~10 m da tutto, e una profondità più precisa evita i lampeggi sulle superfici piatte.
+    const cam = new T.PerspectiveCamera(45, 1, 4, 130);
     hud.setCamera(cam);
     scene.add(new T.HemisphereLight(0xe4f1ff, 0x8597ad, 0.8));
     const sun = new T.DirectionalLight(0xfff1d6, 0.8);
     sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
+    sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.03; // niente puntini d'ombra sulle superfici piatte
     const sc = sun.shadow.camera; sc.left = -20; sc.right = 20; sc.top = 20; sc.bottom = -20; sc.near = 1; sc.far = 70;
     scene.add(sun); scene.add(sun.target);
 
@@ -34,7 +36,10 @@
 
     // --- paesaggio ----------------------------------------------------------
     const ground = new T.Mesh(new T.PlaneGeometry(160, 160), mats.snow); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
-    box(15, 0.02, 1.6, mats.path, 10, 0.01, 1.2); box(24, 0.02, 1.4, mats.path, 2, 0.01, -2.9); box(1.4, 0.02, 4, mats.path, 3, 0.01, -0.6);
+    // Tratti di sentiero sovrapposti: altezze leggermente diverse, altrimenti le facce piatte coincidono e lampeggiano (z-fighting).
+    mats.path.polygonOffset = true; mats.path.polygonOffsetFactor = -1; mats.path.polygonOffsetUnits = -1;
+    const pathBox = (...a) => { const m = box(...a); m.castShadow = false; return m; }; // il sentiero non proietta ombre (sono solo un velo sul terreno)
+    pathBox(15, 0.02, 1.6, mats.path, 10, 0.01, 1.2); pathBox(24, 0.02, 1.4, mats.path, 2, 0.013, -2.9); pathBox(1.4, 0.02, 4, mats.path, 3, 0.016, -0.6);
     for (let i = 0; i < 8; i++) {
       const h = 14 + rnd() * 10, r = 9 + rnd() * 6, x = -52 + i * 15 + rnd() * 4, z = -50 - rnd() * 8;
       const m = new T.Mesh(new T.ConeGeometry(r, h, 16), mats.rock); m.position.set(x, h / 2, z); scene.add(m);
@@ -442,10 +447,10 @@
         S.won = true; save(); running = false; endJoy();
         hud.showWin(`Hai ospitato ${S.guests} escursionisti e servito ${S.cocoa} cioccolate calde.`);
       }
-      saveT += dt; if (saveT > 3) { saveT = 0; save(); }
+      saveT += dt; if (saveT > 2) { saveT = 0; save(); }
     }
 
-    const camGoal = new T.Vector3();
+    const camGoal = new T.Vector3(), sunDir = new T.Vector3(), sunX = new T.Vector3(), sunY = new T.Vector3(), sunT = new T.Vector3();
     function anim(dt) {
       tt += dt; const p = player.position;
       for (const r of rooms) {
@@ -470,7 +475,14 @@
       camGoal.set(p.x, 15 * k, p.z + 12 * k);
       cam.position.lerp(camGoal, Math.min(1, dt * 5));
       cam.lookAt(cam.position.x, 0, cam.position.z - 12 * k - 1);
-      sun.position.set(p.x - 10, 22, p.z + 8); sun.target.position.set(p.x, 0, p.z);
+      // La luce segue il giocatore a scatti di un pixel della mappa d'ombra (nello spazio della luce): così le ombre non "nuotano" e non lampeggiano.
+      sunDir.set(-10, 22, 8).normalize(); sunX.set(0, 1, 0).cross(sunDir).normalize(); sunY.copy(sunDir).cross(sunX);
+      const texel = (sc.right - sc.left) / sun.shadow.mapSize.x;
+      sunT.set(p.x, 0, p.z);
+      const sx = Math.round(sunT.dot(sunX) / texel) * texel - sunT.dot(sunX), sy = Math.round(sunT.dot(sunY) / texel) * texel - sunT.dot(sunY);
+      sunT.addScaledVector(sunX, sx).addScaledVector(sunY, sy);
+      sun.target.position.copy(sunT); sun.position.set(sunT.x - 10, 22, sunT.z + 8);
+      sun.target.updateMatrixWorld();
     }
 
     function overlays(dt) {

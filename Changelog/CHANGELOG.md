@@ -9,6 +9,30 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.5.6 · 2026-11-24 · Abeti morbidi, niente lampeggio sul sentiero, salvataggio più sicuro
+
+**Richiesto**
+- Fogliame degli alberi più realistico: stilizzato ma non poligonale.
+- Brutto lampeggio (flicker) sul camminamento davanti al rifugio mentre l'omino si muove.
+- Con gli aggiornamenti non si deve perdere nulla (dopo un aggiornamento i progressi erano ripartiti da zero ma le monete no).
+
+**Modificato**
+| File | Cosa |
+|---|---|
+| `web/js/build.js` | Chioma: sei piani morbidi a 24 lati con profilo curvo, bordo a ciuffi che pende e cappelli di neve a ciuffi (niente più facce a spigolo). |
+| `web/js/game.js` | Lampeggio: la luce del sole segue il giocatore a scatti esatti di un pixel della mappa d'ombra (prima le ombre "nuotavano"); `bias` e `normalBias` sulle ombre; sentiero senza ombre proprie, con altezze diverse per i tre tratti e `polygonOffset`; camera con near 4 e far 130 (prima 0,1 e 200) per una profondità più precisa. Salvataggio ogni 2 s (prima 3). |
+| `web/js/state.js` | Salvataggio con copia di riserva (`rifugio-v2-bak`) che non viene mai sostituita da una partita meno avanzata; all'avvio vince la copia più avanzata. Il tasto Ricomincia cancella entrambe. |
+| `web/js/main.js` | Chiede al sistema di non cancellare i dati (`navigator.storage.persist`). |
+| `web/sw.js` | `CACHE` da v7 a v8. |
+
+**Nota sui salvataggi**
+- Gli aggiornamenti del gioco (`web/`) e i nuovi APK con la stessa firma non toccano il salvataggio. Si perde solo disinstallando l'app (successo con gli APK v0.5.2 e v0.5.4, per colpa della firma cambiata ogni volta). Non ho trovato nel codice nessun punto che azzeri solo i progressi: se ricapita, annotare cosa si vedeva.
+
+**Per tornare indietro**
+- `git checkout 8e74793 -- web/js/build.js web/js/game.js web/js/state.js web/js/main.js web/sw.js`
+
+---
+
 ## v0.5.5 · 2026-11-24 · Risoluzione piena, abeti più veri, omini stickman
 
 **Richiesto**

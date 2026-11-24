@@ -3,6 +3,8 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const state = R.createState('rifugio-v2');
+  // Chiede al sistema di non cancellare i dati del gioco quando manca spazio.
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* ignorato */ }
 
   const reset = () => { state.reset(); location.reload(); };
   $('reset1').onclick = reset; $('reset2').onclick = reset;

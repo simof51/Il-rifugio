@@ -96,11 +96,26 @@
       m.setAttribute('color', new T.Float32BufferAttribute(col, 3)); m.setIndex(idx);
       return m;
     }
+    // Un piano di chioma morbido (non a spigoli): profilo curvo che si allarga verso il basso, bordo ondulato a ciuffi
+    // che pende un po' e 24 lati con luce liscia. wob = profondità dei ciuffi, ph = fase delle onde.
+    function tierGeo(r, h, wob, ph) {
+      const g = new T.CylinderGeometry(0.02, r, h, 24, 4), p = g.attributes.position;
+      for (let i = 0; i < p.count; i++) {
+        const x = p.getX(i), y = p.getY(i), z = p.getZ(i), rad = Math.hypot(x, z);
+        if (rad < 1e-5) continue;
+        const k = Math.min(1, Math.max(0, 1 - (y + h / 2) / h)); // 0 in punta, 1 alla base
+        const w = Math.sin(5 * Math.atan2(z, x) + ph);       // 5 ciuffi per piano
+        const nr = r * Math.pow(k, 0.7) * (1 + wob * k * k * w);
+        p.setXYZ(i, x / rad * nr, y - wob * h * 0.55 * Math.pow(k, 3) * (0.5 + 0.5 * w), z / rad * nr);
+      }
+      g.computeVertexNormals();
+      return g;
+    }
     const foliageGeo = () => cached('treeFoliage', () => mergeParts(TIERS.map(([r, h, y], i) => ({
-      geo: new T.CylinderGeometry(0.03, r, h, 9), y: y + h / 2, ry: i * 0.45, color: i % 2 ? 0x3d8460 : 0x2f6b4f
+      geo: tierGeo(r, h, 0.13, i * 1.3), y: y + h / 2, ry: i * 0.6, color: i % 2 ? 0x3d8460 : 0x2f6b4f
     }))));
     const snowCapsGeo = () => cached('treeSnow', () => mergeParts(TIERS.map(([r, h, y], i) => ({
-      geo: new T.CylinderGeometry(0.03, r * 0.62, h * 0.55, 9), y: y + h + 0.06 - h * 0.275, ry: i * 0.45
+      geo: tierGeo(r * 0.7, h * 0.42, 0.28, i * 1.3), y: y + h + 0.06 - h * 0.21, ry: i * 0.6
     }))));
 
     // Arto con perno in alto (anca o spalla). Ordine di rotazione YXZ: prima si alza (x), poi ruota sul piano orizzontale (y).
