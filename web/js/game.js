@@ -220,7 +220,7 @@
       }
       else if (h.state === 'deliver') { if (B.follow(g, h.path, 3.2, dt)) h.state = 'feed'; }
       else if (h.state === 'feed') {
-        if (h.logs > 0 && h.room.fuel < P.fuel_max) {
+        if (h.logs > 0 && h.room.fuel + 1 <= P.fuel_max) {
           if (h.cd <= 0) { h.cd = 0.25; h.logs--; h.room.fuel = Math.min(P.fuel_max, h.room.fuel + 1); B.drawStack(h.sg, h.logs, 0); }
         } else { h.path = [[h.room.cx, -3]]; h.state = 'leave'; }
       }
@@ -379,7 +379,7 @@
       }
       for (const r of rooms) {
         if (!r.open) continue;
-        if (carry.logs > 0 && r.fuel < P.fuel_max && feedCd <= 0 && Math.hypot(p.x - r.cx, p.z - FEED_Z) < P.feed_range) {
+        if (carry.logs > 0 && r.fuel + 1 <= P.fuel_max && feedCd <= 0 && Math.hypot(p.x - r.cx, p.z - FEED_Z) < P.feed_range) {
           feedCd = P.feed_interval; carry.logs--; r.fuel = Math.min(P.fuel_max, r.fuel + 1); S.fed++; changed = true;
         }
         if (r.pileN > 0 && Math.hypot(p.x - r.cx - 1.7, p.z - PILE_Z) < 1.5) {

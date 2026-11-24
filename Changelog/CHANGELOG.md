@@ -9,6 +9,22 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.5.1 · 2026-11-24 · Il camino pieno non accetta più legna
+
+**Richiesto**
+- Quando la saturazione del camino è al massimo, non deve più accettare legna dal giocatore.
+
+**Modificato**
+| File | Cosa |
+|---|---|
+| `web/js/game.js` | Il camino (giocatore e boscaiolo) accetta un pezzo solo se ci sta intero (`fuel + 1 <= fuel_max`). Prima bastava `fuel < fuel_max`: con 9,9 su 10 il pezzo veniva preso e quasi tutto andava sprecato. |
+| `web/sw.js` | `CACHE` da v4 a v5. |
+
+**Per tornare indietro**
+- `git checkout f072b3b -- web/js/game.js web/sw.js`
+
+---
+
 ## v0.5 · 2026-11-24 · Progetto su git, tutto dentro il progetto, APK Android che si aggiorna da solo
 
 **Richiesto**
