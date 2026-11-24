@@ -22,8 +22,13 @@
       }
       const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; return t;
     }
+    // Terreno con una leggera texture a macchie dello stesso colore (neve, erba, terra): più vivo di un colore piatto.
+    const gc = new T.Color(theme.ground != null ? theme.ground : 0xf6f9ff), gh = {}; gc.getHSL(gh);
+    const shade = d => '#' + new T.Color().setHSL(gh.h, gh.s, Math.max(0, Math.min(1, gh.l + d))).getHexString();
+    const groundTex = speckle({ base: '#' + gc.getHexString(), cols: [shade(0.035), shade(-0.035), shade(0.06), shade(-0.06)], n: 1100, min: 1.2, max: 5 });
+    groundTex.repeat.set(34, 34);
     const mats = {
-      snow: M(0xf6f9ff), ground: M(theme.ground || 0xf6f9ff), path: theme.pathTex ? M(0xffffff, { map: speckle(theme.pathTex) }) : M(theme.path || 0xe8dcc4),
+      snow: M(0xf6f9ff), ground: M(0xffffff, { map: groundTex }), blob: new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.13, depthWrite: false }), path: theme.pathTex ? M(0xffffff, { map: speckle(theme.pathTex) }) : M(theme.path || 0xe8dcc4),
       hill: M(theme.hill || 0x8fb0d8), peak: M(theme.peak || 0xf6f9ff),
       foliage: M(0xffffff, { vertexColors: true }), accent: M(0xffffff, { vertexColors: true }), face: M(0xffffff, { vertexColors: true, shininess: 0, specular: 0x000000 }),
       trunk: M(0x7a4a30), wood: M(0xb07848),
@@ -145,10 +150,10 @@
     // Albero estivo: chioma a palloni morbidi (due verdi) con frutti e fiorellini colorati.
     const BLOBS = [[0, 2.45, 0, 1.2], [0.75, 2.15, 0.3, 0.85], [-0.7, 2.2, -0.2, 0.9], [0.1, 3.25, -0.1, 0.85], [-0.25, 2.2, 0.75, 0.75], [0.4, 2.1, -0.75, 0.75]];
     const leafyGeo = () => cached('leafy', () => mergeParts(BLOBS.map(([x, y, z, r], i) => ({
-      geo: cached('blob', () => new T.SphereGeometry(1, 14, 10)), x, y, z, s: [r, r * 0.88, r], color: i % 2 ? 0x5ccf5b : 0x3fb14f
+      geo: cached('blob', () => new T.SphereGeometry(1, 14, 10)), x, y, z, s: [r, r * 0.88, r], color: (theme.leafCols || [0x5ccf5b, 0x3fb14f])[i % (theme.leafCols || [0, 0]).length]
     }))));
     const FRUIT = [[0.9, 2.6, 0.9, 0xff4d4d], [-0.9, 2.4, 0.5, 0xff8fb3], [0.2, 3.1, 0.85, 0xffd23a], [-0.3, 3.35, -0.7, 0xff4d4d], [0.95, 2.1, -0.5, 0xff8fb3], [-0.7, 1.95, -0.85, 0xffd23a], [0.4, 3.55, 0.3, 0xff8fb3], [-1.0, 2.8, -0.3, 0xff4d4d]];
-    const fruitGeo = () => cached('fruit', () => mergeParts(FRUIT.map(([x, y, z, c]) => ({ geo: cached('fr', () => new T.SphereGeometry(0.13, 8, 6)), x, y, z, color: c }))));
+    const fruitGeo = () => cached('fruit', () => mergeParts(FRUIT.map(([x, y, z, c], i) => ({ geo: cached('fr', () => new T.SphereGeometry(0.13, 8, 6)), x, y, z, color: theme.accentCols ? theme.accentCols[i % theme.accentCols.length] : c }))));
 
     // --- personaggi ---------------------------------------------------------
     // Arto con perno in alto (anca o spalla). Ordine di rotazione YXZ: prima si alza (x), poi ruota sul piano orizzontale (y).
@@ -225,9 +230,10 @@
     function person(coat, hat, withTool, style, opt) {
       style = style || 'winter'; opt = opt || {};
       const g = new T.Group();
-      const summer = style === 'summer', waiter = style === 'waiter';
+      // 'spring' = felpa a maniche lunghe, jeans, sneakers e berretto con visiera
+      const summer = style === 'summer', spring = style === 'spring', waiter = style === 'waiter', visor = summer || spring;
       const coatM = waiter ? mats.tux : tint(coat), hatM = tint(hat);
-      const pantsM = waiter ? mats.tux : summer ? tint(opt.shorts || 0x3b6fd4) : mats.pants;
+      const pantsM = waiter ? mats.tux : summer ? tint(opt.shorts || 0x3b6fd4) : spring ? tint(0x3f62b0) : mats.pants;
       // gambe
       const legs = [-1, 1].map(s => {
         const leg = new T.Group(); leg.position.set(s * 0.09, HIP, 0); leg.rotation.order = 'YXZ'; g.add(leg);
@@ -238,7 +244,8 @@
           const shoe = new T.Mesh(roundShoeGeo(), tint(opt.shoes || 0xffffff)); shoe.position.set(0, -0.385, 0.05); shoe.castShadow = true; leg.add(shoe);
         } else {
           cyl(0.075, 0.07, 0.4, pantsM, 0, -0.2, 0, leg, 12); ball(0.075, pantsM, 0, -0.4, 0, leg, 12, 8);
-          const shoe = new T.Mesh(roundBootGeo(), waiter ? mats.tux : mats.boots); shoe.position.set(0, -0.375, 0.05); shoe.castShadow = true; leg.add(shoe);
+          const shoe = spring ? new T.Mesh(roundShoeGeo(), tint(opt.shoes || 0xffffff)) : new T.Mesh(roundBootGeo(), waiter ? mats.tux : mats.boots);
+          shoe.position.set(0, spring ? -0.385 : -0.375, 0.05); shoe.castShadow = true; leg.add(shoe);
         }
         return leg;
       });
@@ -251,7 +258,7 @@
         [-1, 1].forEach(s => { const w = new T.Mesh(B_cone(), mats.tux); w.rotation.z = s * Math.PI / 2; w.position.set(s * 0.045, 0.725, 0.15); up.add(w); });
         ball(0.026, mats.tux, 0, 0.725, 0.15, up, 8, 6);                              // papillon
         const hair = new T.Mesh(cached('hairW', () => new T.SphereGeometry(0.315, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.5)), mats.tux); hair.position.y = 1.56 - HIP; hair.castShadow = true; up.add(hair);
-      } else if (summer) {
+      } else if (visor) {
         const col = new T.Mesh(cached('tcol', () => new T.TorusGeometry(0.105, 0.02, 6, 14).rotateX(Math.PI / 2)), mats.white); col.position.y = 0.77; up.add(col); // scollo
         const str = new T.Mesh(cached('tstr', () => new T.TorusGeometry(0.196, 0.016, 6, 18).rotateX(Math.PI / 2)), mats.white); str.position.y = 0.47; str.scale.z = 0.78; up.add(str); // riga
       } else {
@@ -264,7 +271,7 @@
       const face = new T.Mesh(faceGeo(), mats.face); face.position.y = 1.52 - HIP; up.add(face);
       if (!waiter) {
         const cap = new T.Mesh(cached('cap', () => new T.SphereGeometry(0.32, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.42)), hatM); cap.position.y = 1.57 - HIP; cap.castShadow = true; up.add(cap);
-        if (summer) {
+        if (visor) {
           const brim = new T.Mesh(cached('brim', () => new T.CylinderGeometry(0.31, 0.31, 0.03, 14, 1, false, -Math.PI / 2, Math.PI)), hatM); // visiera davanti
           brim.position.set(0, 1.585 - HIP, 0.13); brim.rotation.x = 0.18; brim.castShadow = true; up.add(brim);
           ball(0.03, hatM, 0, 1.89 - HIP, 0, up, 6, 5);
@@ -272,7 +279,7 @@
           const pom = new T.Mesh(cached('pom', () => new T.SphereGeometry(0.085, 12, 10)), mats.white); pom.position.y = 1.94 - HIP; up.add(pom);
         }
       }
-      const armOpt = waiter ? { cuffM: mats.white } : summer ? { short: true } : { cuffM: hatM, handM: hatM };
+      const armOpt = waiter ? { cuffM: mats.white } : summer ? { short: true } : spring ? {} : { cuffM: hatM, handM: hatM };
       const arms = [-1, 1].map(side => arm(up, side * 0.255, 1.15 - HIP, 0.062, coatM, armOpt));
       // vassoio d'argento con le bevande (solo camerieri): compare quando portano qualcosa
       let tray = null, trayCups = null;
@@ -281,8 +288,10 @@
         cyl(0.3, 0.3, 0.03, mats.steel, 0, 0, 0, tray, 18); cyl(0.32, 0.32, 0.02, mats.steel, 0, -0.005, 0, tray, 18);
         trayCups = new T.Group(); tray.add(trayCups);
       }
+      // ombra di contatto morbida sotto i piedi (si nasconde quando l'ospite si sdraia)
+      const blob = new T.Mesh(cached('blob', () => new T.CircleGeometry(0.42, 16).rotateX(-Math.PI / 2)), mats.blob); blob.position.y = 0.04; blob.renderOrder = 1; g.add(blob);
       Object.assign(g.userData, {
-        legs, up, arms: arms.map(a => a.sh), elbows: arms.map(a => a.el),
+        blob, legs, up, arms: arms.map(a => a.sh), elbows: arms.map(a => a.el),
         axe: withTool ? axe(arms[1].el) : null, saw: withTool ? chainsaw(arms[1].el) : null, tool: 'axe',
         tray, trayCups, hold: false, hb: 0,
         ph: 0, t: Math.random() * 6, mv: 0, chopT: 0, chopDur: 1, ck: 1, cb: 0, tossT: 0, tossDur: 1, tk: 1, tb: 0

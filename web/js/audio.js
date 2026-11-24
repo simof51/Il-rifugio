@@ -8,7 +8,9 @@
   // Due brani brevi che si ripetono: calmo e a carillon d'inverno, vivace d'estate. Gli accordi sono note MIDI.
   const SONGS = {
     inverno: { bpm: 84, wave: 'sine', prog: [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]], scale: [69, 72, 74, 76, 79, 81] },
-    estate: { bpm: 112, wave: 'triangle', prog: [[48, 52, 55], [55, 59, 62], [57, 60, 64], [53, 57, 60]], scale: [72, 74, 76, 79, 81, 84] }
+    estate: { bpm: 112, wave: 'triangle', prog: [[48, 52, 55], [55, 59, 62], [57, 60, 64], [53, 57, 60]], scale: [72, 74, 76, 79, 81, 84] },
+    primavera: { bpm: 100, wave: 'sine', prog: [[53, 57, 60], [48, 52, 55], [50, 53, 57], [55, 59, 62]], scale: [72, 74, 77, 79, 81, 84] },
+    autunno: { bpm: 76, wave: 'triangle', prog: [[57, 60, 64], [50, 53, 57], [52, 56, 59], [57, 60, 64]], scale: [69, 72, 74, 76, 81, 84] }
   };
 
   R.createAudio = function () {

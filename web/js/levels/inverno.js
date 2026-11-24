@@ -59,7 +59,7 @@
     theme: {
       sky: 0xbfe0ff, fog: [48, 110], ground: 0xf6f9ff, path: 0x8c8b87, hill: 0x7f9bc2, peak: 0xf6f9ff,
       pathTex: { base: '#8c8b87', cols: ['#a9a8a3', '#6d6c68', '#bcbbb5', '#5b5a56'], n: 1100, min: 0.8, max: 2.8 }, // ghiaia
-      edge: 'mountains', room: 'cabin', outfit: 'winter',
+      edge: 'mountains', room: 'cabin', outfit: 'winter', decor: ['rocks', 'bushes'], dust: 0xffffff,
       tree: 'pine', fall: 'snow', deco: 'snowman', cup: 0xd0502e, cupLiquid: 0x5a3220,
       hemi: [0xe4f1ff, 0x8597ad, 0.85], sun: [0xfff1d6, 0.85]
     },

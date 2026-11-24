@@ -56,7 +56,7 @@
     theme: {
       sky: 0xc4ecff, fog: [50, 120], ground: 0x5fc24a, path: 0xe9cf8e, hill: 0x3fae62, peak: 0x8fdc7a,
       pathTex: { base: '#e6cd8e', cols: ['#f1dca4', '#d4b877', '#c9ab68', '#f6e6bb'], n: 700, min: 0.8, max: 2.2 }, // sentiero di sabbia
-      edge: 'forest', room: 'lido', outfit: 'summer',
+      edge: 'forest', room: 'lido', outfit: 'summer', decor: ['bushes', 'grass', 'rocks'], dust: 0xe6cd8e,
       tree: 'leafy', fall: 'petals', deco: 'duck', flowers: true, butterflies: true, cup: 0xffe27a, cupLiquid: 0xffd23a, water: 0x4fc3f7,
       hemi: [0xffffff, 0x6fa05a, 0.6], sun: [0xfff4cf, 0.55]
     },

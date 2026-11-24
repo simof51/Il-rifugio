@@ -40,6 +40,10 @@
     const cols = []; // ostacoli come rettangoli [x0, x1, z0, z1]
     const lake = level.lake;
     const inLake = (x, z, pad) => !!lake && Math.hypot(x - lake.x, z - lake.z) < lake.r + (pad || 0);
+    // Monumento della città (mulino o faro): occupa un angolo della mappa, senza alberi né decorazioni intorno.
+    const LM = level.landmark === 'windmill' ? { x: 23.5, z: -11.5, r: 4.4 } : level.landmark === 'lighthouse' ? { x: -25, z: -12.5, r: 3.8 } : null;
+    const inLM = (x, z, pad) => !!LM && Math.hypot(x - LM.x, z - LM.z) < LM.r + (pad || 0);
+    const snowy = TH.fall === 'snow'; // d'inverno: neve che cade, sassi e cespugli innevati
 
     // --- paesaggio ----------------------------------------------------------
     const ground = new T.Mesh(new T.PlaneGeometry(160, 160), mats.ground); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
@@ -82,7 +86,7 @@
       [[1, 2.2, 1.6], [4.5, 2.3, 2], [8, 2.6, 2.4], [12, 3, 2.8]].forEach(([off, step, sc0]) => ringPoints(off, step, 1.6).forEach(([side, x, z]) => {
         const sc = sc0 * (0.85 + rnd() * 0.5) / 1.6 + 0.4;
         forest[side].push({ geo: trunk, x, y: 0, z, s: sc, color: 0x7a4a30 });
-        BL.forEach(([bx, by, bz, br], k) => forest[side].push({ geo: blob, x: x + bx * sc, y: by * sc, z: z + bz * sc, s: [br * sc, br * 0.88 * sc, br * sc], color: (k + side) % 2 ? 0x57c455 : 0x34a448 }));
+        BL.forEach(([bx, by, bz, br], k) => forest[side].push({ geo: blob, x: x + bx * sc, y: by * sc, z: z + bz * sc, s: [br * sc, br * 0.88 * sc, br * sc], color: (TH.leafCols || [0x57c455, 0x34a448])[(k + side) % (TH.leafCols || [0, 0]).length] }));
       }));
       for (let s = 0; s < 4; s++) scene.add(new T.Mesh(B.mergeParts(forest[s]), mats.accent));
       ringPoints(24, 16, 6).forEach(([, x, z]) => { const h = 12 + rnd() * 10, r = 12 + rnd() * 5, m = new T.Mesh(new T.ConeGeometry(r, h, 14), mats.hill); m.position.set(x, h / 2, z); scene.add(m); });
@@ -107,8 +111,59 @@
       }
       const fm = new T.Mesh(B.mergeParts(parts), mats.accent); fm.receiveShadow = true; scene.add(fm);
     }
+    // Decorazioni sparse della stagione (sassi, cespugli, ciuffi d'erba, funghi, zucche): tutte fuse in una sola mesh.
+    if (TH.decor) {
+      const parts = [], pickC = a => a[Math.floor(rnd() * a.length)];
+      const spot = () => {
+        for (let k = 0; k < 25; k++) {
+          const x = bx0 + 1 + rnd() * (bx1 - bx0 - 2), z = bz0 + 1 + rnd() * (bz1 - bz0 - 2);
+          if (!(inLake(x, z, 2.4) || inLM(x, z, 1.8) || (x > -17 && x < 19 && z > -10.5 && z < 5.5))) return [x, z];
+        }
+        return null;
+      };
+      const sph = B.cached('dsph', () => new T.SphereGeometry(1, 9, 6)), cone = B.cached('dcone', () => new T.ConeGeometry(0.07, 0.6, 4)), stem = B.cached('dstem', () => new T.CylinderGeometry(0.04, 0.06, 0.16, 6));
+      const cap = B.cached('dcap', () => new T.SphereGeometry(0.13, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2)), dot = B.cached('ddot', () => new T.SphereGeometry(0.03, 5, 4));
+      const MAKE = {
+        rocks: (x, z) => { const s = 0.5 + rnd() * 1; parts.push({ geo: sph, x, y: 0.1 * s, z, s: [0.4 * s, 0.26 * s, 0.34 * s], ry: rnd() * 6, color: snowy ? 0x9aa6b8 : 0x9a9a92 }); if (snowy) parts.push({ geo: sph, x, y: 0.17 * s, z, s: [0.32 * s, 0.14 * s, 0.27 * s], color: 0xffffff }); },
+        bushes: (x, z) => {
+          const s = 0.6 + rnd() * 0.7, c = snowy ? 0xe6eef7 : pickC(TH.leafCols ? [0x4fae5a, 0x3f9c4e] : [0x45b05a, 0x56c46d]);
+          parts.push({ geo: sph, x, y: 0.3 * s, z, s: [0.6 * s, 0.4 * s, 0.55 * s], color: snowy ? 0x4f8f6a : c });
+          if (snowy) parts.push({ geo: sph, x, y: 0.5 * s, z, s: [0.5 * s, 0.22 * s, 0.46 * s], color: c });
+          else if (TH.flowers) for (let k = 0; k < 3; k++) parts.push({ geo: dot, x: x + (rnd() - 0.5) * 0.5 * s, y: 0.5 * s, z: z + (rnd() - 0.5) * 0.5 * s, s: 1.6, color: pickC([0xffffff, 0xff7ac6, 0xffd23a]) });
+        },
+        grass: (x, z) => { const c = TH.fall === 'leaves' ? 0xc2a23c : 0x57c455; for (let k = 0; k < 3; k++) parts.push({ geo: cone, x: x + (rnd() - 0.5) * 0.2, y: 0.28, z: z + (rnd() - 0.5) * 0.2, s: [1, 0.8 + rnd() * 0.6, 1], ry: rnd() * 3, color: c }); },
+        mushrooms: (x, z) => { const s = 0.8 + rnd() * 0.8; parts.push({ geo: stem, x, y: 0.08 * s, z, s, color: 0xf4ead2 }, { geo: cap, x, y: 0.16 * s, z, s, color: 0xe0453a }); for (let k = 0; k < 3; k++) { const a = rnd() * 6.28; parts.push({ geo: dot, x: x + Math.cos(a) * 0.07 * s, y: 0.26 * s, z: z + Math.sin(a) * 0.07 * s, s, color: 0xffffff }); } },
+        pumpkins: (x, z) => { const s = 0.7 + rnd() * 0.8; parts.push({ geo: sph, x, y: 0.22 * s, z, s: [0.3 * s, 0.24 * s, 0.3 * s], color: 0xff8a1f }, { geo: stem, x, y: 0.46 * s, z, s: 0.8 * s, color: 0x4c8a2f }); }
+      };
+      const COUNT = { rocks: 36, bushes: 30, grass: 110, mushrooms: 36, pumpkins: 30 };
+      TH.decor.forEach(kind => { for (let i = 0; i < (COUNT[kind] || 20); i++) { const p = spot(); if (p) MAKE[kind](p[0], p[1]); } });
+      const dm = new T.Mesh(B.mergeParts(parts), mats.accent); scene.add(dm);
+    }
+    // Monumento della città: mulino a vento con pale che girano o faro con il fascio di luce che ruota.
+    const lmAnim = [];
+    if (LM) {
+      const g = new T.Group(); g.position.set(LM.x, 0, LM.z); scene.add(g);
+      if (level.landmark === 'windmill') {
+        cyl(1.2, 1.9, 4.4, B.tint(0xf3e6c8), 0, 2.2, 0, g, 14);
+        box(0.9, 1.5, 0.15, B.tint(0x7a4a30), 0, 0.75, 1.42, g, 0.05);
+        const roof = new T.Mesh(B.cached('mroof', () => new T.ConeGeometry(1.5, 1.5, 12)), B.tint(0x9b3d2e)); roof.position.y = 5.15; roof.castShadow = true; g.add(roof);
+        const hub = new T.Group(); hub.position.set(0, 4.4, 1.35); g.add(hub); ball(0.28, mats.dark, 0, 0, 0, hub, 10, 8);
+        for (let k = 0; k < 4; k++) { const bl = new T.Group(); bl.rotation.z = k * Math.PI / 2; hub.add(bl); box(0.16, 3.7, 0.08, mats.trunk, 0, 1.9, 0, bl, 0.02); box(0.8, 2.4, 0.04, mats.white, 0.45, 2.3, 0.04, bl, 0.01); }
+        lmAnim.push(dt => { hub.rotation.z -= dt * 0.8; });
+      } else {
+        let y = 0;
+        [0xe0453a, 0xffffff, 0xe0453a, 0xffffff].forEach((c, k) => { const h = 1.9; cyl(1.55 - (k + 1) * 0.12, 1.55 - k * 0.12, h, B.tint(c), 0, y + h / 2, 0, g, 16); y += h; });
+        cyl(1.3, 1.3, 0.2, mats.dark, 0, y + 0.1, 0, g, 16); y += 0.2;
+        const lamp = new T.Mesh(B.cached('lamp', () => new T.CylinderGeometry(0.55, 0.55, 1.1, 14)), new T.MeshBasicMaterial({ color: 0xfff3a0 })); lamp.position.y = y + 0.55; g.add(lamp);
+        const roof = new T.Mesh(B.cached('lroof', () => new T.ConeGeometry(0.85, 0.8, 14)), B.tint(0xb02e26)); roof.position.y = y + 1.5; roof.castShadow = true; g.add(roof);
+        const beam = new T.Group(); beam.position.y = y + 0.55; g.add(beam);
+        beam.add(new T.Mesh(B.cached('beam', () => new T.ConeGeometry(1.5, 14, 14, 1, true).rotateZ(Math.PI / 2).translate(7, 0, 0)), new T.MeshBasicMaterial({ color: 0xfff3a0, transparent: true, opacity: 0.2, depthWrite: false, side: T.DoubleSide })));
+        lmAnim.push(dt => { beam.rotation.y += dt * 0.9; });
+      }
+      cols.push([LM.x - 1.7, LM.x + 1.7, LM.z - 1.7, LM.z + 1.7]);
+    }
     // Lago con spiaggia, ninfee, paperelle e una barchetta (solo se il livello lo prevede).
-    const ducks = [], bobbers = [];
+    const ducks = [], bobbers = [], ripples = [];
     function makeDuck(scale) {
       const g = new T.Group();
       ball(0.3, mats.yellow, 0, 0.3, 0, g, 14, 10).scale.set(1, 0.85, 1.25);
@@ -130,6 +185,10 @@
       for (let i = 0; i < 3; i++) { const d = makeDuck(1); ducks.push({ g: d, a: i * 2.1, rr: 2.2 + i * 1.5, sp: 0.25 + i * 0.07 * (i % 2 ? -1 : 1) }); }
       const boat = new T.Group(); box(1.7, 0.28, 0.75, mats.red, 0, 0.18, 0, boat, 0.1); box(1.5, 0.1, 0.55, mats.plank, 0, 0.34, 0, boat, 0.04);
       box(0.06, 1.2, 0.06, mats.wood, 0.1, 0.95, 0, boat); box(0.7, 0.55, 0.03, mats.white, 0.45, 1.0, 0, boat, 0.01);
+      for (let i = 0; i < 6; i++) { // cerchi che si allargano sull'acqua
+        const a = rnd() * 6.28, d = rnd() * (lake.r - 1.5), rm = new T.Mesh(B.cached('ripple', () => new T.RingGeometry(0.22, 0.3, 24).rotateX(-Math.PI / 2)), new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false }));
+        rm.position.set(lake.x + Math.cos(a) * d, 0.07, lake.z + Math.sin(a) * d); scene.add(rm); ripples.push({ m: rm, ph: rnd() });
+      }
       boat.position.set(lake.x + 2.2, 0.05, lake.z - 1.5); boat.rotation.y = 0.5; scene.add(boat); bobbers.push({ g: boat, ph: 0 });
       // Il lago è un ostacolo: lo approssimo con strisce di rettangoli.
       const N = 7;
@@ -159,13 +218,13 @@
     while (near < P.trees && tries < 800) {
       tries++;
       const x = -12 + rnd() * 24, z = 5 + rnd() * 8;
-      if (trees.some(t => Math.hypot(t.x - x, t.z - z) < 2.5) || inLake(x, z, 1.5)) continue;
+      if (trees.some(t => Math.hypot(t.x - x, t.z - z) < 2.5) || inLake(x, z, 1.5) || inLM(x, z, 1)) continue;
       plantTree(x, z, 1); near++;
     }
     for (let i = 0, planted = 0; i < P.forest_trees * 8 && planted < P.forest_trees; i++) {
       const x = bx0 + rnd() * (bx1 - bx0), z = bz0 + rnd() * (bz1 - bz0), sc = 0.8 + rnd() * 0.7;
       if (x > -16 && x < 18 && z > -11 && z < 15) continue;
-      if (inLake(x, z, 2)) continue;
+      if (inLake(x, z, 2) || inLM(x, z, 1.5)) continue;
       if (trees.some(t => Math.hypot(t.x - x, t.z - z) < 1.4)) continue; // lascia sempre un passaggio fra gli alberi
       plantTree(x, z, sc); planted++;
     }
@@ -293,14 +352,14 @@
     // Due stili: 'cabin' (baita con muri, camino e letti, per l'inverno) e 'lido' (postazione sul lago con ombrellone,
     // lettini e barbecue, senza muri: bassi parapetti bianchi e una staccionata di bambù). Cambiano solo l'aspetto: ostacoli e regole sono gli stessi.
     const lido = TH.room === 'lido';
-    const bambooM = B.tint(0xd9b36c), railM = B.tint(0xf4f1e6), TOWELS = [0xff6b6b, 0x4fa3ff, 0xffd23a, 0x4cd964, 0xff9a2a, 0xc084fc];
+    const hedge = !!TH.fence, bambooM = B.tint(TH.fence || 0xd9b36c), railM = B.tint(0xf4f1e6), TOWELS = [0xff6b6b, 0x4fa3ff, 0xffd23a, 0x4cd964, 0xff9a2a, 0xc084fc];
     const rooms = level.rooms.map((def, i) => {
       const cx = def.x, g = new T.Group(); scene.add(g);
       box(RW, 0.2, 5, mats.plank, cx, 0.1, -6.5, g, 0.015);
       let wallL, wallR, flame, fireY, fireZ;
       if (lido) {
-        box(RW, 0.9, 0.16, bambooM, cx, 0.65, -9.1, g, 0.04); // staccionata sul retro
-        for (let k = 0; k < 7; k++) box(0.1, 1.05, 0.2, bambooM, cx - 2.7 + k * 0.9, 0.72, -9.1, g, 0.04); // canne
+        if (hedge) box(RW, 1.05, 0.55, bambooM, cx, 0.72, -9.0, g, 0.22); // siepe fiorita sul retro (primavera)
+        else { box(RW, 0.9, 0.16, bambooM, cx, 0.65, -9.1, g, 0.04); for (let k = 0; k < 7; k++) box(0.1, 1.05, 0.2, bambooM, cx - 2.7 + k * 0.9, 0.72, -9.1, g, 0.04); } // staccionata di bambù
         wallL = box(0.12, 0.55, 5, railM, cx - RW / 2 + 0.06, 0.47, -6.5, g, 0.03);
         wallR = box(0.12, 0.55, 5, railM, cx + RW / 2 - 0.06, 0.47, -6.5, g, 0.03);
         box(1.8, 0.03, 1.1, B.tint(0xffe08a), cx, 0.21, -7.6, g);
@@ -311,7 +370,7 @@
         box(0.5, 0.06, 0.5, mats.plank, cx + 0.95, 0.9, -8.55, g, 0.02);
         // ombrellone: palo e cappello a spicchi nei colori del lido
         cyl(0.05, 0.05, 2.9, mats.white, cx - 2.35, 1.45, -8.3, g, 8);
-        const can = new T.Mesh(B.cached('umb', () => new T.ConeGeometry(1.75, 0.65, 12)), B.tint([0xff4d4d, 0x3d8bff, 0xffd23a][i % 3])); can.position.set(cx - 2.35, 3.0, -8.3); can.castShadow = true; g.add(can);
+        const can = new T.Mesh(B.cached('umb', () => new T.ConeGeometry(1.75, 0.65, 12)), B.tint((TH.umbrellaCols || [0xff4d4d, 0x3d8bff, 0xffd23a])[i % 3])); can.position.set(cx - 2.35, 3.0, -8.3); can.castShadow = true; g.add(can);
         ball(0.07, mats.white, cx - 2.35, 3.35, -8.3, g, 8, 6);
         // due pali per il festone di bandierine
         cyl(0.04, 0.04, 1.7, bambooM, cx - 2.9, 0.85, -8.95, g, 6); cyl(0.04, 0.04, 1.7, bambooM, cx + 2.9, 0.85, -8.95, g, 6);
@@ -626,7 +685,30 @@
       });
     }
     function buildMascot(pd) {
+      const hold = (g, amp) => { scene.add(g); bobbers.push({ g, ph: 1, base: 0, amp: amp || 0.04 }); cols.push([pd.x - 0.6, pd.x + 0.6, pd.z - 0.6, pd.z + 0.6]); };
       if (TH.deco === 'duck') { const d = makeDuck(2.4); d.position.set(pd.x, 0, pd.z); d.rotation.y = 1.2; bobbers.push({ g: d, ph: 1, base: 0, amp: 0.06 }); cols.push([pd.x - 0.6, pd.x + 0.6, pd.z - 0.6, pd.z + 0.6]); return; }
+      if (TH.deco === 'bunny') { // coniglio gigante
+        const g = new T.Group(); g.position.set(pd.x, 0, pd.z); g.rotation.y = 0.9;
+        ball(0.55, mats.white, 0, 0.6, 0, g, 18, 12).scale.set(1, 0.95, 1.15);
+        ball(0.38, mats.white, 0, 1.3, 0.35, g, 16, 12);
+        [-0.16, 0.16].forEach(s => { const e = ball(0.14, mats.white, s, 2.0, 0.28, g, 10, 8); e.scale.set(0.55, 2.3, 0.45); e.rotation.z = -s * 0.5; const i2 = ball(0.09, mats.pink, s, 2.0, 0.33, g, 8, 6); i2.scale.set(0.5, 2.0, 0.3); i2.rotation.z = -s * 0.5; });
+        [-0.14, 0.14].forEach(s => { ball(0.05, mats.dark, s, 1.4, 0.69, g, 6, 5); ball(0.08, mats.pink, s * 1.8, 1.25, 0.62, g, 6, 5).scale.set(1, 0.7, 0.4); });
+        ball(0.06, mats.pink, 0, 1.3, 0.73, g, 6, 5); ball(0.18, mats.white, 0, 0.55, -0.62, g, 10, 8);
+        [-0.28, 0.28].forEach(s => ball(0.2, mats.white, s, 0.12, 0.5, g, 10, 8).scale.set(0.8, 0.5, 1.5));
+        hold(g, 0.05); return;
+      }
+      if (TH.deco === 'scarecrow') { // spaventapasseri con testa a zucca
+        const g = new T.Group(); g.position.set(pd.x, 0, pd.z);
+        cyl(0.07, 0.07, 2.8, mats.trunk, 0, 1.4, 0, g, 8);
+        const bar = cyl(0.06, 0.06, 2.2, mats.trunk, 0, 2.0, 0, g, 8); bar.rotation.z = Math.PI / 2;
+        box(0.8, 0.9, 0.4, B.tint(0xc0553a), 0, 1.7, 0, g, 0.15);
+        ball(0.4, mats.orange, 0, 2.6, 0, g, 14, 10).scale.set(1, 0.85, 1);
+        [-0.14, 0.14].forEach(s => box(0.1, 0.1, 0.05, mats.dark, s, 2.65, 0.36, g, 0.02));
+        box(0.28, 0.07, 0.05, mats.dark, 0, 2.45, 0.37, g, 0.02);
+        cyl(0.55, 0.55, 0.05, B.tint(0xe8c66a), 0, 2.95, 0, g, 14); cyl(0.28, 0.32, 0.4, B.tint(0xe8c66a), 0, 3.15, 0, g, 12);
+        [-1, 1].forEach(s => { box(0.18, 0.28, 0.12, B.tint(0xe8c66a), s * 1.15, 2.0, 0, g, 0.05); box(0.26, 0.5, 0.1, B.tint(0xe8c66a), s * 0.3, 1.0, 0.05, g, 0.04); });
+        hold(g, 0.02); return;
+      }
       // pupazzo di neve
       const g = new T.Group(); g.position.set(pd.x, 0, pd.z);
       ball(0.8, mats.snow, 0, 0.7, 0, g, 18, 14); ball(0.58, mats.snow, 0, 1.75, 0, g, 18, 14); ball(0.4, mats.snow, 0, 2.55, 0, g, 16, 12);
@@ -688,10 +770,10 @@
 
     // --- freccia guida e caduta (neve o petali) ------------------------------
     const arrow = new T.Mesh(new T.ConeGeometry(0.35, 0.7, 20), mats.arrow); arrow.rotation.x = Math.PI; scene.add(arrow);
-    const snowy = TH.fall === 'snow', NS = snowy ? 500 : 200, snowPos = new Float32Array(NS * 3), fallSpeed = snowy ? 1.3 : 0.7;
+    const leafy = TH.fall === 'leaves', NS = snowy ? 500 : leafy ? 110 : 200, snowPos = new Float32Array(NS * 3), fallSpeed = snowy ? 1.3 : leafy ? 0.9 : 0.7;
     for (let i = 0; i < NS; i++) { snowPos[i * 3] = -20 + Math.random() * 40; snowPos[i * 3 + 1] = Math.random() * 14; snowPos[i * 3 + 2] = -20 + Math.random() * 40; }
     const snowGeo = new T.BufferGeometry(); snowGeo.setAttribute('position', new T.BufferAttribute(snowPos, 3));
-    scene.add(new T.Points(snowGeo, new T.PointsMaterial(snowy ? { color: 0xffffff, size: 0.16, transparent: true, opacity: 0.9 } : { color: 0xff9ec7, size: 0.17, transparent: true, opacity: 0.95 })));
+    scene.add(new T.Points(snowGeo, new T.PointsMaterial(snowy ? { color: 0xffffff, size: 0.16, transparent: true, opacity: 0.9 } : { color: TH.fallColor || 0xff9ec7, size: leafy ? 0.27 : 0.17, transparent: true, opacity: 0.95 })));
     // Farfalle: un'ala sola che batte (scala in larghezza), sempre in giro sul prato.
     const flies = [];
     if (TH.butterflies) {
@@ -714,7 +796,7 @@
       b.guest = gu; guests.push(gu);
     }
     function leave(gu, happy) {
-      const g = gu.g; g.rotation.set(0, 0, 0); g.position.set(gu.b.x, 0, -4.6); gu.b.guest = null; gu.state = 'out';
+      const g = gu.g; g.rotation.set(0, 0, 0); g.position.set(gu.b.x, 0, -4.6); gu.b.guest = null; gu.state = 'out'; g.userData.blob.visible = true;
       gu.path = [[gu.r.cx, -2.8], [SPAWN[0], SPAWN[1]]];
       if (happy) {
         const pay = P.pay + (gu.served ? P.tip : 0);
@@ -789,7 +871,7 @@
     addEventListener('pagehide', save);
 
     // --- ciclo di gioco -----------------------------------------------------
-    let running = false, paused = false, tt = 0, saveT = 0, chopCd = 0, feedCd = 0, cupCd = 0, hopT = 0;
+    let running = false, paused = false, tt = 0, saveT = 0, chopCd = 0, feedCd = 0, cupCd = 0, hopT = 0, dustT = 0;
     function update(dt) {
       const p = player.position;
       let mx = (keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0), mz = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
@@ -865,6 +947,10 @@
 
       // camini e griglie
       for (const r of rooms) if (r.open) r.fuel = Math.max(0, r.fuel - dt / ((busy(r) ? P.burn_busy : P.burn_idle) * burnMul()));
+      // fumo dal camino o dal barbecue acceso, polvere (o neve) sotto i passi
+      for (const r of rooms) if (r.open && r.fuel > 0) { r.smokeT = (r.smokeT || 0) - dt; if (r.smokeT <= 0) { r.smokeT = 0.45 + Math.random() * 0.3; burst(r.cx + (Math.random() - 0.5) * 0.2, r.fireY + (lido ? 0.4 : 1.35), r.fireZ - (lido ? 0.05 : 0.45), 1, [0xeef1f5, 0xd5dbe3], 0.2, 0.9, 2, 0.2, -0.25); } }
+      dustT -= dt;
+      if (moving && dustT <= 0) { dustT = 0.17; burst(p.x - Math.sin(player.rotation.y) * 0.18, 0.08, p.z - Math.cos(player.rotation.y) * 0.18, 1, [TH.dust || 0xffffff, 0xffffff], 0.3, 0.7, 0.45, 0.11, 2.5); }
       // alberi che ricrescono
       regrowTrees(dt);
       // ospiti
@@ -873,7 +959,7 @@
         const gu = guests[i];
         if (gu.state === 'in') {
           if (B.follow(gu.g, gu.path, 2.6, dt)) {
-            gu.state = 'bed'; gu.g.rotation.set(-Math.PI / 2, 0, 0); gu.g.position.set(gu.b.x, 0.62, -5.7); A.sfx('guest');
+            gu.state = 'bed'; gu.g.rotation.set(-Math.PI / 2, 0, 0); gu.g.position.set(gu.b.x, 0.62, -5.7); gu.g.userData.blob.visible = false; A.sfx('guest');
             gu.want = cocoa.open && Math.random() < P.cocoa_chance;
           }
         } else if (gu.state === 'bed') {
@@ -917,7 +1003,7 @@
       if (hopT > 0) { hopT = Math.max(0, hopT - dt); p.y = Math.sin(Math.PI * (1 - hopT / 0.5)) * 0.55; } else p.y = 0;
       const a = snowGeo.attributes.position.array;
       for (let i = 0; i < NS; i++) {
-        a[i * 3 + 1] -= dt * fallSpeed; a[i * 3] += Math.sin(tt + i) * dt * (snowy ? 0.2 : 0.6);
+        a[i * 3 + 1] -= dt * fallSpeed; a[i * 3] += Math.sin(tt + i) * dt * (snowy ? 0.2 : leafy ? 1.2 : 0.6);
         if (a[i * 3 + 1] < 0) { a[i * 3 + 1] = 14; a[i * 3] = p.x - 20 + Math.random() * 40; a[i * 3 + 2] = p.z - 20 + Math.random() * 40; }
       }
       snowGeo.attributes.position.needsUpdate = true;
@@ -930,6 +1016,8 @@
         d.a += dt * d.sp; const x = lake.x + Math.cos(d.a) * d.rr, z = lake.z + Math.sin(d.a) * d.rr;
         d.g.position.set(x, 0.02 + Math.sin(tt * 2 + d.a * 3) * 0.03, z); d.g.rotation.y = -d.a + (d.sp > 0 ? 0 : Math.PI);
       }
+      for (const fnA of lmAnim) fnA(dt);
+      for (const rp of ripples) { const k = (tt * 0.3 + rp.ph) % 1; rp.m.scale.setScalar(0.6 + k * 2.6); rp.m.material.opacity = 0.5 * (1 - k) * Math.min(1, k * 6); }
       for (const b of bobbers) { const base = b.base == null ? 0.05 : b.base, amp = b.amp == null ? 0.05 : b.amp; b.g.position.y = base + Math.sin(tt * 1.6 + b.ph) * amp; if (b.amp == null) b.g.rotation.z = Math.sin(tt * 1.2 + b.ph) * 0.05; }
       for (const l of bulbs) l.b.scale.setScalar(1 + 0.12 * Math.sin(tt * 3 + l.ph));
       // camera isometrica che segue il giocatore; si allontana in verticale (portrait)
@@ -981,7 +1069,7 @@
     requestAnimationFrame(frame);
 
     return {
-      start() { running = true; if (S.done === 0) hud.toast('Vai verso il bosco: segui la freccia gialla ➜'); },
+      start() { running = true; hud.toast(S.done === 0 ? 'Vai verso il bosco: segui la freccia gialla ➜' : `${level.cityEmoji || ''} ${level.cityName || ''} · ${level.emoji} ${level.name}`); },
       resume() { running = true; },
       pause(on) { paused = !!on; if (on) { endJoy(); save(); } },
       save,

@@ -9,6 +9,38 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.7.0 · 2026-11-25 · Quattro stagioni, tre città, grafica più ricca, "Ricomincia TUTTO" nel Debug
+
+**Richiesto**
+- Più stagioni e più città da completare, sempre visibili nel menu.
+- Grafica più accattivante.
+- Nel menu Debug un tasto per ricominciare tutto.
+- Pensare a miglioramenti possibili e proporli prima di farli (proposte nel messaggio, niente di implementato).
+
+**Aggiunto**
+| File | Cosa |
+|---|---|
+| `web/js/levels/primavera.js` | Primavera: giardino in fiore con ciliegi rosa, petali, farfalle, laghetto, aree picnic (ombrellone, lettini, barbecue, siepe fiorita), spremute, coniglio gigante. |
+| `web/js/levels/autunno.js` | Autunno: bosco dorato con foglie che cadono, zucche, funghi, baite col camino, sidro caldo, spaventapasseri. |
+| `web/js/levels/common.js` | Elenco dei 41 obiettivi e dei 22 sblocchi con le parole che cambiano da stagione a stagione, e i numeri di base. |
+| `web/js/levels/cities.js` | Tre città, ognuna con le quattro stagioni (12 tappe, 492 obiettivi): Valle del Rifugio (i livelli di sempre), Borgo dei Mulini (colori più caldi, obiettivi ×1,2, costi ×1,15, ospiti più frequenti, mulino a vento con le pale che girano) e Porto delle Luci (colori più freddi, ×1,4, ×1,3, faro con fascio di luce che ruota). Ordine: inverno, primavera, estate, autunno, poi la città dopo. I salvataggi di inverno ed estate restano quelli di prima. |
+
+**Modificato**
+| File | Cosa |
+|---|---|
+| `web/js/main.js` | La tappa si sceglie dal progresso (prima non completata). Menu "Le tue città": tutte le città sono sempre visibili con barra di avanzamento e le quattro stagioni (completata, in corso, bloccata). Debug: "🔄 Ricomincia TUTTO da capo" (cancella ogni progresso di ogni città, conferma con un secondo tocco), vai a una tappa qualsiasi, completa fino a qui o tutto. |
+| `web/js/build.js` | Terreno con texture a macchie (neve, erba, terra); colori delle foglie e dei frutti dal tema (ciliegi, autunno); ombra morbida sotto i piedi; nuovo guardaroba "primavera" (felpa, jeans, sneakers, berretto con visiera). |
+| `web/js/game.js` | Decorazioni sparse per stagione (sassi, cespugli, erba, funghi, zucche), fumo da camini e barbecue, polvere o neve sotto i passi, cerchi sull'acqua, foglie che cadono, monumenti di città, nuove mascotte (coniglio, spaventapasseri). Messaggio all'avvio con città e stagione. |
+| `web/js/audio.js`, `css/style.css`, `index.html`, `sw.js` | Due nuovi brani, stile delle città, nuovi script, `CACHE` v13. |
+
+**Nota**
+- Tempi degli obiettivi e bilanciamento delle città nuove sono stime, non misurati.
+
+**Per tornare indietro**
+- `git checkout 816ef11 -- web`
+
+---
+
 ## v0.6.0 · 2026-11-25 · Colpo orizzontale, motosega, camerieri in smoking, lido d'estate, bordi della mappa
 
 **Richiesto**
