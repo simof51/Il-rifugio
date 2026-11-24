@@ -1,41 +1,39 @@
-// Avvio: sceglie il livello, carica il salvataggio, collega pulsanti, menu e audio, avvia il livello e registra il service worker (uso offline).
+// Avvio: sceglie la stagione dal progresso, carica il salvataggio, collega pulsanti, menu, strumenti di prova e audio,
+// avvia il livello e registra il service worker (uso offline).
 (function (R) {
   'use strict';
   const $ = id => document.getElementById(id);
   const ORDER = ['inverno', 'estate'].filter(id => R.levels[id]);
   const debug = location.search.indexOf('debug') >= 0;
+  // Menu Debug: mettere false prima di pubblicare sul Play Store (si può riaprire con ?debug nell'indirizzo).
+  const SHOW_DEBUG = true;
 
-  // Si parte sempre dall'inverno. Le stagioni successive si aprono quando si completa la precedente.
-  // Il cambio di livello ricarica la pagina e lascia un promemoria che vale solo per quell'avvio.
+  // La stagione non si sceglie: si gioca la prima non ancora completata e, una volta completata, non si torna indietro.
+  // Solo il menu Debug può forzare una stagione (promemoria che vale per un solo avvio).
   const NEXT_KEY = 'rifugio-next-level';
-  const takeNext = () => { try { const v = sessionStorage.getItem(NEXT_KEY); sessionStorage.removeItem(NEXT_KEY); return v; } catch (e) { return null; } };
-  const goLevel = id => { try { sessionStorage.setItem(NEXT_KEY, id); } catch (e) { /* ignorato */ } location.reload(); };
+  const takeKey = k => { try { const v = sessionStorage.getItem(k); sessionStorage.removeItem(k); return v; } catch (e) { return null; } };
+  const forceLevel = id => { try { sessionStorage.setItem(NEXT_KEY, id); } catch (e) { /* ignorato */ } location.reload(); };
   const savedData = l => R.createState(l.saveKey).data;
   const isWon = l => { const d = savedData(l); return !!d.won || d.done >= l.objectives.length; };
-  const unlocked = id => debug || ORDER.indexOf(id) <= 0 || isWon(R.levels[ORDER[ORDER.indexOf(id) - 1]]);
-
-  const wanted = takeNext();
-  const level = R.levels[wanted && unlocked(wanted) ? wanted : 'inverno'];
+  const firstOpen = ORDER.find(id => !isWon(R.levels[id])) || ORDER[ORDER.length - 1];
+  const forced = takeKey(NEXT_KEY);
+  const level = R.levels[(SHOW_DEBUG || debug) && forced && R.levels[forced] ? forced : firstOpen];
   const state = R.createState(level.saveKey);
+  const levelDone = () => !!state.data.won || state.data.done >= level.objectives.length;
   // Chiede al sistema di non cancellare i dati del gioco quando manca spazio.
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* ignorato */ }
 
   const audio = R.createAudio();
 
-  // Testi del livello nella finestra iniziale e scelta della stagione.
+  // Testi della stagione nella finestra iniziale.
   $('introMsg').textContent = level.text.intro;
   $('introList').innerHTML = level.text.help.map(t => `<li>${t}</li>`).join('');
   $('levelNote').textContent = `${level.emoji} ${level.name}: ${level.objectives.length} obiettivi. I progressi restano salvati sul dispositivo.`;
-  $('levels').innerHTML = ORDER.map(id => {
-    const l = R.levels[id], ok = unlocked(id);
-    return `<button class="lv${l === level ? ' on' : ''}" data-level="${id}"${ok ? '' : ' disabled'}>${ok ? l.emoji : '🔒'} ${l.name}</button>`;
-  }).join('');
-  $('levels').onclick = e => { const b = e.target.closest('button[data-level]'); if (b && !b.disabled && R.levels[b.dataset.level] !== level) goLevel(b.dataset.level); };
-  $('nextLevel').onclick = () => goLevel($('nextLevel').dataset.level);
+  $('nextLevel').onclick = () => location.reload(); // la stagione vinta è salvata: al riavvio parte la successiva
 
   const reset = () => { state.reset(); location.reload(); };
-  $('reset1').onclick = reset; $('reset2').onclick = reset;
-  if (state.hasProgress()) $('reset1').hidden = false;
+  $('reset1').onclick = reset;
+  if (state.hasProgress() && !levelDone()) $('reset1').hidden = false;
 
   // Nell'app Android il service worker non serve: l'aggiornamento e l'uso offline li gestisce il caricatore dell'app.
   const remote = window.RIFUGIO_REMOTE, inApp = !!(remote || window.Capacitor);
@@ -56,33 +54,67 @@
   const hud = R.createHud();
   const game = R.createGame({ hud, level, state, audio });
   if (debug) window.rifugioDebug = game.debug;
+  const dbg = game.debug;
 
-  // --- menu: avanzamento e impostazioni -------------------------------------
-  let confirmReset = false;
+  // --- menu: avanzamento, impostazioni e strumenti di prova -------------------
+  let confirmReset = false, showDbg = false, dbgMsg = '';
   function levelRow(l) {
-    const cur = l === level, d = cur ? state.data : savedData(l), n = l.objectives.length, done = Math.min(d.done || 0, n), ok = unlocked(l.id), won = done >= n;
+    const cur = l === level, d = cur ? state.data : savedData(l), n = l.objectives.length, done = Math.min(d.done || 0, n), won = done >= n;
+    const idx = ORDER.indexOf(l.id), ok = cur || won || ORDER.slice(0, idx).every(id => isWon(R.levels[id]));
     const bar = `<div class="bar"><i style="width:${(done / n * 100).toFixed(1)}%"></i></div>`;
-    const act = cur ? '<span class="tag">Stai giocando qui</span>' : ok ? `<button class="mini" data-go="${l.id}">Gioca</button>` : '<span class="tag">🔒 Completa la stagione prima</span>';
-    return `<div class="lrow${cur ? ' cur' : ''}"><div class="lhead"><b>${ok ? l.emoji : '🔒'} ${l.name}</b><span>${won ? '✅ Completato' : `${done}/${n} obiettivi`}</span></div>${bar}<div class="lact">${act}</div></div>`;
+    const note = cur ? (won ? '✅ Completata: alla prossima apertura si passa alla stagione successiva' : 'Stai giocando qui') : won ? 'Completata: non si torna indietro' : ok ? '' : '🔒 Completa la stagione precedente';
+    return `<div class="lrow${cur ? ' cur' : ''}"><div class="lhead"><b>${ok ? l.emoji : '🔒'} ${l.name}</b><span>${won ? '✅ Completata' : `${done}/${n} obiettivi`}</span></div>${bar}${note ? `<div class="lact">${note}</div>` : ''}</div>`;
   }
   function toggle(key, label) { return `<div class="set"><span>${label}</span><button class="tg${audio.state[key] ? ' on' : ''}" data-tg="${key}" aria-pressed="${!!audio.state[key]}">${audio.state[key] ? 'Sì' : 'No'}</button></div>`; }
   function slider(key, label) { return `<div class="set"><span>${label}</span><input type="range" min="0" max="1" step="0.05" value="${audio.state[key]}" data-vol="${key}" aria-label="${label}"></div>`; }
+
+  // Strumenti di prova: [testo, azione]. Le azioni agiscono sulla partita in corso.
+  const nowOn = () => dbg.info();
+  const markWon = id => {
+    const l = R.levels[id];
+    if (l === level) { dbg.finishLevel(); return; }
+    const s = R.createState(l.saveKey); s.data.done = l.objectives.length; s.data.won = true; s.save();
+  };
+  const DBG = [
+    ['Monete', [['+100', () => dbg.coins(100)], ['+1000', () => dbg.coins(1000)]]],
+    ['Obiettivi', [['Completa questo', () => dbg.skip(1)], ['+5', () => dbg.skip(5)], ['Completa livello', () => dbg.finishLevel()]]],
+    ['Sblocchi', [['Sblocca tutto', () => dbg.unlockAll()], ['Assumi aiutanti', () => dbg.hireAll()]]],
+    ['Partita', [['Chiama ospite', () => dbg.callGuest()], ['Riempi fuochi', () => dbg.fillFuel()], ['Zaino pieno', () => dbg.fillBag()], ['Banco pieno', () => dbg.fillStand()]]],
+    ['Vai a…', [['Casetta', () => dbg.go('casetta')], ['Bosco', () => dbg.go('bosco')], ['Banco', () => dbg.go('banco')], ['Sentiero', () => dbg.go('sentiero')], ['Lago', () => dbg.go('lago')]]],
+    ['Strumenti', [['Velocità x2', () => dbg.fast(!nowOn().fast), () => nowOn().fast], ['Mostra FPS', () => dbg.showFps(!nowOn().fps), () => nowOn().fps]]],
+    ['Stagioni', [['Inverno', () => forceLevel('inverno')], ['Estate', () => forceLevel('estate')], ['Segna inverno completato', () => markWon('inverno')], ['Segna estate completata', () => markWon('estate')]]],
+    ['Suoni', ['chop', 'log', 'coin', 'cup', 'buy', 'goal', 'guest', 'cold', 'tree'].map(n => [n, () => audio.sfx(n)])],
+    ['Pericolo', [['Azzera TUTTO', () => { if (dbgMsg === 'Tocca ancora per azzerare tutto') { R.levels && ORDER.forEach(id => { try { localStorage.removeItem(R.levels[id].saveKey); localStorage.removeItem(R.levels[id].saveKey + '-bak'); } catch (e) { /* ignorato */ } }); location.reload(); } else dbgMsg = 'Tocca ancora per azzerare tutto'; }]]]
+  ];
+  const dbgActs = [];
+  function debugPanel() {
+    dbgActs.length = 0;
+    return DBG.map(([title, items]) => `<div class="dbgrow"><b>${title}</b><div>${items.map(it => {
+      dbgActs.push(it[1]); const on = it[2] && it[2]();
+      return `<button class="mini${on ? ' on' : ''}" data-act="${dbgActs.length - 1}">${it[0]}</button>`;
+    }).join('')}</div></div>`).join('') + `<div class="lact" id="dbgMsg">${dbgMsg}</div>`;
+  }
   function renderMenu() {
     const S = state.data;
     $('menuBody').innerHTML =
       `<h2>Il tuo cammino</h2>${ORDER.map(id => levelRow(R.levels[id])).join('')}` +
       `<div class="stats"><div><b>${S.coins}</b><span>monete</span></div><div><b>${S.guests}</b><span>ospiti</span></div><div><b>${S.wood}</b><span>legna</span></div><div><b>${S.cocoa}</b><span>bevande</span></div></div>` +
       `<h2>Impostazioni</h2>${toggle('sfx', 'Suoni')}${slider('sfxVol', 'Volume suoni')}${toggle('music', 'Musica')}${slider('musVol', 'Volume musica')}` +
-      `<div class="row"><button class="btn ghost" id="menuReset">${confirmReset ? 'Sicuro? Tocca di nuovo' : 'Ricomincia questo livello'}</button></div>`;
+      (levelDone() ? '' : `<div class="row"><button class="btn ghost" id="menuReset">${confirmReset ? 'Sicuro? Tocca di nuovo' : 'Ricomincia questa stagione'}</button></div>`) +
+      (SHOW_DEBUG || debug ? `<div class="row"><button class="btn ghost" id="dbgToggle">🛠 Debug ${showDbg ? '▲' : '▼'}</button></div>${showDbg ? `<div class="dbg">${debugPanel()}</div>` : ''}` : '');
   }
-  function openMenu() { confirmReset = false; renderMenu(); $('menu').classList.remove('hidden'); game.pause(true); audio.sfx('click'); }
+  function openMenu() { confirmReset = false; dbgMsg = ''; renderMenu(); $('menu').classList.remove('hidden'); game.pause(true); audio.sfx('click'); }
   function closeMenu() { $('menu').classList.add('hidden'); game.pause(false); audio.sfx('click'); }
   $('menuBtn').onclick = openMenu; $('menuClose').onclick = closeMenu;
   $('menuBody').addEventListener('click', e => {
     const t = e.target.closest('button'); if (!t) return;
-    if (t.dataset.go) goLevel(t.dataset.go);
-    else if (t.dataset.tg) { audio.set(t.dataset.tg, !audio.state[t.dataset.tg]); audio.unlock(); renderMenu(); audio.sfx('click'); }
+    if (t.dataset.tg) { audio.set(t.dataset.tg, !audio.state[t.dataset.tg]); audio.unlock(); renderMenu(); audio.sfx('click'); }
     else if (t.id === 'menuReset') { if (confirmReset) reset(); else { confirmReset = true; renderMenu(); } }
+    else if (t.id === 'dbgToggle') { showDbg = !showDbg; renderMenu(); }
+    else if (t.dataset.act != null) {
+      const before = dbgMsg; dbgActs[+t.dataset.act](); if (dbgMsg === before) dbgMsg = 'Fatto: ' + t.textContent;
+      const y = $('menu').scrollTop; renderMenu(); $('menu').scrollTop = y;
+    }
   });
   $('menuBody').addEventListener('input', e => { const k = e.target.dataset.vol; if (k) audio.set(k, +e.target.value); });
   $('menuBody').addEventListener('change', e => { if (e.target.dataset.vol) audio.sfx('coin'); });
@@ -96,7 +128,7 @@
     const check = () => fetch(remote.api, { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(j => {
       if (!j || !j.sha || j.sha === remote.sha) return;
       const b = $('update'); b.hidden = false;
-      b.onclick = () => { game.save(); try { sessionStorage.setItem(NEXT_KEY, level.id); } catch (e) { /* ignorato */ } location.reload(); }; // resta nella stagione in corso
+      b.onclick = () => { game.save(); location.reload(); };
     }).catch(() => { /* senza rete si riprova più tardi */ });
     setInterval(check, 90000);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });

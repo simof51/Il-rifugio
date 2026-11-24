@@ -74,6 +74,11 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;backgrou
 .set input[type=range]{flex:1;max-width:190px;accent-color:#e8452f;height:32px}
 .tg{font:inherit;font-weight:700;font-size:16px;border:0;border-radius:14px;min-width:64px;min-height:40px;background:#dde6ef;color:var(--ink);box-shadow:0 3px 0 #b8c6d4;cursor:pointer}
 .tg.on{background:#4cd964;color:#fff;box-shadow:0 3px 0 #2fa645}
+.dbg{background:#fff;border:3px dashed #b8c6d4;border-radius:18px;padding:8px 10px;margin:10px 0}
+.dbgrow{margin:8px 0}.dbgrow b{display:block;font-size:13px;color:#5b6b7c;margin-bottom:4px}
+.dbgrow div{display:flex;flex-wrap:wrap;gap:6px}
+.mini.on{background:#4cd964;box-shadow:0 3px 0 #2fa645}
+.dbg .mini{font-size:13px;padding:5px 10px;min-height:32px}
 .lv:disabled{opacity:.55}
 .levels{display:flex;gap:10px;margin:0 0 14px}
 .lv{font:inherit;font-weight:600;font-size:17px;border:3px solid #fff;border-radius:16px;padding:8px 14px;background:#eef2f6;color:var(--ink);box-shadow:0 3px 0 #cfd8e2;flex:1;min-height:44px}

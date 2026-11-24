@@ -21,6 +21,7 @@
       bed: M(0xfff1da), blanket: M(0x3d8bff), gold: M(0xffc83a, { shininess: 60, specular: 0x887733 }), cup: M(theme.cup || 0xd0502e),
       cocoa: M(theme.cupLiquid || 0x5a3220), steel: M(0xc4ccd6, { shininess: 50, specular: 0x555555 }),
       water: M(theme.water || 0x4fc3f7, { shininess: 80, specular: 0xaaddff, transparent: true, opacity: 0.88 }), sand: M(0xf1dca0),
+      pants: M(0x38487a), boots: M(0x5a3b2a), belt: M(0x3a2a20),
       white: M(0xffffff), pink: M(0xff9bb5), yellow: M(0xffd23a), orange: M(0xff9a2a),
       pad: new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 }),
       ghost: M(0xe6b27a, { transparent: true, opacity: 0.3 }),
@@ -149,13 +150,14 @@
     }
     // Braccio con gomito: spalla (sh) → braccio → gomito (el) → avambraccio → mano.
     const UP = 0.24, FORE = 0.24;
-    function arm(parent, x, y, r, m) {
+    function arm(parent, x, y, r, m, handM) {
       const sh = new T.Group(); sh.position.set(x, y, 0); sh.rotation.order = 'YXZ'; parent.add(sh);
-      cyl(r, r, UP, m, 0, -UP / 2, 0, sh, 10);
+      cyl(r, r * 0.95, UP, m, 0, -UP / 2, 0, sh, 10);
       ball(r * 1.05, m, 0, -UP, 0, sh, 10, 8); // gomito
       const el = new T.Group(); el.position.y = -UP; sh.add(el);
-      cyl(r * 0.92, r * 0.92, FORE, m, 0, -FORE / 2, 0, el, 10);
-      ball(r * 1.35, mats.skin, 0, -FORE - 0.02, 0, el, 10, 8); // mano
+      cyl(r * 0.95, r * 0.85, FORE, m, 0, -FORE / 2, 0, el, 10);
+      cyl(r * 1.05, r * 1.05, 0.04, handM || mats.skin, 0, -FORE + 0.01, 0, el, 10); // polsino
+      ball(r * 1.45, handM || mats.skin, 0, -FORE - 0.03, 0, el, 10, 8); // mano (guanto)
       return { sh, el };
     }
     // Ascia nella mano destra: il manico prosegue l'avambraccio, la lama guida il colpo.
@@ -176,24 +178,40 @@
       { geo: cached('eyeH', () => new T.SphereGeometry(0.016, 6, 5)), x: 0.12, y: 0.045, z: 0.305, color: 0xffffff },
       { geo: cached('cheek', () => new T.SphereGeometry(0.05, 8, 6)), x: -0.19, y: -0.07, z: 0.2, s: [1, 0.7, 0.4], color: 0xff8fa8 },
       { geo: cached('cheek', () => new T.SphereGeometry(0.05, 8, 6)), x: 0.19, y: -0.07, z: 0.2, s: [1, 0.7, 0.4], color: 0xff8fa8 },
-      { geo: cached('smile', () => new T.TorusGeometry(0.07, 0.014, 6, 12, Math.PI).rotateZ(Math.PI)), x: 0, y: -0.07, z: 0.285, color: 0x7a2f2f }
+      { geo: cached('smile', () => new T.TorusGeometry(0.07, 0.014, 6, 12, Math.PI).rotateZ(Math.PI)), x: 0, y: -0.07, z: 0.285, color: 0x7a2f2f },
+      { geo: cached('nose', () => new T.SphereGeometry(0.04, 8, 6)), x: 0, y: -0.01, z: 0.295, color: 0xffbd96 },
+      { geo: cached('ear', () => new T.SphereGeometry(0.06, 8, 6)), x: -0.295, y: 0, z: 0, s: [0.55, 1, 0.8], color: 0xffd0a8 },
+      { geo: cached('ear', () => new T.SphereGeometry(0.06, 8, 6)), x: 0.295, y: 0, z: 0, s: [0.55, 1, 0.8], color: 0xffd0a8 }
     ]));
+    // Busto più umano: una sola forma tornita con spalle, torace, vita stretta e fianchi (poi appiattita davanti-dietro).
+    const torsoGeo = () => cached('torso', () => new T.LatheGeometry([
+      [0.001, 0], [0.17, 0.01], [0.215, 0.1], [0.2, 0.2], [0.165, 0.34], [0.19, 0.5], [0.225, 0.64], [0.2, 0.72], [0.1, 0.78], [0.001, 0.79]
+    ].map(p => new T.Vector2(p[0], p[1])), 20).scale(1, 1, 0.78));
     // Omino stile "stickman": busto stretto, testa grande, sciarpa, berretto con pon pon, arti sottili con gomiti.
     // Il busto (up) sta su un perno all'altezza dei fianchi: si inclina e ruota quando taglia o lancia.
     const HIP = 0.42;
+    const roundBootGeo = () => roundBoxGeo(0.14, 0.1, 0.24, 0.04);
     function person(coat, hat, withAxe) {
       const g = new T.Group();
       const coatM = tint(coat), hatM = tint(hat);
-      const legs = [limb(g, -0.1, HIP, 0.07, 0.38, mats.dark), limb(g, 0.1, HIP, 0.07, 0.38, mats.dark)];
+      // gambe con pantaloni e scarponcini
+      const legs = [-1, 1].map(s => {
+        const leg = limb(g, s * 0.09, HIP, 0.075, 0.4, mats.pants);
+        const boot = new T.Mesh(roundBootGeo(), mats.boots); boot.position.set(0, -0.375, 0.05); boot.castShadow = true; leg.add(boot);
+        return leg;
+      });
       const up = new T.Group(); up.position.y = HIP; g.add(up);
-      cyl(0.19, 0.21, 0.74, coatM, 0, 0.8 - HIP, 0, up);
-      ball(0.19, coatM, 0, 1.17 - HIP, 0, up).scale.y = 0.35; // spalle arrotondate
-      const scarf = new T.Mesh(cached('scarf', () => new T.TorusGeometry(0.2, 0.06, 8, 16).rotateX(Math.PI / 2)), hatM); scarf.position.y = 1.22 - HIP; scarf.castShadow = true; up.add(scarf);
+      // giaccone: busto tornito, cintura con fibbia, bottoni e sciarpa al collo
+      const torso = new T.Mesh(torsoGeo(), coatM); torso.castShadow = true; up.add(torso);
+      const belt = new T.Mesh(cached('belt', () => new T.TorusGeometry(0.172, 0.022, 6, 18).rotateX(Math.PI / 2)), mats.belt); belt.position.y = 0.34; belt.scale.z = 0.78; up.add(belt);
+      box(0.07, 0.06, 0.03, mats.gold, 0, 0.34, 0.138, up, 0.01);
+      [0.47, 0.57, 0.67].forEach((by, k) => ball(0.022, mats.gold, 0, by, 0.148 + k * 0.007, up, 6, 5));
+      const scarf = new T.Mesh(cached('scarf', () => new T.TorusGeometry(0.15, 0.062, 8, 16).rotateX(Math.PI / 2)), hatM); scarf.position.y = 0.76; scarf.castShadow = true; up.add(scarf);
       ball(0.3, mats.skin, 0, 1.52 - HIP, 0, up);
       const face = new T.Mesh(faceGeo(), mats.face); face.position.y = 1.52 - HIP; up.add(face);
       const cap = new T.Mesh(cached('cap', () => new T.SphereGeometry(0.32, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.42)), hatM); cap.position.y = 1.57 - HIP; cap.castShadow = true; up.add(cap);
       const pom = new T.Mesh(cached('pom', () => new T.SphereGeometry(0.085, 12, 10)), mats.white); pom.position.y = 1.94 - HIP; up.add(pom);
-      const arms = [-1, 1].map(side => arm(up, side * 0.27, 1.15 - HIP, 0.06, coatM));
+      const arms = [-1, 1].map(side => arm(up, side * 0.255, 1.15 - HIP, 0.062, coatM, hatM));
       Object.assign(g.userData, {
         legs, up, arms: arms.map(a => a.sh), elbows: arms.map(a => a.el), axe: withAxe ? axe(arms[1].el) : null,
         ph: 0, t: Math.random() * 6, mv: 0, chopT: 0, chopDur: 1, ck: 1, cb: 0, tossT: 0, tossDur: 1, tk: 1, tb: 0

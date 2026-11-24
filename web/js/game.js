@@ -310,39 +310,113 @@
     cocoa.g.visible = false;
     function openCocoa() { if (cocoa.open) return; cocoa.open = true; cocoa.g.visible = true; cols.push([9.9, 12.1, -7.35, -6.25]); }
 
+    // --- percorsi per gli aiutanti -------------------------------------------
+    // Griglia di 0,5 m sul mondo: una cella è chiusa se è vicina a un ostacolo (muri, letti, camino, banco, lago, alberi, mascotte).
+    // I percorsi si trovano con A* (8 direzioni, niente angoli tagliati) e si accorciano togliendo i punti inutili (linea di vista).
+    // La griglia si ricostruisce da sola quando gli ostacoli cambiano (stanza aperta, parete tolta, banco, mascotte).
+    const CELL = 0.5, MARGIN = 0.48, GX0 = P.world_min[0], GZ0 = P.world_min[1];
+    const GW = Math.ceil((P.world_max[0] - GX0) / CELL) + 1, GH = Math.ceil((P.world_max[1] - GZ0) / CELL) + 1;
+    const grid = new Uint8Array(GW * GH), gScore = new Float32Array(GW * GH), came = new Int32Array(GW * GH);
+    let gridSig = -1;
+    const clampI = (v, n) => Math.max(0, Math.min(n - 1, v));
+    function buildGrid() {
+      grid.fill(0);
+      for (const c of cols) {
+        const x0 = clampI(Math.floor((c[0] - MARGIN - GX0) / CELL), GW), x1 = clampI(Math.ceil((c[1] + MARGIN - GX0) / CELL), GW);
+        const z0 = clampI(Math.floor((c[2] - MARGIN - GZ0) / CELL), GH), z1 = clampI(Math.ceil((c[3] + MARGIN - GZ0) / CELL), GH);
+        for (let iz = z0; iz <= z1; iz++) for (let ix = x0; ix <= x1; ix++) {
+          const cx = GX0 + ix * CELL, cz = GZ0 + iz * CELL;
+          const qx = Math.max(c[0], Math.min(cx, c[1])), qz = Math.max(c[2], Math.min(cz, c[3]));
+          if (Math.hypot(cx - qx, cz - qz) < MARGIN) grid[iz * GW + ix] = 1;
+        }
+      }
+      gridSig = cols.length;
+    }
+    const cellX = x => clampI(Math.round((x - GX0) / CELL), GW), cellZ = z => clampI(Math.round((z - GZ0) / CELL), GH);
+    const blockedAt = (x, z) => grid[cellZ(z) * GW + cellX(x)] === 1;
+    function lineClear(ax, az, bx, bz) {
+      const n = Math.ceil(Math.hypot(bx - ax, bz - az) / 0.2);
+      for (let i = 1; i < n; i++) { const t = i / n; if (blockedAt(ax + (bx - ax) * t, az + (bz - az) * t)) return false; }
+      return true;
+    }
+    // La cella libera più vicina all'obiettivo (che può stare dentro un albero): fra quelle a pari distanza, la più vicina a chi parte.
+    function freeGoal(tx, tz, sx, sz) {
+      const gx = cellX(tx), gz = cellZ(tz);
+      if (!grid[gz * GW + gx]) return [gx, gz];
+      for (let r = 1; r <= 8; r++) {
+        let best = null, bd = 1e9;
+        for (let iz = gz - r; iz <= gz + r; iz++) for (let ix = gx - r; ix <= gx + r; ix++) {
+          if (ix < 0 || iz < 0 || ix >= GW || iz >= GH || Math.max(Math.abs(ix - gx), Math.abs(iz - gz)) !== r || grid[iz * GW + ix]) continue;
+          const d = Math.hypot(GX0 + ix * CELL - sx, GZ0 + iz * CELL - sz);
+          if (d < bd) { bd = d; best = [ix, iz]; }
+        }
+        if (best) return best;
+      }
+      return null;
+    }
+    // Percorso da (sx, sz) a (tx, tz): lista di punti {x, z} (senza il punto di partenza), vuota se non si trova niente.
+    function findPath(sx, sz, tx, tz) {
+      if (gridSig !== cols.length) buildGrid();
+      const goal = freeGoal(tx, tz, sx, sz); if (!goal) return [];
+      const s0 = cellZ(sz) * GW + cellX(sx), g0 = goal[1] * GW + goal[0];
+      gScore.fill(1e9); came.fill(-1); gScore[s0] = 0;
+      // coda con priorità (heap binario)
+      const hp = [], hf = [];
+      const push = (i, f) => { let k = hp.length; hp.push(i); hf.push(f); while (k > 0) { const q = (k - 1) >> 1; if (hf[q] <= hf[k]) break; [hp[q], hp[k]] = [hp[k], hp[q]]; [hf[q], hf[k]] = [hf[k], hf[q]]; k = q; } };
+      const pop = () => {
+        const top = hp[0], li = hp.pop(), lf = hf.pop();
+        if (hp.length) { hp[0] = li; hf[0] = lf; let k = 0; for (;;) { let m = k; const a = 2 * k + 1, b = a + 1; if (a < hp.length && hf[a] < hf[m]) m = a; if (b < hp.length && hf[b] < hf[m]) m = b; if (m === k) break; [hp[m], hp[k]] = [hp[k], hp[m]]; [hf[m], hf[k]] = [hf[k], hf[m]]; k = m; } }
+        return top;
+      };
+      const gx = goal[0], gz = goal[1], heur = (ix, iz) => { const dx = Math.abs(ix - gx), dz = Math.abs(iz - gz); return Math.max(dx, dz) + 0.414 * Math.min(dx, dz); };
+      push(s0, heur(s0 % GW, (s0 / GW) | 0));
+      let found = false, steps = 0;
+      while (hp.length && steps++ < 12000) {
+        const cur = pop(); if (cur === g0) { found = true; break; }
+        const cx = cur % GW, cz = (cur / GW) | 0;
+        for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
+          if (!dx && !dz) continue;
+          const nx = cx + dx, nz = cz + dz; if (nx < 0 || nz < 0 || nx >= GW || nz >= GH) continue;
+          const ni = nz * GW + nx; if (grid[ni]) continue;
+          if (dx && dz && (grid[cz * GW + nx] || grid[nz * GW + cx])) continue; // niente angoli tagliati
+          const ng = gScore[cur] + (dx && dz ? 1.414 : 1);
+          if (ng < gScore[ni]) { gScore[ni] = ng; came[ni] = cur; push(ni, ng + heur(nx, nz)); }
+        }
+      }
+      if (!found) return [];
+      const pts = []; for (let i = g0; i !== -1; i = came[i]) pts.push({ x: GX0 + (i % GW) * CELL, z: GZ0 + ((i / GW) | 0) * CELL });
+      pts.reverse(); // dal punto di partenza all'arrivo
+      // si tolgono i punti intermedi quando c'è visuale libera fra due punti lontani
+      const out = []; let i = 0;
+      while (i < pts.length - 1) { let j = pts.length - 1; while (j > i + 1 && !lineClear(pts[i].x, pts[i].z, pts[j].x, pts[j].z)) j--; out.push(pts[j]); i = j; }
+      return out;
+    }
+
     // --- aiutanti: boscaioli e camerieri ------------------------------------
-    // Come l'omino del giocatore, urtano contro muri, letti, alberi e lago (collide). Se restano bloccati per mezzo secondo
-    // fanno una deviazione laterale e riprovano. Un boscaiolo e un cameriere al massimo per ogni stanza.
+    // Come l'omino del giocatore, urtano contro muri, letti, alberi e lago (collide), ma prima cercano un percorso che li evita.
+    // Un boscaiolo e un cameriere al massimo per ogni stanza.
     const helpers = [], waiters = [];
     const HCOL = [0x3fae6e, 0x2f7bd6, 0xd0883a];
-    // Cammina verso (tx, tz) evitando gli ostacoli; true quando è arrivato.
+    // Cammina verso (tx, tz) lungo il percorso trovato; true quando è arrivato (o è arrivato alla cella libera più vicina).
+    // Il percorso si ricalcola se la meta cambia o se resta bloccato per più di un secondo.
     function nav(h, tx, tz, sp, dt, stop) {
-      const g = h.g, p = g.position, bx = p.x, bz = p.z;
-      let detouring = false;
-      if (h.detour > 0) { h.detour -= dt; tx = h.dx; tz = h.dz; stop = 0.3; detouring = true; }
-      else {
-        const t0 = tx, z0 = tz;
-        // Dentro una stanza si esce prima dal varco davanti (fra i letti), come farebbe il giocatore: andare dritto contro letti e camino lo blocca.
-        for (const r of rooms) {
-          if (r.open && p.z < -4.2 && Math.abs(p.x - r.cx) < RW / 2 + 0.3 && !(tz < -4.2 && Math.abs(tx - r.cx) < RW / 2 + 0.3)) { tx = Math.max(r.cx - 0.4, Math.min(r.cx + 0.4, p.x)); tz = -3.2; stop = 0.2; break; }
+      const g = h.g, p = g.position;
+      if (Math.hypot(p.x - tx, p.z - tz) <= stop) { h.route = null; B.walk(g, 0, dt); return true; }
+      if (!h.route || Math.abs(h.gx - tx) > 0.4 || Math.abs(h.gz - tz) > 0.4 || h.sig !== cols.length) {
+        h.route = findPath(p.x, p.z, tx, tz); h.gx = tx; h.gz = tz; h.sig = cols.length; h.stuck = 0;
+        if (!h.route.length) { // nessun percorso: ci riprova fra poco, intanto resta fermo
+          h.route = null; h.wait = (h.wait || 0) + dt; B.walk(g, 0, dt); return h.wait > 3 ? (h.wait = 0, true) : false;
         }
-        if (tx !== t0 || tz !== z0) detouring = true; // la tappa intermedia non conta come arrivo
       }
-      const arrived = B.moveTo(g, tx, tz, sp, dt, stop);
+      const wp = h.route[0], bx = p.x, bz = p.z;
+      if (B.moveTo(g, wp.x, wp.z, sp, dt, 0.2)) { h.route.shift(); if (!h.route.length) { h.route = null; return true; } }
       collide(p);
-      if (!arrived) {
-        if (Math.hypot(p.x - bx, p.z - bz) < sp * dt * 0.35) h.stuck = (h.stuck || 0) + dt; else h.stuck = 0;
-        if (h.stuck > 0.5) {
-          h.stuck = 0;
-          const a = Math.atan2(tx - p.x, tz - p.z) + (Math.random() < 0.5 ? 1 : -1) * (1.2 + Math.random() * 0.6);
-          h.dx = p.x + Math.sin(a) * 2.5; h.dz = p.z + Math.cos(a) * 2.5; h.detour = 0.9;
-        }
-      } else h.stuck = 0;
-      return arrived && !detouring;
+      if (Math.hypot(p.x - bx, p.z - bz) < sp * dt * 0.3) { h.stuck = (h.stuck || 0) + dt; if (h.stuck > 1) { h.route = null; h.stuck = 0; } } else h.stuck = 0;
+      return false;
     }
     function navPath(h, sp, dt) {
       if (!h.path.length) return true;
-      if (nav(h, h.path[0][0], h.path[0][1], sp, dt, 0.15)) h.path.shift();
+      if (nav(h, h.path[0][0], h.path[0][1], sp, dt, 0.25)) h.path.shift();
       return !h.path.length;
     }
     const needFuel = r => r.open && r.fuel + r.pend < 8;
@@ -500,6 +574,20 @@
       // (un aiutante è un oggetto "helper" o "waiter" legato alla stanza pd.room: rooms[pd.room] deve esistere)
     }
     const hasEffect = e => pads.some(p => p.effect === e && state.isBought(p.id));
+    // Usati dagli strumenti di prova: comprano uno sblocco (con quel che richiede) e rendono vero un obiettivo.
+    let speedMul = 1, fpsOn = false, fpsEl = null, fpsN = 0, fpsT = 0;
+    function buyPad(pd) {
+      if (!pd || state.isBought(pd.id)) return;
+      if (pd.needRoom != null) rooms[pd.needRoom].open || buyPad(pads.find(p => p.effect === 'room' && p.room === pd.needRoom));
+      if (pd.effect === 'waiter') buyPad(pads.find(p => p.effect === 'cocoa'));
+      S.paid[pd.id] = pd.cost; S.bought[pd.id] = true; applyEffect(pd);
+    }
+    function satisfy(o) {
+      if (!o) return;
+      if (o.bought) buyPad(pads.find(p => p.id === o.bought));
+      else if (o.stat === 'stars') S.happy = Math.max(S.happy, Math.ceil(o.n / P.star_per_guest));
+      else S[o.stat] = Math.max(S[o.stat] || 0, o.n);
+    }
 
     // --- giocatore ----------------------------------------------------------
     const player = B.person(0xf0503a, 0xffd23a, true); player.position.set(0, 0, 0);
@@ -509,7 +597,7 @@
     // Lo zaino ha due scomparti separati: legna e bevande.
     const logCap = () => hasEffect('bag2') ? P.bag_huge_logs : hasEffect('bag') ? P.bag_big_logs : P.bag_logs;
     const cupCap = () => hasEffect('bag2') ? P.bag_huge_cups : hasEffect('bag') ? P.bag_big_cups : P.bag_cups;
-    const speed = () => hasEffect('boots') ? P.speed_fast : P.speed_base;
+    const speed = () => (hasEffect('boots') ? P.speed_fast : P.speed_base) * speedMul;
     const chopInterval = () => P.chop_interval * (hasEffect('axe') ? P.axe_mul : 1);
     const burnMul = () => hasEffect('insul') ? P.insul_mul : 1;
     const cocoaInterval = () => hasEffect('cocoa2') ? P.cocoa2_interval : P.cocoa_interval;
@@ -806,7 +894,8 @@
     cam.position.set(0, 15, 12);
     let last = performance.now();
     function frame(now) {
-      const dt = Math.min(0.05, (now - last) / 1000); last = now;
+      const raw = (now - last) / 1000, dt = Math.min(0.05, raw); last = now;
+      if (fpsOn) { fpsN++; fpsT += raw; if (fpsT >= 0.5) { fpsEl.textContent = Math.round(fpsN / fpsT) + ' fps'; fpsN = 0; fpsT = 0; } }
       if (running && !paused) { update(dt); tickLater(dt); updateFlyers(dt); updateParts(dt); }
       anim(dt); renderer.render(scene, cam); overlays(dt); refreshHud();
       requestAnimationFrame(frame);
@@ -818,8 +907,32 @@
       resume() { running = true; },
       pause(on) { paused = !!on; if (on) { endJoy(); save(); } },
       save,
-      // Solo per le prove (si attiva aprendo la pagina con ?debug): sposta l'omino e dà monete.
-      debug: { player, S, carry, trees, rooms, helpers, waiters, guests, cocoa, openRoom, openCocoa, spawnHelper, spawnWaiter, spawnGuest, tp(x, z) { player.position.x = x; player.position.z = z; }, coins(n) { S.coins += n; } }
+      // Strumenti di prova (menu Debug e `window.rifugioDebug` con ?debug).
+      debug: {
+        player, S, carry, trees, rooms, helpers, waiters, guests, cocoa, openRoom, openCocoa, spawnHelper, spawnWaiter, spawnGuest,
+        tp(x, z) { player.position.x = x; player.position.z = z; },
+        coins(n) { S.coins += n; },
+        // porta l'omino in un punto utile
+        go(where) {
+          if (where === 'casetta') this.tp(0, -3);
+          else if (where === 'banco') this.tp(11, -4.6);
+          else if (where === 'sentiero') this.tp(10, 1.2);
+          else if (where === 'bosco') { const t = trees.filter(t => t.logs > 0 && t.z > 4).sort((a, b) => Math.hypot(a.x - player.position.x, a.z - player.position.z) - Math.hypot(b.x - player.position.x, b.z - player.position.z))[0]; if (t) this.tp(t.x, t.z - 1.1); }
+          else if (where === 'lago' && lake) this.tp(lake.x + lake.r + 2, lake.z);
+        },
+        // completa l'obiettivo di turno (o i prossimi n): il ciclo di gioco li chiude subito
+        skip(n) { for (let k = 0; k < (n || 1); k++) satisfy(objectives[S.done + k]); },
+        finishLevel() { objectives.slice(S.done).forEach(satisfy); },
+        unlockAll() { pads.forEach(buyPad); },
+        callGuest() { if (!S.fed) S.fed = 1; spawnGuest(); },
+        fillFuel() { rooms.forEach(r => { if (r.open) r.fuel = P.fuel_max; }); },
+        fillBag() { carry.logs = logCap(); carry.cups = cupCap(); refreshStack(); },
+        fillStand() { if (cocoa.open) cocoa.cups = cocoaMax(); },
+        hireAll() { pads.forEach(pd => { if (pd.effect === 'helper' || pd.effect === 'waiter') buyPad(pd); }); },
+        fast(on) { speedMul = on ? 2 : 1; },
+        showFps(on) { fpsOn = !!on; if (!fpsEl) { fpsEl = document.createElement('div'); fpsEl.style.cssText = 'position:fixed;left:8px;bottom:8px;background:rgba(0,0,0,.6);color:#fff;font:12px monospace;padding:3px 6px;border-radius:6px;z-index:50'; document.body.appendChild(fpsEl); } fpsEl.hidden = !on; },
+        info() { return { fast: speedMul > 1, fps: fpsOn, done: S.done, total: objectives.length }; }
+      }
     };
   };
 })(window.Rifugio);

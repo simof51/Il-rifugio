@@ -9,6 +9,29 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.5.9 · 2026-11-24 · Percorsi senza intoppi, menu Debug, stagione automatica, omini più umani
+
+**Richiesto**
+- Camerieri e boscaioli restano incastrati: devono fare un percorso che evita gli ostacoli.
+- Menu di debug per provare le funzioni.
+- All'avvio non si sceglie la stagione; una volta completata non si torna indietro.
+- Busti più umani e vestiti migliori.
+
+**Modificato**
+| File | Cosa |
+|---|---|
+| `web/js/game.js` | Percorsi con A* su una griglia di 0,5 m (muri, letti, camino, banco, lago, alberi e mascotte sono chiusi con un margine di 0,48 m), percorso accorciato con la linea di vista e ricalcolato se la meta cambia o se restano fermi più di un secondo. La griglia si rifà da sola quando gli ostacoli cambiano. Sostituisce il vecchio "gira largo a caso". Strumenti di prova nell'oggetto `debug` (monete, obiettivi, sblocchi, aiutanti, ospiti, fuochi, zaino, teletrasporto, velocità x2, FPS). |
+| `web/js/main.js` | La stagione si sceglie da sola: la prima non completata (inverno, poi estate). Tolta la scelta dalla finestra iniziale e i pulsanti "Gioca" dal menu. Una stagione completata non si può più riaprire né ricominciare ("Ricomincia" sparisce). Nuovo menu **🛠 Debug** dentro il menu ☰. `SHOW_DEBUG` (in cima al file) lo spegne per la pubblicazione. |
+| `web/js/build.js` | Omini: busto tornito con spalle, vita stretta e fianchi; giaccone con cintura e fibbia, bottoni, sciarpa; pantaloni e scarponcini; guanti con polsino; naso e orecchie. |
+| `web/index.html`, `css/style.css`, `sw.js` | Tolti scelta stagione e "Ricomincia" dalla vittoria; stile del menu Debug; `CACHE` v11. |
+
+**Menu Debug**: +100/+1000 monete; completa obiettivo, +5, completa livello; sblocca tutto, assumi aiutanti; chiama ospite, riempi fuochi, zaino e banco; vai a casetta, bosco, banco, sentiero, lago; velocità x2, FPS; forza Inverno o Estate, segna una stagione come completata; prova dei suoni; azzera tutto (conferma con un secondo tocco).
+
+**Per tornare indietro**
+- `git checkout b620530 -- web`
+
+---
+
 ## v0.5.8 · 2026-11-24 · Camerieri, un boscaiolo per stanza, menu con suoni e musica, si parte dall'inverno
 
 **Richiesto**
