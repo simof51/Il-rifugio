@@ -9,6 +9,26 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.5.2 · 2026-11-24 · L'app richiede internet per avviarsi
+
+**Richiesto**
+- L'app deve avere internet per avviarsi e deve essere aggiornata; altrimenti mostra un errore con i tasti "Riprova" ed "Esci".
+
+**Modificato**
+| File | Cosa |
+|---|---|
+| `app/boot/index.html` | Tolti i ripieghi offline (ultimo commit salvato e copia del gioco nell'APK). Se non riesce a leggere l'ultimo commit o a scaricare il gioco, mostra "Serve internet" con **Riprova** ed **Esci**. Attesa massima per GitHub da 6 a 10 secondi. |
+| `app/package.json` | Aggiunto `@capacitor/app` 8.1.2, che serve al tasto Esci (`exitApp`). |
+
+**Nota**
+- Serve un nuovo APK (cambia `app/`): lo costruisce GitHub Actions al push.
+- Senza rete l'app non parte più. Per il Play Store va ricontrollato: codice scaricato da fuori non è ammesso.
+
+**Per tornare indietro**
+- `git checkout 338ff57 -- app/boot/index.html app/package.json`
+
+---
+
 ## v0.5.1 · 2026-11-24 · Il camino pieno non accetta più legna
 
 **Richiesto**

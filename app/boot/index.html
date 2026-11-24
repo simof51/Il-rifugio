@@ -9,15 +9,23 @@
   #boot{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:0 24px;box-sizing:border-box}
   #boot b{font-size:28px}
   #boot span{color:#4a5a6b;font-size:14px}
+  #boot .row{display:none;gap:12px;margin-top:8px}
+  #boot.err .row{display:flex}
+  #boot.err b{color:#9b2c2c}
+  #boot button{font:600 16px system-ui,sans-serif;padding:12px 24px;border:0;border-radius:12px;background:#2b6cb0;color:#fff}
+  #boot button.sec{background:#fff;color:#1f2a37}
 </style>
 </head>
 <body>
-<div id="boot"><b>Il Rifugio</b><span id="msg">Cerco l'ultima versione…</span></div>
+<div id="boot"><b id="title">Il Rifugio</b><span id="msg">Cerco l'ultima versione…</span>
+  <div class="row"><button id="retry">Riprova</button><button id="quit" class="sec">Esci</button></div>
+</div>
 <script>
 // Caricatore dell'app Android.
 // All'avvio chiede a GitHub qual è l'ultimo commit del branch di sviluppo e scarica da lì i file del gioco (cartella web/),
-// così ogni modifica pubblicata arriva sul telefono senza reinstallare l'APK. I file scaricati restano in cache per commit:
-// senza rete si usa l'ultima versione scaricata, e se non c'è nemmeno quella la copia del gioco inclusa nell'APK (game/).
+// così ogni modifica pubblicata arriva sul telefono senza reinstallare l'APK. I file scaricati restano in cache per commit,
+// ma l'app si avvia solo se riesce a sapere qual è l'ultimo commit: senza rete (o senza una versione aggiornata)
+// mostra un errore con i tasti Riprova ed Esci. La copia in game/ serve solo per librerie, font e icone.
 (function () {
   'use strict';
   var REPO = 'simof51/Il-rifugio';
@@ -29,20 +37,28 @@
   function withTimeout(p, ms) {
     return Promise.race([p, new Promise(function (_, no) { setTimeout(function () { no(new Error('timeout')); }, ms); })]);
   }
-  function local(why) {
-    try { console.warn('Uso la copia inclusa nell\'app:', why); } catch (e) {}
-    location.replace('game/index.html');
+  var boot = document.getElementById('boot'), title = document.getElementById('title');
+  function fail(why) {
+    try { console.warn('Avvio non riuscito:', why); } catch (e) {}
+    boot.className = 'err';
+    title.textContent = 'Serve internet';
+    msg.textContent = 'Il Rifugio ha bisogno di internet per avviarsi e aggiornarsi. Controlla la connessione e riprova.';
+  }
+  function quit() {
+    try { window.Capacitor.Plugins.App.exitApp(); return; } catch (e) {}
+    window.close();
+  }
+  function start() {
+    boot.className = '';
+    title.textContent = 'Il Rifugio';
+    msg.textContent = 'Cerco l\'ultima versione…';
+    getSha().then(run).catch(fail);
   }
   function getSha() {
     // no-cache: il WebView rivalida con l'ETag, e le risposte 304 non consumano il limite di richieste di GitHub.
-    return withTimeout(fetch(API, { cache: 'no-cache' }), 6000)
+    return withTimeout(fetch(API, { cache: 'no-cache' }), 10000)
       .then(function (r) { if (!r.ok) throw new Error('GitHub ' + r.status); return r.json(); })
-      .then(function (j) { return j.sha; })
-      .catch(function (e) {
-        var last = null; try { last = localStorage.getItem(SHA_KEY); } catch (err) {}
-        if (!last) throw e;
-        return last;
-      });
+      .then(function (j) { return j.sha; });
   }
   function getText(url) {
     var store = window.caches ? caches.open(CACHE) : Promise.resolve(null);
@@ -104,7 +120,9 @@
     });
   }
 
-  getSha().then(run).catch(local);
+  document.getElementById('retry').addEventListener('click', start);
+  document.getElementById('quit').addEventListener('click', quit);
+  start();
 })();
 </script>
 </body>
