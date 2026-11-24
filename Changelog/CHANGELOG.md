@@ -9,6 +9,21 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.5.4 · 2026-11-24 · Firma fissa dell'APK
+
+**Problema**
+- Ogni APK costruito da GitHub Actions usciva con una chiave di firma diversa (verificato sui certificati degli APK v0.5, v0.5.2, v0.5.3): copiare `debug.keystore` in `~/.android` non bastava, e per aggiornare l'app bisognava disinstallarla perdendo i salvataggi.
+
+**Modificato**
+| File | Cosa |
+|---|---|
+| `.github/workflows/apk.yml` | La firma di debug è dichiarata nel `build.gradle` con `app/debug.keystore` (nome della chiave letto con `keytool`, password `android`). A fine build scrive l'impronta SHA-256 della firma nelle annotazioni della corsa, per controllare che sia sempre la stessa. |
+
+**Per tornare indietro**
+- `git checkout 93656ca -- .github/workflows/apk.yml`
+
+---
+
 ## v0.5.3 · 2026-11-24 · Gioco più fluido, avvio senza scritte, barra di aggiornamento
 
 **Richiesto**

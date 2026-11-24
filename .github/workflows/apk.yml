@@ -58,10 +58,29 @@ jobs:
       - name: Compila l'APK
         working-directory: app/android
         run: |
-          # Chiave di prova fissa: così ogni nuovo APK si installa sopra il precedente senza disinstallare.
-          mkdir -p ~/.android && cp ../debug.keystore ~/.android/debug.keystore
+          # Chiave di prova fissa (app/debug.keystore): così ogni nuovo APK si installa sopra il precedente senza disinstallare.
+          # La firma è dichiarata in modo esplicito nel build.gradle: copiare il file in ~/.android non bastava, ogni APK usciva con una chiave nuova.
+          ALIAS=$(keytool -list -keystore ../debug.keystore -storepass android 2>&1 | awk -F, '/PrivateKeyEntry/{print $1; exit}')
+          if [ -z "$ALIAS" ]; then echo "::error::Nessuna chiave in app/debug.keystore (password android)"; keytool -list -keystore ../debug.keystore -storepass android || true; exit 1; fi
+          echo "::notice::Firma con la chiave $ALIAS di app/debug.keystore"
+          cat >> app/build.gradle <<EOF
+
+          android {
+              signingConfigs {
+                  debug {
+                      storeFile file('../../debug.keystore')
+                      storePassword 'android'
+                      keyAlias '$ALIAS'
+                      keyPassword 'android'
+                  }
+              }
+          }
+          EOF
           ./gradlew assembleDebug --no-daemon --stacktrace
           cp app/build/outputs/apk/debug/app-debug.apk ../../il-rifugio.apk
+          # Impronta della firma: deve essere uguale in ogni build (visibile nelle annotazioni della corsa).
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | tail -1 || true)
+          if [ -n "$APKSIGNER" ]; then "$APKSIGNER" verify --print-certs ../../il-rifugio.apk | grep "SHA-256" | sed 's/^/::notice::Firma APK /' || true; fi
 
       - uses: actions/upload-artifact@v4
         with:
