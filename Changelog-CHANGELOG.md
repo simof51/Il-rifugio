@@ -1,0 +1,152 @@
+# Changelog: Il Rifugio
+
+Registro di tutto quello che aggiungiamo e modifichiamo, con le istruzioni per tornare indietro.
+Le voci più recenti stanno in cima.
+
+## Come usare questo registro
+- Ogni voce ha una versione, una data, cosa è cambiato e una sezione **Per tornare indietro**.
+- Prima di modificare un file esistente, la sua versione precedente viene copiata in `Changelog/backup/<data>_<descrizione>/`. Per annullare una modifica, ricopia il file dal backup al suo posto.
+- I file e le cartelle **nuovi** di una voce si annullano cancellandoli.
+- Il progetto non usa git. Se un giorno lo installiamo, questo registro resta valido e i backup diventano commit.
+
+---
+
+## v0.4 · 2026-11-24 · Grafica morbida, ascia orizzontale, abeti che reagiscono, stanze unite
+
+**Richiesto**
+- Grafica con linee più morbide e meno poligonali.
+- Colpo d'ascia orizzontale invece che verticale.
+- Abeti semitrasparenti quando ci si avvicina, per vedere sempre il personaggio.
+- Abeti che si muovono in base ai colpi invece di tremare.
+- Stanze nuove che si uniscono alle altre invece di restare separate.
+
+**Modificato**
+| File | Cosa |
+|---|---|
+| `web/js/build.js` | Riscritto. Materiali Phong (luce per pixel) al posto di Lambert. Scatole con spigoli arrotondati (`roundBoxGeo`). Cilindri a 24 segmenti invece di 6-10, sfere più fitte, spalle arrotondate, arti con estremità tonde. Le geometrie sono condivise in cache. Braccia con rotazione in ordine YXZ e colpo d'ascia orizzontale: braccia tese in avanti, carica di lato, colpo trasversale. Nuova ascia: il manico prosegue il braccio e la lama in acciaio guarda nella direzione del colpo. Ogni abete ha materiali propri (per la trasparenza), un gruppo `fall` che si inclina e cade attorno alla base e un ceppo `stump`. Nuova costante `HIT_AT` (momento in cui l'ascia tocca il tronco). |
+| `web/js/game.js` | Gli abeti reagiscono al momento dell'impatto: molla smorzata che li piega dalla parte opposta all'ascia, più forte a ogni colpo. All'ultimo colpo cadono, restano a terra circa 1 s, poi svaniscono lasciando il ceppo; ricrescono come prima. Gli abeti entro 2,2 m dal personaggio o fra lui e la camera scendono al 35 % di opacità con una sfumatura. Stanze larghe 6 m (prima 5 m, con 1 m di vuoto fra l'una e l'altra): quando due stanze vicine sono aperte la parete in comune e il suo ostacolo spariscono (`joinRooms`). Montagne, cumuli, fiamme e freccia con più segmenti. |
+| `web/sw.js` | Cache portata a `rifugio-cache-v3`. |
+| `rifugio-design.md` | Taglio, stanze unite e stile aggiornati. |
+
+**Verificato** nel browser integrato:
+- Forme visibilmente più morbide.
+- Abeti semitrasparenti attorno e davanti al personaggio.
+- Tre stanze aperte unite in un unico salone senza pareti interne.
+- Abete abbattuto: caduto a terra, poi ceppo.
+- Taglio continuo fino a 12/15.
+
+**Non verificato:** l'oscillazione a ogni colpo e il movimento dell'ascia, troppo rapidi per gli screenshot (vanno guardati giocando). Non è verificata neanche la fluidità su telefono, visto che Phong e geometrie più fitte pesano un po' di più.
+
+**Per tornare indietro a v0.3:** ricopia i file da `Changelog/backup/2026-11-24_grafica-morbida-ascia-stanze/` nelle stesse posizioni: `rifugio-design.md` nella radice, `sw.js` in `web/`, `build.js` e `game.js` in `web/js/`. Nessun file nuovo da cancellare.
+
+---
+
+## v0.3 · 2026-11-24 · Zaino più grande, braccia animate, tutto il bosco abbattibile
+
+**Richiesto**
+- Lo zaino iniziale porta almeno 15 pezzi di legna e 5 cioccolate.
+- I personaggi hanno le braccia, con animazioni di camminata e di taglio.
+- Tutti gli alberi visibili si possono abbattere.
+- Obiettivo dichiarato: pubblicazione sul Play Store con pubblicità e shop a pagamento.
+
+**Modificato**
+| File | Cosa |
+|---|---|
+| `web/js/levels/inverno.js` | Lo zaino ha due scomparti: `bag_logs: 15`, `bag_cups: 5`; con lo Zaino grande `bag_big_logs: 30`, `bag_big_cups: 10`. Al posto di `bag_base` (7), `bag_big` (14) e `max_cups` (3). Nuovi `forest_trees: 70` e limiti della mappa `world_min`/`world_max` (prima −15…18 × −9…14, ora −30…30 × −20…26). |
+| `web/js/build.js` | Braccia con mano, perno alla spalla; gambe con perno all'anca. Camminata con braccia opposte alle gambe. Colpo d'ascia (braccia alzate, poi colpo in avanti) con ascia che compare solo durante il taglio. Lo zaino impila la legna a strati di 3 tronchi e le cioccolate sopra, a file di 3. |
+| `web/js/game.js` | I 70 abeti del bosco esterno sono abbattibili e hanno collisioni, con almeno 1,4 m fra un albero e l'altro. Giocatore e boscaiolo si girano verso l'albero e fanno il colpo d'ascia. Capienze separate per legna e cioccolate. La mappa si allarga fino al bosco esterno. |
+| `web/js/hud.js`, `web/index.html` | Nuovo indicatore delle cioccolate (tazza, es. `0/5`), visibile dopo l'apertura del banco. La legna mostra `0/15`. |
+| `web/css/style.css` | Regola `[hidden]{display:none!important}`: senza, l'indicatore delle cioccolate restava visibile. |
+| `web/js/state.js` | **Bug corretto** (presente anche nel prototipo): "Ricomincia" cancellava il salvataggio, ma alla ricarica il salvataggio automatico lo riscriveva. Ora dopo il reset i salvataggi sono bloccati. |
+| `web/sw.js` | Cache portata a `rifugio-cache-v2`. |
+| `rifugio-design.md` | Zaino, taglio di tutti gli abeti, personaggi animati, nuova sezione "Pubblicazione", prossimi passi aggiornati (Capacitor per AdMob e acquisti). |
+| `CLAUDE.md` | Obiettivo Play Store con pubblicità e shop. |
+
+**Verificato** nel browser integrato:
+- Pagina di prova con i personaggi da vicino: camminata, ascia alzata, colpo in avanti, zaino pieno (15 + 5). La pagina è stata cancellata dopo la prova.
+- Nel gioco:
+  - Un abete grande del bosco esterno abbattuto fino al ceppo (4 pezzi, contatore `4/15`).
+  - "Ricomincia" che ora azzera davvero la partita.
+  - Indicatore delle cioccolate nascosto prima del banco.
+
+**Non verificato:** zaino grande (30/10) e indicatore delle cioccolate dopo l'apertura del banco. Il boscaiolo che taglia nel bosco esterno, e la fluidità con 84 alberi con ombre su un telefono vero.
+
+**Per tornare indietro a v0.2.1:** ricopia tutti i file da `Changelog/backup/2026-11-24_zaino-braccia-alberi/` nelle stesse posizioni del progetto: `CLAUDE.md` e `rifugio-design.md` nella radice, il resto sotto `web/`. Nessun file nuovo da cancellare.
+
+---
+
+## v0.2.1 · 2026-11-24 · Rimossa la cartella `godot/`
+
+**Rimosso:** la cartella `godot/` (20 file del porting v0.1, mai usato), spostata nel **Cestino di Windows**, non cancellata definitivamente.
+
+**Modificato:** `CLAUDE.md`, tolta la riga su `godot/`. Backup: `Changelog/backup/2026-11-24_rimozione-godot/CLAUDE.md`.
+
+**Per tornare indietro**
+1. Apri il Cestino, cerca la cartella `godot` e scegli "Ripristina": torna in `C:\PERSONALE\Sviluppo_APP\Rifugio\godot`. Se il Cestino è già stato svuotato, la cartella non si può recuperare. L'elenco dei file è nella voce v0.1 qui sotto.
+2. Ricopia `CLAUDE.md` da `Changelog/backup/2026-11-24_rimozione-godot/`.
+
+---
+
+## v0.2 · 2026-11-24 · Gioco web installabile su Android (senza Godot)
+
+**Perché:** Godot non è indispensabile. Il prototipo funziona già nel browser con Three.js, e sul PC non c'erano Godot, Node, Python né Android SDK. Un'app web installabile (PWA) non richiede di installare nessun programma.
+
+**Aggiunto: cartella `web/`**
+| File | Contenuto |
+|---|---|
+| `web/index.html` | Pagina del gioco (HUD, finestre, script). |
+| `web/css/style.css` | Stile del prototipo, con i margini per notch e barre di sistema. |
+| `web/js/namespace.js` | Oggetto globale `Rifugio` condiviso fra gli script. |
+| `web/js/levels/inverno.js` | Numeri, stanze, sblocchi e obiettivi del livello 1, letti dal gioco. |
+| `web/js/state.js` | Salvataggio su dispositivo (chiave `rifugio-v2`). |
+| `web/js/build.js` | Primitive low-poly, abeti, omini, pile di legna. |
+| `web/js/hud.js` | Interfaccia ed etichette sopra la scena 3D. |
+| `web/js/game.js` | Ciclo di gioco completo del livello Inverno. |
+| `web/js/main.js` | Avvio, pulsanti, registrazione del service worker. |
+| `web/manifest.webmanifest` | Dati per installare il gioco come app (nome, icone, schermo intero). |
+| `web/sw.js` | Service worker per giocare offline (cache `rifugio-cache-v1`). |
+| `web/icons/icon.svg`, `icon-192.png`, `icon-512.png` | Icona dell'app. |
+| `web/serve.ps1` | Server locale di prova su http://localhost:8080, in PowerShell. |
+| `web/README.md` | Come giocare, pubblicare e installare su Android. |
+
+**Differenze rispetto al prototipo (`rifugio-prototipo.html`, non modificato)**
+- Il codice è diviso in file, e sblocchi e obiettivi sono guidati dai dati di `inverno.js` invece che scritti nel codice.
+- Il salvataggio conserva anche le monete rimaste a terra davanti alle stanze. Salva quando l'app va in background o si chiude.
+- I materiali dei personaggi sono condivisi (meno memoria). I tasti vengono rilasciati se la finestra perde il focus.
+- Il gioco si può installare come app ed è giocabile offline dopo la prima apertura.
+- La chiave di salvataggio è nuova (`rifugio-v2`): i progressi del prototipo non vengono importati.
+
+**Modificato**
+- `CLAUDE.md`: obiettivo del progetto passato da Godot alla versione web, con le regole sul changelog. Backup: `Changelog/backup/2026-11-24_passaggio-a-web/CLAUDE.md`.
+- `rifugio-design.md`: aggiornata la sezione "Prossimi passi" (Godot → web). Backup: `Changelog/backup/2026-11-24_passaggio-a-web/rifugio-design.md`.
+
+**Verificato** nel browser integrato, a dimensione telefono:
+- Caricamento, intro e HUD.
+- Taglio della legna, consegna al camino, arrivo dell'ospite, pagamento e raccolta delle monete.
+- Avviso "Ho freddo!" quando il fuoco si spegne.
+- Avanzamento degli obiettivi fino al 4 e ripristino del salvataggio dopo la ricarica.
+
+**Non verificato**
+- Piazzole, cioccolata, boscaiolo e schermata di vittoria: la logica è la stessa del prototipo, ma non le ho provate in questa versione.
+- Uso offline: il browser integrato rifiuta di registrare il service worker anche se il file è valido. Va provato con Chrome.
+- Installazione su un telefono vero.
+
+**Noto (come nel prototipo):** il passaggio fra i due letti verso il camino è stretto e l'omino può incastrarsi sullo spigolo.
+
+**Per tornare indietro a v0.1**
+1. Cancella la cartella `web/`.
+2. Ricopia `CLAUDE.md` e `rifugio-design.md` da `Changelog/backup/2026-11-24_passaggio-a-web/` alla cartella del progetto.
+
+---
+
+## v0.1 · 2026-11-23 · Porting su Godot 4 (accantonato)
+
+**Aggiunto: cartella `godot/`**, un progetto Godot 4.4 con export Android:
+- `project.godot`, `export_presets.cfg`, `icon.svg`, `.gitignore`, `README.md`
+- `data/inverno.json` (dati del livello)
+- `scenes/main.tscn`, `scenes/player.tscn`
+- `scripts/`: `main.gd`, `hud.gd`, `game_state.gd`, `build.gd`, `world_builder.gd`, `player.gd`, `room.gd`, `chop_tree.gd`, `cocoa_stand.gd`, `unlock_pad.gd`, `guest.gd`, `lumberjack.gd`
+
+**Stato:** mai aperto né provato in Godot (Godot non è installato). Accantonato e poi rimosso il 2026-11-24 (vedi v0.2.1).
+
+**Per tornare indietro a prima di v0.1:** cancella la cartella `godot/`.

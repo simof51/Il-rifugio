@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Il Rifugio</title>
+<meta name="description" content="Arcade tycoon in un rifugio di montagna">
+<meta name="theme-color" content="#a9c9e6">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Il Rifugio">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="game"></div>
+<div id="labels"></div>
+<div id="hud">
+  <div class="chip"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#f2b632"/><circle cx="12" cy="12" r="6.5" fill="none" stroke="#c98a00" stroke-width="2"/></svg><b id="coinN">0</b></div>
+  <div class="chip"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3.3 1.3-6.5L2.5 9.3l6.6-.8z" fill="#f2b632" stroke="#c98a00" stroke-width="1.2" stroke-linejoin="round"/></svg><b id="starN">0.0</b></div>
+  <div class="chip"><svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="4" fill="#9a6a45"/><circle cx="7" cy="12" r="3" fill="#e2b98c" stroke="#6b4430" stroke-width="1.2"/></svg><b id="carryN">0/7</b></div>
+</div>
+<div id="task"><small><span id="taskN">Obiettivo 1</span><span id="taskV"></span></small><div id="taskTxt"></div><div class="bar"><i id="taskBar"></i></div></div>
+<div id="stick"><div id="knob"></div></div>
+<div id="toast"></div>
+
+<div id="intro" class="modal"><div class="card">
+  <h1>Il Rifugio</h1>
+  <p id="introMsg">Una baita sotto la neve da far crescere. Tieni accesi i camini, accogli gli escursionisti e trasformala nel rifugio più famoso della valle.</p>
+  <ul>
+    <li>Trascina il dito sullo schermo per muoverti (o WASD e frecce).</li>
+    <li>Fermati vicino a un abete per tagliare la legna.</li>
+    <li>Porta la legna ai camini: gli ospiti pagano solo se stanno al caldo.</li>
+    <li>Fermati sulle piazzole bianche per spendere le monete e sbloccare nuove cose.</li>
+  </ul>
+  <div class="row"><button class="btn" id="start">Inizia</button><button class="btn ghost" id="reset1" hidden>Ricomincia da capo</button></div>
+  <p class="note">Livello 1, Inverno. I progressi restano salvati sul dispositivo.</p>
+</div></div>
+
+<div id="win" class="modal hidden"><div class="card">
+  <h1>Inverno completato!</h1>
+  <p id="winTxt"></p>
+  <p>Il prossimo livello sarà l'estate al lago: barche, campeggio e grigliate.</p>
+  <div class="row"><button class="btn" id="keep">Continua a giocare</button><button class="btn ghost" id="reset2">Ricomincia</button></div>
+</div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous"></script>
+<script src="js/namespace.js"></script>
+<script src="js/levels/inverno.js"></script>
+<script src="js/state.js"></script>
+<script src="js/build.js"></script>
+<script src="js/hud.js"></script>
+<script src="js/game.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
