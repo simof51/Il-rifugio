@@ -9,6 +9,13 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.17.1 · 2026-11-26 · Più veloce, più colorato, reception vicina
+
+- **Prestazioni** (misurate nel browser, stagione di primavera): triangoli disegnati da 276.000 a 117.000; luci vere da 10 a 5 (una sola luce di fuoco condivisa che segue il camino più vicino, 2 luci per le lanterne); niente più sfocature dietro ai pannelli; ombre ridisegnate un fotogramma su due; frutti, neve e fiori non proiettano ombra; alberi, boschi di bordo, colline e sfere più leggeri; risoluzione massima 1,5x (Alta) e 1,25x (Media) invece di 2x.
+- **Colori**: tolto il filtro cinema che ingrigiva la scena e la vignettatura; interfaccia più colorata (indicatori dorati, azzurri e rossi, schede con un colore per ciascuna, icone colorate).
+- **Reception** spostata vicino al rifugio, a destra delle stanze, dopo il banco delle bevande.
+- **Per tornare indietro**: `git checkout d311788 -- web Changelog`.
+
 ## v0.17.0 · 2026-11-26 · Reception, premi giornalieri, album, eventi e tanto altro
 
 - **Reception** (a destra, oltre l'ingresso): bancone con insegna, campanello, scaffale con le chiavi e una receptionist che ti guarda e saltella. Gli ospiti soddisfatti passano di lì prima di partire e lasciano i soldi nella ciotola; l'omino li ritira restando sul tappeto. I soldi non restano più davanti alle stanze (le vecchie monete dei salvataggi si possono ancora prendere). La freccia guida, il tutorial e l'obiettivo "raccogli monete" portano lì.

@@ -216,4 +216,43 @@ body:has(#pop:not(.hidden)) #tabbar{display:none}
 .reward{text-align:center;padding:10px 0}.reward i{display:block;font-style:normal;font-size:64px;line-height:1.1;animation:cardin .5s}.reward b{display:block;font-size:26px}.reward span{display:block;color:#5b6b7c;margin-top:4px}
 .txt{flex:1;min-width:0;font:inherit;font-size:16px;padding:9px 12px;border:1px solid rgba(31,42,55,.15);border-radius:12px;background:#fff;color:var(--ink);user-select:text;-webkit-user-select:text}
 #popBody p{margin:0 0 12px}
+/* Prestazioni e colori: niente sfocature dietro ai pannelli (pesanti sul telefono) e più colore nell'interfaccia */
+*{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+body::before{display:none}
+:root{--glass:rgba(255,255,255,.92)}
+.chip:nth-child(1){background:linear-gradient(#fffbe0,#ffe27a)}
+.chip:nth-child(2){background:linear-gradient(#fff3cf,#ffc94d)}
+.chip:nth-child(3){background:linear-gradient(#ffeee0,#ffb67a)}
+.chip:nth-child(n){border:2px solid #fff}
+#gemChip{background:linear-gradient(#e6f4ff,#8fcaff)}
+#cupChip{background:linear-gradient(#ffeae6,#ffa89a)}
+#envChip{background:linear-gradient(#f0f4ff,#bccdff)}
+#task{background:linear-gradient(#ffffff,#e4f4ff);border:2px solid #fff;border-left:7px solid #22c58b}
+#task small{color:#2f7fbf}
+.bar i{background:linear-gradient(90deg,#22c58b,#ffd23a)}
+.pad{background:linear-gradient(#fff,#fff2c9);border:2px solid #fff}
+.pill{border:2px solid #fff}
+.menuBtn{background:linear-gradient(#fff,#ffe3b8);color:#ff6a2f;border:2px solid #fff}
+#toast{background:linear-gradient(135deg,#3a4a8a,#27315f)}
+#tabbar button{background:linear-gradient(#fff,#f1f5ff);border:2px solid #fff;color:#2b3a52}
+#tabbar button i svg [fill-opacity]{fill-opacity:.28}
+#tabbar [data-tab=map] i{color:#12b88f}
+#tabbar [data-tab=shop] i{color:#ff8a1f}
+#tabbar [data-tab=profile] i{color:#3d8bff}
+#tabbar [data-tab=set] i{color:#9b5cf6}
+#tabbar button.on{color:#fff;border-color:rgba(255,255,255,.7)}
+#tabbar button.on i{color:#fff!important}
+#tabbar [data-tab=map].on{background:linear-gradient(135deg,#34dcb0,#12a380);box-shadow:0 8px 18px rgba(18,163,128,.45)}
+#tabbar [data-tab=shop].on{background:linear-gradient(135deg,#ffb04a,#ff7a1f);box-shadow:0 8px 18px rgba(255,122,31,.45)}
+#tabbar [data-tab=profile].on{background:linear-gradient(135deg,#6aa9ff,#3a6fe0);box-shadow:0 8px 18px rgba(58,111,224,.45)}
+#tabbar [data-tab=set].on{background:linear-gradient(135deg,#b583ff,#7c43e0);box-shadow:0 8px 18px rgba(124,67,224,.45)}
+.card{background:linear-gradient(#fff,#fff7ea)}
+.card h1{color:#f2552f}
+.lrow,.prod,.city,.stats div,.mrow,.medal,.opt{background:#fff;border:2px solid #ffe7c2}
+.stats div:nth-child(1){background:#fff6d1}.stats div:nth-child(2){background:#e6f6ff}.stats div:nth-child(3){background:#ffe9d9}.stats div:nth-child(4){background:#e4efff}
+.lrow.cur,.city.cur,.opt.on,.medal.ok{background:#fff3c4;border-color:#ffb62e}
+.mrow.ok{background:#e3fbec;border-color:#38d17a}
+.sc{background:#eef3fa}.sc.done{background:#d9f7e4}.sc.cur{background:#ffe9a8}
+.day{background:#fff;border:2px solid #dbe7f5}.day.got{background:#d9f7e4;border-color:#38d17a}.day.now{background:#ffe9a8;border-color:#ffab2e}
+.chestbox{background:#fff4dc;border:2px solid #ffd98a}
 @media(prefers-reduced-motion:reduce){.card,.conf,.day.now,.chestbox.ready .cico,#tabbar button.dot::after{animation:none}}

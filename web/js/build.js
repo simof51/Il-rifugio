@@ -86,7 +86,7 @@
       o.position.set(x, y, z); return add(o, p);
     }
     function ball(r, m, x, y, z, p, ws, hs) {
-      const o = new T.Mesh(cached(`s${r}_${ws || 20}`, () => new T.SphereGeometry(r, ws || 20, hs || 14)), m);
+      const o = new T.Mesh(cached(`s${r}_${ws || 14}_${hs || 10}`, () => new T.SphereGeometry(r, ws || 14, hs || 10)), m);
       o.position.set(x, y, z); return add(o, p);
     }
     function clear(g) { while (g.children.length) g.remove(g.children[0]); }
@@ -118,10 +118,10 @@
       const g = new T.Group(); g.position.set(x, 0, z); if (sc) g.scale.setScalar(sc);
       const stump = cyl(0.22, 0.27, 0.3, tm.trunk, 0, 0.15, 0, g, 16); stump.visible = false;
       const fall = new T.Group(); g.add(fall);
-      const part = (geo, m) => { const o = new T.Mesh(geo, m); o.castShadow = o.receiveShadow = true; fall.add(o); return o; };
-      part(cached('treeTrunk', () => new T.CylinderGeometry(0.15, 0.25, 1.4, 10).translate(0, 0.7, 0)), tm.trunk);
-      part(leafy ? leafyGeo() : foliageGeo(), tm.foliage);
-      part(leafy ? fruitGeo() : snowCapsGeo(), tm.top);
+      const part = (geo, m, shadow) => { const o = new T.Mesh(geo, m); o.castShadow = shadow; o.receiveShadow = shadow; fall.add(o); return o; };
+      part(cached('treeTrunk', () => new T.CylinderGeometry(0.15, 0.25, 1.4, 8).translate(0, 0.7, 0)), tm.trunk, true);
+      part(leafy ? leafyGeo() : foliageGeo(), tm.foliage, true);
+      part(leafy ? fruitGeo() : snowCapsGeo(), tm.top, false); // frutti e neve non proiettano ombra (si disegnerebbero due volte per niente)
       scene.add(g);
       return { g, fall, stump, mats: Object.values(tm) };
     }
@@ -129,7 +129,7 @@
     // Abete: sei piani morbidi di cono sovrapposti e ruotati (due verdi che si alternano), ognuno con un cappello di neve a ciuffi.
     const TIERS = [[1.4, 1.0, 0.8], [1.2, 0.95, 1.4], [1.0, 0.9, 1.95], [0.8, 0.85, 2.45], [0.6, 0.8, 2.9], [0.38, 0.8, 3.3]]; // raggio, altezza, base
     function tierGeo(r, h, wob, ph) {
-      const g = new T.CylinderGeometry(0.02, r, h, 24, 4), p = g.attributes.position;
+      const g = new T.CylinderGeometry(0.02, r, h, 15, 2), p = g.attributes.position;
       for (let i = 0; i < p.count; i++) {
         const x = p.getX(i), y = p.getY(i), z = p.getZ(i), rad = Math.hypot(x, z);
         if (rad < 1e-5) continue;
@@ -150,10 +150,10 @@
     // Albero estivo: chioma a palloni morbidi (due verdi) con frutti e fiorellini colorati.
     const BLOBS = [[0, 2.45, 0, 1.2], [0.75, 2.15, 0.3, 0.85], [-0.7, 2.2, -0.2, 0.9], [0.1, 3.25, -0.1, 0.85], [-0.25, 2.2, 0.75, 0.75], [0.4, 2.1, -0.75, 0.75]];
     const leafyGeo = () => cached('leafy', () => mergeParts(BLOBS.map(([x, y, z, r], i) => ({
-      geo: cached('blob', () => new T.SphereGeometry(1, 14, 10)), x, y, z, s: [r, r * 0.88, r], color: (theme.leafCols || [0x5ccf5b, 0x3fb14f])[i % (theme.leafCols || [0, 0]).length]
+      geo: cached('blob', () => new T.SphereGeometry(1, 10, 7)), x, y, z, s: [r, r * 0.88, r], color: (theme.leafCols || [0x5ccf5b, 0x3fb14f])[i % (theme.leafCols || [0, 0]).length]
     }))));
     const FRUIT = [[0.9, 2.6, 0.9, 0xff4d4d], [-0.9, 2.4, 0.5, 0xff8fb3], [0.2, 3.1, 0.85, 0xffd23a], [-0.3, 3.35, -0.7, 0xff4d4d], [0.95, 2.1, -0.5, 0xff8fb3], [-0.7, 1.95, -0.85, 0xffd23a], [0.4, 3.55, 0.3, 0xff8fb3], [-1.0, 2.8, -0.3, 0xff4d4d]];
-    const fruitGeo = () => cached('fruit', () => mergeParts(FRUIT.map(([x, y, z, c], i) => ({ geo: cached('fr', () => new T.SphereGeometry(0.13, 8, 6)), x, y, z, color: theme.accentCols ? theme.accentCols[i % theme.accentCols.length] : c }))));
+    const fruitGeo = () => cached('fruit', () => mergeParts(FRUIT.map(([x, y, z, c], i) => ({ geo: cached('fr', () => new T.SphereGeometry(0.13, 6, 4)), x, y, z, color: theme.accentCols ? theme.accentCols[i % theme.accentCols.length] : c }))));
 
     // --- personaggi ---------------------------------------------------------
     // Arto con perno in alto (anca o spalla). Ordine di rotazione YXZ: prima si alza (x), poi ruota sul piano orizzontale (y).

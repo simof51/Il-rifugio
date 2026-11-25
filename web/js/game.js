@@ -5,7 +5,7 @@
 
   const FEED_Z = -7.6, PILE_Z = -3.2, COCOA_PICK = [11, -5.6];
   const SPAWN = [17, 1.2];
-  const RECEP = { x: 20.5, z: -2.4 }; // reception: bancone con la receptionist; gli ospiti che partono pagano qui, l'omino riscuote davanti
+  const RECEP = { x: 17.5, z: -6.8 }; // reception: bancone con la receptionist; gli ospiti che partono pagano qui, l'omino riscuote davanti
   const COATS = [0x4f8cff, 0xa066ff, 0xff9a2a, 0x2ec4b6, 0xff5d8f, 0x6bcf3a];
   const CONFETTI = [0xff4d4d, 0xffd23a, 0x3d8bff, 0x4cd964, 0xff7ac6, 0xa066ff];
   const SHORTS = [0x3b6fd4, 0xe8c66a, 0xf2f2f2, 0x2ec4b6, 0xff8a65];
@@ -28,7 +28,7 @@
     const Q = R.settings ? R.settings.quality() : { ratio: 2, shadows: 'pcf', map: 1024, density: 1 };
     const pixelRatio = Math.min(window.devicePixelRatio || 1, Q.ratio);
     renderer.setPixelRatio(pixelRatio);
-    renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.35; // colori più ricchi e contrastati, meno "piatti"
+    let shadowN = 0; renderer.shadowMap.autoUpdate = false;
     renderer.shadowMap.enabled = Q.shadows !== 'off'; renderer.shadowMap.type = T.PCFShadowMap;
     document.getElementById('game').appendChild(renderer.domElement);
     const scene = new T.Scene();
@@ -123,9 +123,9 @@
       }
     } else {
       // Foresta fitta di bordo: tre file di alberi tondi (solo decorazione), più qualche collina verde dietro.
-      const blob = new T.SphereGeometry(1, 9, 6), trunk = new T.CylinderGeometry(0.15, 0.25, 1.4, 6).translate(0, 0.7, 0), forest = [[], [], [], []];
-      const BL = [[0, 2.45, 0, 1.2], [0.75, 2.15, 0.3, 0.85], [-0.7, 2.2, -0.2, 0.9], [0.1, 3.25, -0.1, 0.85], [-0.25, 2.2, 0.75, 0.75]];
-      [[1, 2.2, 1.6], [4.5, 2.3, 2], [8, 2.6, 2.4], [12, 3, 2.8]].slice(0, Q.density < 0.5 ? 2 : Q.density < 1 ? 3 : 4).forEach(([off, step, sc0]) => ringPoints(off, step, 1.6).forEach(([side, x, z]) => {
+      const blob = new T.SphereGeometry(1, 7, 5), trunk = new T.CylinderGeometry(0.15, 0.25, 1.4, 5).translate(0, 0.7, 0), forest = [[], [], [], []];
+      const BL = [[0, 2.45, 0, 1.2], [0.75, 2.15, 0.3, 0.85], [-0.7, 2.2, -0.2, 0.9]]; // tre palloni per albero di bordo: da lontano non si vede la differenza
+      [[1, 2.4, 1.6], [4.5, 2.6, 2], [8.5, 2.9, 2.4]].slice(0, Q.density < 0.5 ? 1 : Q.density < 1 ? 2 : 3).forEach(([off, step, sc0]) => ringPoints(off, step, 1.6).forEach(([side, x, z]) => {
         const sc = sc0 * (0.85 + rnd() * 0.5) / 1.6 + 0.4;
         forest[side].push({ geo: trunk, x, y: 0, z, s: sc, color: 0x7a4a30 });
         BL.forEach(([bx, by, bz, br], k) => forest[side].push({ geo: blob, x: x + bx * sc, y: by * sc, z: z + bz * sc, s: [br * sc, br * 0.88 * sc, br * sc], color: (TH.leafCols || [0x57c455, 0x34a448])[(k + side) % (TH.leafCols || [0, 0]).length] }));
@@ -133,7 +133,7 @@
       for (let s = 0; s < 4; s++) scene.add(new T.Mesh(B.mergeParts(forest[s]), mats.accent));
       ringPoints(24, 16, 6).forEach(([, x, z]) => { const h = 12 + rnd() * 10, r = 12 + rnd() * 5, m = new T.Mesh(new T.ConeGeometry(r, h, 14), mats.hill); m.position.set(x, h / 2, z); scene.add(m); });
     }
-    const moundGeo = new T.SphereGeometry(1, 24, 16);
+    const moundGeo = new T.SphereGeometry(1, 14, 8);
     for (let i = 0; i < 14; i++) {
       const s = new T.Mesh(moundGeo, mats.ground);
       s.scale.set(1 + rnd() * 1.5, 0.35, 1 + rnd()); s.position.set(-16 + rnd() * 32, 0, -12 + rnd() * 28);
@@ -439,7 +439,7 @@
       // festone di bandierine colorate sul retro
       const bun = B.mergeParts(Array.from({ length: 9 }, (_, k) => ({ geo: flagGeo, x: cx - 2.5 + k * 0.625, y: lido ? 1.55 : 1.2, z: -8.93, color: CONFETTI[(k + i) % CONFETTI.length] })));
       g.add(new T.Mesh(bun, mats.accent));
-      const light = new T.PointLight(0xff8a3d, 0, 8); light.position.set(cx, 1.3, -7.4); scene.add(light);
+      const light = { intensity: 0, distance: 8, position: new T.Vector3(cx, 1.3, -7.4) }; // la luce vera è una sola, condivisa (fireLight): tante luci rallentano il telefono
       const beds = [-1.4, 1.4].map((o, k) => {
         const bx = cx + o;
         if (lido && TH.seat === 'table') {
@@ -478,6 +478,13 @@
       g.visible = false;
       return { i, cx, g, flame, light, beds, pile, pileN: 0, fuel: 0, pend: 0, flare: 0, open: false, ghost, el, bar: el.firstChild, wallL, wallR, colL: null, colR: null, fireY, fireZ, sit: lido && TH.seat === 'table', seatZ: -5.98 };
     });
+    const fireLight = new T.PointLight(0xff8a3d, 0, 8); scene.add(fireLight);
+    function updateFireLight() { // la luce segue il fuoco acceso più vicino all'omino
+      let best = null, bs = 0;
+      for (const r of rooms) { if (r.light.intensity <= 0) continue; const d = Math.hypot(r.cx - player.position.x, 7.4 + player.position.z), s = r.light.intensity / (1 + d * d * 0.05); if (s > bs) { bs = s; best = r; } }
+      if (!best) { fireLight.intensity = 0; return; }
+      fireLight.position.copy(best.light.position); fireLight.intensity = best.light.intensity; fireLight.distance = 8;
+    }
     const removeCol = c => { const k = cols.indexOf(c); if (k >= 0) cols.splice(k, 1); };
     function openRoom(r) {
       if (r.open) return;
@@ -880,7 +887,7 @@
         const pool = new T.Mesh(poolGeo, m.pool); pool.position.y = 0.07; pool.renderOrder = 3; g.add(pool);     // macchia di luce a terra
         lamps.push({ x, z, c, glass, halo, ph: i });
       });
-      for (let k = 0; k < 4; k++) { const l = new T.PointLight(0xffd9a0, 0, 9, 2); scene.add(l); lampLights.push(l); } // luci vere (quelle vicine all'omino)
+      for (let k = 0; k < 2; k++) { const l = new T.PointLight(0xffd9a0, 0, 9, 2); scene.add(l); lampLights.push(l); } // luci vere (le 2 vicine all'omino): ogni luce in più rallenta ogni pixel
     }
     function updateLamps() {
       if (!lamps.length) return;
@@ -1273,6 +1280,7 @@
         if (r.glow) { r.glow.visible = lit; if (lit) { const gs = 1.6 + s * 1.5 + 0.15 * Math.sin(tt * 11 + r.i); r.glow.scale.set(gs, gs, 1); r.glow.material.opacity = Math.min(0.9, 0.3 + (env ? env.night : 0) * 0.35 + r.flare * 0.3); } }
         r.pile.rotation.y = tt * 0.8; r.pile.position.y = 0.05 + 0.04 * Math.sin(tt * 3 + r.i);
       }
+      updateFireLight();
       // receptionist: guarda l'omino quando è vicino, saltella quando arrivano o se ne vanno i soldi
       if (recep.glow) { recep.glow.visible = recep.n > 0; if (recep.n > 0) { const gs = 1.0 + 0.2 * Math.sin(tt * 5); recep.glow.scale.set(gs, gs, 1); recep.glow.material.opacity = 0.5 + 0.2 * Math.sin(tt * 5); } }
       if (recep.who) {
@@ -1372,7 +1380,7 @@
       }
       if (fpsOn) { fpsN++; fpsT += raw; if (fpsT >= 0.5) { fpsEl.textContent = Math.round(fpsN / fpsT) + ' fps'; fpsN = 0; fpsT = 0; } }
       if (running && !paused) { update(dt); tickLater(dt); updateFlyers(dt); updateParts(dt); env.update(dt); fauna.update(dt); }
-      anim(dt); renderer.render(scene, cam); overlays(dt); refreshHud();
+      anim(dt); renderer.shadowMap.needsUpdate = (shadowN++ & 1) === 0; renderer.render(scene, cam); overlays(dt); refreshHud(); // le ombre si ridisegnano un fotogramma su due: dimezza il costo senza che si noti
       requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);
@@ -1421,6 +1429,8 @@
         weather(k) { env.setWeather(k); }, time(n) { env.setTime(n); }, autoEnv() { env.release(); env.setWeather('auto'); },
         event(k) { if (!S.fed) S.fed = 1; if (k === 'scout') for (let i = 0; i < 3; i++) spawnGuest('scout'); else spawnGuest(k); },
         gems(n) { R.settings.addGems(n); },
+        scene, renderer,
+        perf() { return { calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geos: renderer.info.memory.geometries, tex: renderer.info.memory.textures, lights: scene.children.filter(o => o.isLight).length, shadow: renderer.shadowMap.enabled, ratio: renderer.getPixelRatio(), objs: scene.children.length }; },
         info() { return { fast: speedMul > 1, fps: fpsOn, done: S.done, total: objectives.length, env: env.info(), critters: fauna.count() }; }
       }
     };
