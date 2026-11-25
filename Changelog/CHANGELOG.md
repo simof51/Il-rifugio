@@ -9,6 +9,36 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.8.0 · 2026-11-25 · Meteo e notte, animali, aspetto dell'omino, eventi, tutorial, qualità grafica, salvataggio portatile, consenso, riquadri a terra
+
+**Richiesto** (le proposte 1, 2, 3, 4, 6, 7, 8, 9, 10; la 5 esclusa) più il riquadro delle piazzole.
+
+**Aggiunto**
+| File | Cosa |
+|---|---|
+| `web/js/env.js` | Ciclo giorno/notte di 7 minuti (cielo, nebbia e luci cambiano; di notte i camini illuminano di più e una luce segue l'omino). Meteo per stagione: pioggia, temporale con fulmini e tuoni, nebbia, bufera di neve. Icone nel pannello in alto. |
+| `web/js/fauna.js` | Compagno (cane o gatto) che segue l'omino, salta e fa il verso quando succede qualcosa di bello; animali selvatici per stagione (cervi, conigli, scoiattoli, uccellini) che scappano al tuo avvicinarsi. |
+| `web/js/settings.js` | Impostazioni salvate (qualità, giorno/notte, meteo, vibrazione, ambiente, compagno, aspetto, gemme, consigli visti, consenso) e salvataggio portatile (codice `RIF1.…`). |
+| `web/js/audio.js` | Suoni d'ambiente (vento, pioggia, onde, uccellini di giorno, grilli di notte), tuono, abbaio e miagolio, vibrazione su obiettivi, acquisti, monete e tuoni. |
+
+**Modificato**
+| File | Cosa |
+|---|---|
+| `web/js/game.js` | Piazzole come riquadri a terra con angoli tondi e barra di avanzamento che corre lungo il perimetro (da in alto, in senso orario) e si riempie coi pagamenti. Eventi a sorpresa ogni 75-135 s dopo 3 obiettivi: ospite VIP (paga il triplo, corona), squadra di scout (fino a 3, pagano il 50% in più), ospite affamato (servito entro 24 s dà +40 monete e 2 gemme). Tutorial a fumetti (prima volta, prima stagione) e consigli una tantum. Gemme: +1 per obiettivo, +10 per stagione. Qualità grafica (risoluzione, ombre, quantità di decorazioni). |
+| `web/js/build.js` | Cappelli (cilindro, corona, cowboy, orecchie di gatto, chef) e accessori (occhiali da sole, mantello) per l'omino del giocatore. |
+| `web/js/main.js` | Menu a sezioni: città, 👕 Il tuo omino (colori, cappelli, accessori con le gemme), ⚙️ Impostazioni (suoni, musica, ambiente, vibrazione, giorno/notte, meteo, qualità, compagno), 💾 Salvataggio portatile (crea e usa un codice), 🔒 Privacy e consenso, 🛠 Debug (anche meteo, ora, eventi, gemme, rivedi tutorial e consenso). Schermata di consenso al primo avvio: "Solo essenziali" o "Accetta anche la pubblicità". |
+| `index.html`, `css/style.css`, `js/hud.js`, `sw.js` | Fumetto del tutorial, icona meteo, stili, nuovi script, `CACHE` v14. |
+
+**Nota**
+- Il collegamento con un account Google non c'è: serve un servizio esterno con credenziali. Al suo posto c'è il codice di salvataggio portatile.
+- Pubblicità e acquisti non sono implementati: c'è solo la schermata di consenso e la scelta salvata (`Rifugio.consent`), pronta per quando si aggiungeranno.
+- Cambiare aspetto, compagno o qualità ricarica il gioco (i progressi sono salvati).
+
+**Per tornare indietro**
+- `git checkout ed34ed1 -- web`
+
+---
+
 ## v0.7.0 · 2026-11-25 · Quattro stagioni, tre città, grafica più ricca, "Ricomincia TUTTO" nel Debug
 
 **Richiesto**

@@ -269,7 +269,8 @@
       }
       ball(0.3, mats.skin, 0, 1.52 - HIP, 0, up);
       const face = new T.Mesh(faceGeo(), mats.face); face.position.y = 1.52 - HIP; up.add(face);
-      if (!waiter) {
+      const customHat = !waiter && opt.hat && opt.hat !== 'default';
+      if (!waiter && !customHat) {
         const cap = new T.Mesh(cached('cap', () => new T.SphereGeometry(0.32, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.42)), hatM); cap.position.y = 1.57 - HIP; cap.castShadow = true; up.add(cap);
         if (visor) {
           const brim = new T.Mesh(cached('brim', () => new T.CylinderGeometry(0.31, 0.31, 0.03, 14, 1, false, -Math.PI / 2, Math.PI)), hatM); // visiera davanti
@@ -279,6 +280,17 @@
           const pom = new T.Mesh(cached('pom', () => new T.SphereGeometry(0.085, 12, 10)), mats.white); pom.position.y = 1.94 - HIP; up.add(pom);
         }
       }
+      // Cappelli speciali (si comprano con le gemme) e accessori: solo per l'omino del giocatore.
+      if (customHat) {
+        const hy = 1.78 - HIP, gold = tint(0xffc83a);
+        if (opt.hat === 'tophat') { cyl(0.2, 0.2, 0.36, hatM, 0, hy + 0.17, 0, up, 14); cyl(0.34, 0.34, 0.035, hatM, 0, hy, 0, up, 16); cyl(0.205, 0.205, 0.07, mats.red, 0, hy + 0.06, 0, up, 14); }
+        else if (opt.hat === 'crown') { cyl(0.25, 0.27, 0.14, gold, 0, hy + 0.04, 0, up, 14); for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2, c = new T.Mesh(cached('crc', () => new T.ConeGeometry(0.06, 0.18, 5)), gold); c.position.set(Math.sin(a) * 0.25, hy + 0.2, Math.cos(a) * 0.25); up.add(c); ball(0.03, mats.red, Math.sin(a) * 0.25, hy + 0.31, Math.cos(a) * 0.25, up, 6, 5); } }
+        else if (opt.hat === 'cowboy') { const br = tint(0x9a6a3a); cyl(0.5, 0.5, 0.035, br, 0, hy - 0.01, 0, up, 18); const dm = new T.Mesh(cached('cowdome', () => new T.SphereGeometry(0.27, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.5)), br); dm.position.y = hy; dm.castShadow = true; up.add(dm); cyl(0.275, 0.275, 0.05, mats.dark, 0, hy + 0.05, 0, up, 14); }
+        else if (opt.hat === 'catears') { const cap = new T.Mesh(cached('cap', () => new T.SphereGeometry(0.32, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.42)), hatM); cap.position.y = 1.57 - HIP; up.add(cap); [-1, 1].forEach(s => { const e = new T.Mesh(cached('cearc', () => new T.ConeGeometry(0.09, 0.2, 4)), hatM); e.position.set(s * 0.17, hy + 0.12, 0); e.rotation.z = -s * 0.25; up.add(e); const i2 = new T.Mesh(cached('cearc', () => new T.ConeGeometry(0.09, 0.2, 4)), mats.pink); i2.scale.set(0.55, 0.7, 0.55); i2.position.set(s * 0.17, hy + 0.1, 0.03); i2.rotation.z = -s * 0.25; up.add(i2); }); }
+        else if (opt.hat === 'chef') { cyl(0.2, 0.22, 0.28, mats.white, 0, hy + 0.1, 0, up, 14); ball(0.26, mats.white, 0, hy + 0.34, 0, up, 12, 8).scale.y = 0.8; }
+      }
+      if (opt.acc === 'sunglasses') { [-1, 1].forEach(s => box(0.13, 0.075, 0.035, mats.dark, s * 0.11, 1.55 - HIP, 0.3, up, 0.02)); box(0.1, 0.02, 0.03, mats.dark, 0, 1.56 - HIP, 0.3, up, 0.005); }
+      if (opt.acc === 'cape') { const cp = box(0.5, 0.78, 0.035, hatM, 0, 0.42, -0.2, up, 0.015); cp.rotation.x = 0.12; box(0.5, 0.06, 0.05, mats.gold, 0, 0.78, -0.17, up, 0.02); }
       const armOpt = waiter ? { cuffM: mats.white } : summer ? { short: true } : spring ? {} : { cuffM: hatM, handM: hatM };
       const arms = [-1, 1].map(side => arm(up, side * 0.255, 1.15 - HIP, 0.062, coatM, armOpt));
       // vassoio d'argento con le bevande (solo camerieri): compare quando portano qualcosa

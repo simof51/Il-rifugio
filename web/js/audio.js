@@ -60,9 +60,44 @@
       buy() { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.16, 'triangle', 0.3, ctx.currentTime + i * 0.07)); },
       goal() { [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) => tone(f, 0.22, 'square', 0.14, ctx.currentTime + i * 0.09)); },
       saw() { tone(110, 0.14, 'sawtooth', 0.22, 0, 95); noise(0.13, 0.35, 3200, 'bandpass'); },
+      thunder() { noise(1.6, 0.9, 260); tone(70, 1.2, 'sine', 0.6, 0, 35); },
+      bark() { tone(260, 0.09, 'square', 0.16, 0, 160); tone(250, 0.1, 'square', 0.16, ctx.currentTime + 0.14, 150); },
+      meow() { tone(620, 0.28, 'triangle', 0.18, 0, 880); tone(880, 0.22, 'triangle', 0.12, ctx.currentTime + 0.2, 520); },
       click() { tone(620, 0.05, 'sine', 0.25); }
     };
-    const GAP = { chop: 0.05, saw: 0.1, log: 0.05, coin: 0.04, cup: 0.08, pickup: 0.08, tree: 0.2 };
+    const GAP = { chop: 0.05, saw: 0.1, log: 0.05, coin: 0.04, cup: 0.08, pickup: 0.08, tree: 0.2, bark: 0.5, meow: 0.5 };
+    const HAPTIC = { goal: 45, buy: 30, coin: 8, tree: 25, thunder: 80, guest: 12 }; // millisecondi di vibrazione
+    const settings = () => (R.settings ? R.settings.data : { haptics: true, ambient: true, ambVol: 0.5 });
+    function haptic(ms) { try { if (settings().haptics && navigator.vibrate) navigator.vibrate(ms); } catch (e) { /* ignorato */ } }
+
+    // Suoni d'ambiente: vento, pioggia, onde del lago, uccellini di giorno, grilli di notte. Si regolano dal meteo e dall'ora.
+    let amb = null, birdT = null, ambOpt = { season: 'inverno', rain: 0, storm: 0, night: 0, wind: 0 };
+    function ensureAmbient() {
+      if (amb || !ctx) return;
+      const mk = (type, freq, q) => { const s = ctx.createBufferSource(); s.buffer = noiseBuf; s.loop = true; const f = ctx.createBiquadFilter(); f.type = type; f.frequency.value = freq; if (q) f.Q.value = q; const g = ctx.createGain(); g.gain.value = 0; s.connect(f); f.connect(g); s.start(); return g; };
+      const master = ctx.createGain(); master.connect(ctx.destination);
+      const wind = mk('bandpass', 420, 0.7), rain = mk('highpass', 1400), waves = mk('lowpass', 520);
+      [wind, rain, waves].forEach(g => g.connect(master));
+      const cr = ctx.createOscillator(), cg = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
+      cr.frequency.value = 4300; cg.gain.value = 0; lfo.frequency.value = 13; lg.gain.value = 0.5; lfo.connect(lg); lg.connect(cg.gain); cr.connect(cg); cg.connect(master); cr.start(); lfo.start();
+      amb = { master, wind, rain, waves, crick: cg };
+      birdT = setInterval(() => {
+        if (!ctx || ctx.state !== 'running' || !settings().ambient || ambOpt.night > 0.5 || ambOpt.rain > 0.3 || (ambOpt.season !== 'primavera' && ambOpt.season !== 'estate' && ambOpt.season !== 'autunno')) return;
+        if (Math.random() > 0.55) return;
+        const t0 = ctx.currentTime, f = 2400 + Math.random() * 1600, n = 2 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < n; i++) tone(f + i * 120, 0.07, 'sine', 0.07, t0 + i * 0.1, f * 1.25, amb.master);
+      }, 2600);
+    }
+    function applyAmbient() {
+      if (!amb) return;
+      const s = settings(), v = s.ambient ? s.ambVol * 0.5 : 0, o = ambOpt, t = ctx.currentTime, set = (g, x) => g.gain.setTargetAtTime(x, t, 0.8);
+      amb.master.gain.setTargetAtTime(v, t, 0.3);
+      const cold = o.season === 'inverno';
+      set(amb.wind, (cold ? 0.35 : 0.15) + o.wind * 0.4 + o.storm * 0.25);
+      set(amb.rain, o.rain * 0.4);
+      set(amb.waves, (o.season === 'estate' || o.season === 'primavera') ? 0.12 : 0.02);
+      set(amb.crick, (cold || o.rain > 0.3) ? 0 : o.night * 0.045);
+    }
 
     // Musica: arpeggio a ottavi sull'accordo di turno, basso sul primo e terzo quarto, ogni tanto una nota di melodia.
     function playStep(s, n, t) {
@@ -94,7 +129,12 @@
         const now = ctx.currentTime;
         if (GAP[name] && lastPlay[name] && now - lastPlay[name] < GAP[name]) return;
         lastPlay[name] = now; FX[name]();
+        if (HAPTIC[name]) haptic(HAPTIC[name]);
       },
+      haptic,
+      // Chiamata dall'ambiente (meteo e ora): aggiorna i suoni d'ambiente.
+      ambient(o) { if (!ctx || ctx.state !== 'running') return; Object.assign(ambOpt, o); ensureAmbient(); applyAmbient(); },
+      refresh() { applyAmbient(); },
       playMusic(id) { song = SONGS[id] || SONGS.inverno; step = 0; nextT = 0; startTimer(); },
       set(key, value) { st[key] = value; save(); apply(); }
     };

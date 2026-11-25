@@ -18,9 +18,11 @@
     // Prestazioni: niente antialias (pesa molto sul telefono) e ombre PCF semplici (le "soft" costano di più).
     // La risoluzione resta piena (fino a 2x) e non viene mai abbassata da sola.
     const renderer = new T.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
-    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+    // Qualità grafica scelta nel menu (Alta, Media, Bassa): risoluzione, ombre e quantità di decorazioni.
+    const Q = R.settings ? R.settings.quality() : { ratio: 2, shadows: 'pcf', map: 1024, density: 1 };
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, Q.ratio);
     renderer.setPixelRatio(pixelRatio);
-    renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFShadowMap;
+    renderer.shadowMap.enabled = Q.shadows !== 'off'; renderer.shadowMap.type = T.PCFShadowMap;
     document.getElementById('game').appendChild(renderer.domElement);
     const scene = new T.Scene();
     scene.background = new T.Color(TH.sky);
@@ -28,9 +30,10 @@
     // near/far stretti: la camera sta sempre ad almeno ~10 m da tutto, e una profondità più precisa evita i lampeggi sulle superfici piatte.
     const cam = new T.PerspectiveCamera(45, 1, 4, 130);
     hud.setCamera(cam);
-    scene.add(new T.HemisphereLight(TH.hemi[0], TH.hemi[1], TH.hemi[2]));
+    const hemi = new T.HemisphereLight(TH.hemi[0], TH.hemi[1], TH.hemi[2]); scene.add(hemi);
+    let env = null, fauna = null; // ambiente (giorno/notte, meteo) e animali: si creano dopo l'omino
     const sun = new T.DirectionalLight(TH.sun[0], TH.sun[1]);
-    sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
+    sun.castShadow = Q.shadows !== 'off'; sun.shadow.mapSize.set(Q.map || 512, Q.map || 512);
     sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.03; // niente puntini d'ombra sulle superfici piatte
     const sc = sun.shadow.camera; sc.left = -20; sc.right = 20; sc.top = 20; sc.bottom = -20; sc.near = 1; sc.far = 70;
     scene.add(sun); scene.add(sun.target);
@@ -83,7 +86,7 @@
       // Foresta fitta di bordo: tre file di alberi tondi (solo decorazione), più qualche collina verde dietro.
       const blob = new T.SphereGeometry(1, 9, 6), trunk = new T.CylinderGeometry(0.15, 0.25, 1.4, 6).translate(0, 0.7, 0), forest = [[], [], [], []];
       const BL = [[0, 2.45, 0, 1.2], [0.75, 2.15, 0.3, 0.85], [-0.7, 2.2, -0.2, 0.9], [0.1, 3.25, -0.1, 0.85], [-0.25, 2.2, 0.75, 0.75]];
-      [[1, 2.2, 1.6], [4.5, 2.3, 2], [8, 2.6, 2.4], [12, 3, 2.8]].forEach(([off, step, sc0]) => ringPoints(off, step, 1.6).forEach(([side, x, z]) => {
+      [[1, 2.2, 1.6], [4.5, 2.3, 2], [8, 2.6, 2.4], [12, 3, 2.8]].slice(0, Q.density < 0.5 ? 2 : Q.density < 1 ? 3 : 4).forEach(([off, step, sc0]) => ringPoints(off, step, 1.6).forEach(([side, x, z]) => {
         const sc = sc0 * (0.85 + rnd() * 0.5) / 1.6 + 0.4;
         forest[side].push({ geo: trunk, x, y: 0, z, s: sc, color: 0x7a4a30 });
         BL.forEach(([bx, by, bz, br], k) => forest[side].push({ geo: blob, x: x + bx * sc, y: by * sc, z: z + bz * sc, s: [br * sc, br * 0.88 * sc, br * sc], color: (TH.leafCols || [0x57c455, 0x34a448])[(k + side) % (TH.leafCols || [0, 0]).length] }));
@@ -103,7 +106,7 @@
     if (TH.flowers) {
       const FL = [0xffffff, 0xffd23a, 0xff7ac6, 0xff4d4d, 0xa066ff, 0xff9a2a], petal = B.cached('petal', () => new T.CylinderGeometry(0.13, 0.13, 0.03, 8)), heart = B.cached('flc', () => new T.CylinderGeometry(0.06, 0.06, 0.05, 8));
       const parts = [];
-      for (let i = 0; i < 170; i++) {
+      for (let i = 0, nf = Math.round((TH.flowerCount || 170) * Q.density); i < nf; i++) {
         const x = -30 + rnd() * 60, z = -20 + rnd() * 46;
         if (inLake(x, z, 2.2) || (x > -3 && x < 18 && z > -3.8 && z < 2.2) || (x > -8 && x < 8 && z < -3.6 && z > -9.4) || (x > 8 && x < 13 && z > -8 && z < -3)) continue;
         const c = FL[Math.floor(rnd() * FL.length)];
@@ -136,7 +139,7 @@
         pumpkins: (x, z) => { const s = 0.7 + rnd() * 0.8; parts.push({ geo: sph, x, y: 0.22 * s, z, s: [0.3 * s, 0.24 * s, 0.3 * s], color: 0xff8a1f }, { geo: stem, x, y: 0.46 * s, z, s: 0.8 * s, color: 0x4c8a2f }); }
       };
       const COUNT = { rocks: 36, bushes: 30, grass: 110, mushrooms: 36, pumpkins: 30 };
-      TH.decor.forEach(kind => { for (let i = 0; i < (COUNT[kind] || 20); i++) { const p = spot(); if (p) MAKE[kind](p[0], p[1]); } });
+      TH.decor.forEach(kind => { for (let i = 0, n = Math.round((COUNT[kind] || 20) * Q.density); i < n; i++) { const p = spot(); if (p) MAKE[kind](p[0], p[1]); } });
       const dm = new T.Mesh(B.mergeParts(parts), mats.accent); scene.add(dm);
     }
     // Monumento della città: mulino a vento con pale che girano o faro con il fascio di luce che ruota.
@@ -645,10 +648,12 @@
     const cupCapW = () => 2;
     // Una bevanda vola dallo zaino (o dal vassoio) all'ospite: quando arriva paga la mancia e fa festa.
     function serveGuest(gu, fromObj) {
+      const rushWin = gu.rush > 0; // servito in tempo: premio
       gu.served = true;
       fromObj.getWorldPosition(_v);
       fly('cup', _v, o => o.set(gu.b.x, 1.1, -6.4), 0.45, 1.0, () => {
         S.cocoa++; gu.cold = 0; hud.floatText(TX.thanks, gu.b.x, 1.6, -6.4); A.sfx('cup');
+        if (rushWin) { S.coins += 40; R.settings.addGems(2); hud.toast('⚡ Servizio lampo! +40 monete e 2 gemme'); A.sfx('goal'); fauna.celebrate(); }
         burst(gu.b.x, 1.3, -6.4, 6, [0xff7ac6, 0xff4d4d], 1.4, 3, 0.9, 0.12, 1.5);
       });
     }
@@ -659,11 +664,37 @@
     }
 
     // --- piazzole di sblocco (da level.unlocks) -----------------------------
-    const padGeo = new T.BoxGeometry(1.8, 0.06, 1.8);
+    // Ogni piazzola è un riquadro a terra con gli angoli tondi: la barra di avanzamento dei pagamenti corre lungo il perimetro
+    // (in senso orario, partendo dal centro del lato alto) e si riempie man mano che si spendono le monete.
+    const PAD_PX = 192, PAD_SIZE = 2.3;
+    const padGeo = new T.PlaneGeometry(PAD_SIZE, PAD_SIZE).rotateX(-Math.PI / 2);
+    function drawPad(pd, frac) {
+      const x = pd.cv.getContext('2d'), S = PAD_PX, mg = 14, r = 38, lw = 14, x0 = mg, y0 = mg, x1 = S - mg, y1 = S - mg;
+      const path = () => {
+        x.beginPath(); x.moveTo(S / 2, y0); x.lineTo(x1 - r, y0); x.arc(x1 - r, y0 + r, r, -Math.PI / 2, 0); x.lineTo(x1, y1 - r); x.arc(x1 - r, y1 - r, r, 0, Math.PI / 2);
+        x.lineTo(x0 + r, y1); x.arc(x0 + r, y1 - r, r, Math.PI / 2, Math.PI); x.lineTo(x0, y0 + r); x.arc(x0 + r, y0 + r, r, Math.PI, Math.PI * 1.5); x.lineTo(S / 2, y0);
+      };
+      x.clearRect(0, 0, S, S);
+      x.fillStyle = 'rgba(255,255,255,0.6)'; path(); x.fill();
+      x.lineWidth = lw; x.lineCap = 'round'; x.lineJoin = 'round';
+      x.strokeStyle = 'rgba(31,42,55,0.25)'; path(); x.stroke();                       // binario vuoto
+      if (frac > 0.004) {
+        const per = 4 * (S - 2 * mg - 2 * r) + 2 * Math.PI * r;                          // lunghezza del perimetro
+        const g = x.createLinearGradient(0, 0, S, S); g.addColorStop(0, '#ffd23a'); g.addColorStop(1, '#4cd964');
+        x.setLineDash([per * Math.min(1, frac), per]); x.strokeStyle = g; path(); x.stroke(); x.setLineDash([]);
+      }
+      x.font = '60px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#000'; x.fillText('🪙', S / 2, S / 2 + 4);
+      pd.tex.needsUpdate = true;
+    }
     const pads = level.unlocks.map(u => {
-      const m = new T.Mesh(padGeo, mats.pad); m.position.set(u.pos[0], 0.05, u.pos[1]); scene.add(m);
+      const cv = document.createElement('canvas'); cv.width = cv.height = PAD_PX;
+      const tex = new T.CanvasTexture(cv);
+      const m = new T.Mesh(padGeo, new T.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }));
+      m.position.set(u.pos[0], 0.06, u.pos[1]); m.renderOrder = 2; scene.add(m);
       const el = hud.label('pad', `<b>${u.title}</b><span></span>`);
-      return Object.assign({}, u, { x: u.pos[0], z: u.pos[1], m, el, sp: el.querySelector('span'), cd: 0 });
+      const pd = Object.assign({}, u, { x: u.pos[0], z: u.pos[1], m, cv, tex, el, sp: el.querySelector('span'), cd: 0, frac: -1 });
+      pd.frac = Math.round(state.paid(u.id) / u.cost * 200) / 200; drawPad(pd, pd.frac);
+      return pd;
     });
     function padShown(pd) {
       if (pd.needRoom != null && !rooms[pd.needRoom].open) return false; // camerieri e boscaioli solo per le stanze già aperte
@@ -748,7 +779,10 @@
     }
 
     // --- giocatore ----------------------------------------------------------
-    const player = B.person(0xf0503a, 0xffd23a, true, OUTFIT, { shorts: 0x2d6cdf }); player.position.set(0, 0, 0);
+    // Aspetto dell'omino scelto nel menu (colore, cappello, accessorio).
+    const look = R.settings.get('look'), CAT = R.settings.CATALOG;
+    const lookColor = (CAT.color.find(c => c.id === look.color) || CAT.color[0]).hex;
+    const player = B.person(lookColor, lookColor === 0xffd23a ? 0xff7ac6 : 0xffd23a, true, OUTFIT, { shorts: 0x2d6cdf, hat: look.hat, acc: look.acc }); player.position.set(0, 0, 0);
     const stackG = new T.Group(); stackG.position.set(0, 0.75, -0.32); player.add(stackG);
     const carry = { logs: 0, cups: 0 };
     let inLogs = 0, inCups = 0; // pezzi ancora in volo verso lo zaino: compaiono sulla schiena solo quando arrivano
@@ -767,10 +801,13 @@
     openRoom(rooms[0]); // la prima stanza è sempre aperta
     rooms.forEach((r, i) => { r.pileN = S.piles[i] || 0; drawPile(r); });
     pads.forEach(pd => { if (state.isBought(pd.id)) applyEffect(pd); });
+    // Atmosfera: giorno/notte e meteo; animali e compagno.
+    env = R.createEnv({ T, TH, A, Q, level, hemi, sun, scene, player, mats, hud });
+    fauna = R.createFauna({ T, B, scene, A, Q, level, player, trees, collide, inLake, inLM, bounds: [bx0, bx1, bz0, bz1] });
 
     // --- freccia guida e caduta (neve o petali) ------------------------------
     const arrow = new T.Mesh(new T.ConeGeometry(0.35, 0.7, 20), mats.arrow); arrow.rotation.x = Math.PI; scene.add(arrow);
-    const leafy = TH.fall === 'leaves', NS = snowy ? 500 : leafy ? 110 : 200, snowPos = new Float32Array(NS * 3), fallSpeed = snowy ? 1.3 : leafy ? 0.9 : 0.7;
+    const leafy = TH.fall === 'leaves', NS = Math.round((snowy ? 500 : leafy ? 110 : 200) * Math.max(0.4, Q.density)), snowPos = new Float32Array(NS * 3), fallSpeed = snowy ? 1.3 : leafy ? 0.9 : 0.7;
     for (let i = 0; i < NS; i++) { snowPos[i * 3] = -20 + Math.random() * 40; snowPos[i * 3 + 1] = Math.random() * 14; snowPos[i * 3 + 2] = -20 + Math.random() * 40; }
     const snowGeo = new T.BufferGeometry(); snowGeo.setAttribute('position', new T.BufferAttribute(snowPos, 3));
     scene.add(new T.Points(snowGeo, new T.PointsMaterial(snowy ? { color: 0xffffff, size: 0.16, transparent: true, opacity: 0.9 } : { color: TH.fallColor || 0xff9ec7, size: leafy ? 0.27 : 0.17, transparent: true, opacity: 0.95 })));
@@ -786,20 +823,63 @@
 
     // --- ospiti -------------------------------------------------------------
     const guests = []; let spawnT = 2;
-    function spawnGuest() {
+    // kind: undefined (ospite normale), 'vip' (paga il triplo), 'scout' (squadra: pagano il 50% in più), 'rush' (ospite affamato: servito in fretta dà un premio).
+    function spawnGuest(kind) {
       let fb = null;
       for (const r of rooms) if (r.open) for (const b of r.beds) if (!b.guest && !fb) fb = [r, b];
-      if (!fb) return;
+      if (!fb) return null;
       const [r, b] = fb;
-      const g = B.person(COATS[Math.floor(Math.random() * COATS.length)], CONFETTI[Math.floor(Math.random() * CONFETTI.length)], false, OUTFIT, { shorts: SHORTS[Math.floor(Math.random() * SHORTS.length)], shoes: Math.random() < 0.5 ? 0xffffff : 0x3d8bff }); g.scale.setScalar(0.88); g.position.set(SPAWN[0], 0, SPAWN[1]);
-      const gu = { g, r, b, state: 'in', path: [[r.cx, -2.8], [b.x, -4.6]], stay: P.guest_stay, cold: 0, want: false, served: false, el: hud.label('pill', '') };
+      const look = kind === 'vip' ? { coat: 0xffd23a, hat: 0xffffff, opt: { hat: 'crown' } } : kind === 'scout' ? { coat: 0x4cd964, hat: 0x8b5a2b, opt: {} } : kind === 'rush' ? { coat: 0xff7ac6, hat: 0xffffff, opt: {} } : null;
+      const g = B.person(look ? look.coat : COATS[Math.floor(Math.random() * COATS.length)], look ? look.hat : CONFETTI[Math.floor(Math.random() * CONFETTI.length)], false, OUTFIT,
+        Object.assign({ shorts: SHORTS[Math.floor(Math.random() * SHORTS.length)], shoes: Math.random() < 0.5 ? 0xffffff : 0x3d8bff }, look ? look.opt : {}));
+      g.scale.setScalar(kind === 'vip' ? 1 : 0.88); g.position.set(SPAWN[0], 0, SPAWN[1]);
+      const gu = { g, r, b, state: 'in', path: [[r.cx, -2.8], [b.x, -4.6]], stay: P.guest_stay * (kind === 'vip' ? 1.4 : 1), cold: 0, want: false, served: false, el: hud.label('pill', ''), vip: kind === 'vip', scout: kind === 'scout', rush: kind === 'rush' ? 24 : 0, taken: false };
       b.guest = gu; guests.push(gu);
+      return gu;
+    }
+    // --- tutorial a fumetti: solo la prima volta e solo nella prima stagione ---
+    const tut = { on: !R.settings.get('tutorial') && level.id === 'inverno' && S.done === 0, i: 0, moved: 0, lx: null, lz: null };
+    const TSTEPS = [
+      ['👆 Trascina il dito sullo schermo per muoverti', () => tut.moved > 3],
+      ['🪓 Vai verso un abete: segui la freccia gialla', () => S.wood >= 1 || !!nearTree(player.position, P.chop_range)],
+      ['🌲 Fermati vicino all\'albero: la legna si taglia da sola!', () => S.wood >= 4],
+      ['🔥 Porta la legna al camino, dove c\'è la barra del fuoco', () => S.fed >= 1],
+      ['🧑 Presto arriverà un escursionista: tieni il camino acceso', () => S.guests >= 1],
+      ['🪙 Raccogli le monete lasciate davanti alla stanza', () => S.collected >= 1],
+      ['✨ Spendile nei riquadri a terra: la barra si riempie!', () => Object.keys(S.bought).length >= 1 || S.done >= 5]
+    ];
+    function endTutorial() { tut.on = false; hud.hint(null); R.settings.set('tutorial', true); }
+    hud.onHintSkip(endTutorial);
+    function updateTutorial(dt) {
+      const p = player.position;
+      if (tut.lx != null) tut.moved += Math.hypot(p.x - tut.lx, p.z - tut.lz); tut.lx = p.x; tut.lz = p.z;
+      while (tut.on && tut.i < TSTEPS.length && TSTEPS[tut.i][1]()) tut.i++;
+      if (tut.on && tut.i >= TSTEPS.length) { endTutorial(); hud.toast('Ora sai tutto: buon divertimento! 🎉'); return; }
+      if (tut.on) hud.hint(TSTEPS[tut.i][0]);
+    }
+    // Consigli che compaiono una volta sola, al momento giusto.
+    function tips() {
+      if (carry.logs >= logCap() && S.fed === 0 && R.settings.tip('bag')) hud.toast('🎒 Zaino pieno! Porta la legna al camino');
+      if (guests.some(g => g.want && g.state === 'bed' && !g.served) && R.settings.tip('want')) hud.toast(`${TX.want} Portagli la bevanda dal banco!`);
+      if (cocoa.open && carry.cups === 0 && S.cocoa === 0 && R.settings.tip('stand')) hud.toast('☕ Il banco prepara le bevande: avvicinati per prenderle');
+    }
+    // Eventi a sorpresa ogni 75-135 secondi, dopo i primi obiettivi: un VIP, una squadra di scout o un ospite affamato.
+    let eventT = 70;
+    function runEvent() {
+      const free = rooms.reduce((n, r) => n + (r.open ? r.beds.filter(b => !b.guest).length : 0), 0);
+      if (!free) return;
+      const kinds = ['vip', 'scout', 'rush'].filter(k => (k !== 'scout' || free >= 2) && (k !== 'rush' || cocoa.open));
+      const k = kinds[Math.floor(Math.random() * kinds.length)];
+      if (k === 'vip') { if (spawnGuest('vip')) hud.toast('⭐ Sta arrivando un ospite VIP: paga il triplo!'); }
+      else if (k === 'rush') { if (spawnGuest('rush')) hud.toast(`⏱ Ospite affamato! Portagli subito ${TX.drinkShort || 'la bevanda'}: +40 monete`); }
+      else { for (let i = 0; i < Math.min(3, free); i++) spawnGuest('scout'); hud.toast('🏕️ Arriva una squadra di scout! Pagano di più'); }
+      A.sfx('guest'); fauna.celebrate();
     }
     function leave(gu, happy) {
       const g = gu.g; g.rotation.set(0, 0, 0); g.position.set(gu.b.x, 0, -4.6); gu.b.guest = null; gu.state = 'out'; g.userData.blob.visible = true;
       gu.path = [[gu.r.cx, -2.8], [SPAWN[0], SPAWN[1]]];
       if (happy) {
-        const pay = P.pay + (gu.served ? P.tip : 0);
+        const pay = Math.round((P.pay + (gu.served ? P.tip : 0)) * (gu.vip ? 3 : gu.scout ? 1.5 : 1));
         gu.r.pileN += pay; drawPile(gu.r); S.happy++; S.guests++;
         hud.floatText('+' + pay, gu.r.cx + 1.7, 1.2, PILE_Z);
         burst(gu.r.cx + 1.7, 0.6, PILE_Z, 8, [0xffd23a, 0xfff2a8], 2.2, 4, 0.7, 0.1);
@@ -953,16 +1033,20 @@
       if (moving && dustT <= 0) { dustT = 0.17; burst(p.x - Math.sin(player.rotation.y) * 0.18, 0.08, p.z - Math.cos(player.rotation.y) * 0.18, 1, [TH.dust || 0xffffff, 0xffffff], 0.3, 0.7, 0.45, 0.11, 2.5); }
       // alberi che ricrescono
       regrowTrees(dt);
+      if (tut.on) updateTutorial(dt); else tips();
+      // eventi a sorpresa
+      eventT -= dt; if (S.done >= 3 && S.fed > 0 && eventT <= 0) { eventT = 75 + Math.random() * 60; runEvent(); }
       // ospiti
       if (S.fed > 0) { spawnT -= dt; if (spawnT <= 0) { spawnT = (P.guest_spawn_min + Math.random() * (P.guest_spawn_max - P.guest_spawn_min)) * (hasEffect('sign') ? P.sign_mul : 1); spawnGuest(); } }
       for (let i = guests.length - 1; i >= 0; i--) {
         const gu = guests[i];
         if (gu.state === 'in') {
           if (B.follow(gu.g, gu.path, 2.6, dt)) {
-            gu.state = 'bed'; gu.g.rotation.set(-Math.PI / 2, 0, 0); gu.g.position.set(gu.b.x, 0.62, -5.7); gu.g.userData.blob.visible = false; A.sfx('guest');
-            gu.want = cocoa.open && Math.random() < P.cocoa_chance;
+            gu.state = 'bed'; gu.g.rotation.set(-Math.PI / 2, 0, 0); gu.g.position.set(gu.b.x, 0.62, -5.7); gu.g.userData.blob.visible = false; A.sfx('guest'); fauna.react();
+            gu.want = cocoa.open && (gu.vip || gu.scout || gu.rush > 0 || Math.random() < P.cocoa_chance);
           }
         } else if (gu.state === 'bed') {
+          if (gu.rush > 0 && !gu.served) gu.rush -= dt;
           if (gu.r.fuel > 0) { gu.stay -= dt; gu.cold = Math.max(0, gu.cold - dt * 2); } else gu.cold += dt;
           if (gu.cold > P.guest_cold_limit) leave(gu, false); else if (gu.stay <= 0) leave(gu, true);
         } else if (B.follow(gu.g, gu.path, 2.8, dt)) { scene.remove(gu.g); gu.el.remove(); guests.splice(i, 1); }
@@ -973,11 +1057,11 @@
       // obiettivi
       while (S.done < objectives.length && objValue(objectives[S.done]) >= objTarget(objectives[S.done])) {
         const rw = objectives[S.done].reward || 10;
-        S.done++; S.coins += rw; hud.toast(`Obiettivo completato! +${rw} monete 🎉`); save();
+        S.done++; S.coins += rw; R.settings.addGems(1); hud.toast(`Obiettivo completato! +${rw} monete 🎉`); save(); fauna.celebrate();
         burst(p.x, 1.6, p.z, 34, CONFETTI, 4.5, 8, 1.2, 0.17); hopT = 0.5; A.sfx('goal');
       }
       if (S.done >= objectives.length && !S.won) {
-        S.won = true; save(); running = false; endJoy();
+        S.won = true; R.settings.addGems(10); save(); running = false; endJoy();
         hud.showWin(TX.winTitle, TX.winText(S), TX.winNext, level.next);
       }
       saveT += dt; if (saveT > 2) { saveT = 0; save(); }
@@ -990,12 +1074,18 @@
         r.flare = Math.max(0, r.flare - dt * 3);
         const lit = r.fuel > 0, s = lit ? 0.45 + r.fuel / P.fuel_max * 0.75 + r.flare * 0.35 : 0;
         r.flame.visible = lit; r.flame.scale.set(s, s * (1 + 0.18 * Math.sin(tt * 13 + r.i)), s);
-        r.light.intensity = lit ? 0.6 + r.fuel / P.fuel_max + 0.15 * Math.sin(tt * 17 + r.i) + r.flare * 0.8 : 0;
+        r.light.intensity = lit ? (0.6 + r.fuel / P.fuel_max + 0.15 * Math.sin(tt * 17 + r.i) + r.flare * 0.8) * (1 + (env ? env.night : 0) * 2.4) : 0;
+        r.light.distance = 8 + (env ? env.night : 0) * 6;
         r.pile.rotation.y = tt * 0.8; r.pile.position.y = 0.05 + 0.04 * Math.sin(tt * 3 + r.i);
       }
       for (const t of trees) { animateTree(t, dt); fadeTree(t, p, dt); }
-      mats.pad.opacity = 0.45 + 0.2 * Math.sin(tt * 4);
-      pads.forEach(pd => { pd.m.visible = !state.isBought(pd.id) && padShown(pd); });
+      pads.forEach(pd => {
+        pd.m.visible = !state.isBought(pd.id) && padShown(pd);
+        if (!pd.m.visible) return;
+        const f = Math.round(state.paid(pd.id) / pd.cost * 200) / 200;
+        if (f !== pd.frac) { pd.frac = f; drawPad(pd, f); } // si ridisegna solo quando il pagamento avanza
+        pd.m.scale.setScalar(1 + 0.03 * Math.sin(tt * 4));
+      });
       const tg = running ? taskTarget() : null;
       arrow.visible = !!tg && Math.hypot(tg[0] - p.x, tg[1] - p.z) > 1.4;
       if (tg) { arrow.position.set(tg[0], 2.9 + Math.sin(tt * 4) * 0.25, tg[1]); arrow.rotation.y = tt * 2; }
@@ -1003,7 +1093,7 @@
       if (hopT > 0) { hopT = Math.max(0, hopT - dt); p.y = Math.sin(Math.PI * (1 - hopT / 0.5)) * 0.55; } else p.y = 0;
       const a = snowGeo.attributes.position.array;
       for (let i = 0; i < NS; i++) {
-        a[i * 3 + 1] -= dt * fallSpeed; a[i * 3] += Math.sin(tt + i) * dt * (snowy ? 0.2 : leafy ? 1.2 : 0.6);
+        a[i * 3 + 1] -= dt * fallSpeed * (env ? env.fallMul : 1); a[i * 3] += Math.sin(tt + i) * dt * (snowy ? 0.2 : leafy ? 1.2 : 0.6) + (env ? env.windX : 0) * dt * (snowy ? 1 : 0.5);
         if (a[i * 3 + 1] < 0) { a[i * 3 + 1] = 14; a[i * 3] = p.x - 20 + Math.random() * 40; a[i * 3 + 2] = p.z - 20 + Math.random() * 40; }
       }
       snowGeo.attributes.position.needsUpdate = true;
@@ -1047,6 +1137,8 @@
         if (gu.state === 'bed') {
           if (gu.r.fuel <= 0) { txt = TX.cold; cls += ' cold'; }
           else if (gu.want && !gu.served) { txt = TX.want; cls += ' want'; }
+          const badge = gu.vip ? '⭐ VIP' : gu.scout ? '🏕️' : gu.rush > 0 && !gu.served ? `⏱${Math.ceil(gu.rush)}` : '';
+          if (badge) txt = txt ? `${badge} ${txt}` : badge;
         }
         if (gu.el.textContent !== txt) gu.el.textContent = txt;
         if (gu.el.className !== cls) gu.el.className = cls;
@@ -1062,7 +1154,7 @@
     function frame(now) {
       const raw = (now - last) / 1000, dt = Math.min(0.05, raw); last = now;
       if (fpsOn) { fpsN++; fpsT += raw; if (fpsT >= 0.5) { fpsEl.textContent = Math.round(fpsN / fpsT) + ' fps'; fpsN = 0; fpsT = 0; } }
-      if (running && !paused) { update(dt); tickLater(dt); updateFlyers(dt); updateParts(dt); }
+      if (running && !paused) { update(dt); tickLater(dt); updateFlyers(dt); updateParts(dt); env.update(dt); fauna.update(dt); }
       anim(dt); renderer.render(scene, cam); overlays(dt); refreshHud();
       requestAnimationFrame(frame);
     }
@@ -1097,7 +1189,10 @@
         hireAll() { pads.forEach(pd => { if (pd.effect === 'helper' || pd.effect === 'waiter') buyPad(pd); }); },
         fast(on) { speedMul = on ? 2 : 1; },
         showFps(on) { fpsOn = !!on; if (!fpsEl) { fpsEl = document.createElement('div'); fpsEl.style.cssText = 'position:fixed;left:8px;bottom:8px;background:rgba(0,0,0,.6);color:#fff;font:12px monospace;padding:3px 6px;border-radius:6px;z-index:50'; document.body.appendChild(fpsEl); } fpsEl.hidden = !on; },
-        info() { return { fast: speedMul > 1, fps: fpsOn, done: S.done, total: objectives.length }; }
+        weather(k) { env.setWeather(k); }, time(n) { env.setTime(n); }, autoEnv() { env.release(); env.setWeather('auto'); },
+        event(k) { if (!S.fed) S.fed = 1; if (k === 'scout') for (let i = 0; i < 3; i++) spawnGuest('scout'); else spawnGuest(k); },
+        gems(n) { R.settings.addGems(n); },
+        info() { return { fast: speedMul > 1, fps: fpsOn, done: S.done, total: objectives.length, env: env.info(), critters: fauna.count() }; }
       }
     };
   };

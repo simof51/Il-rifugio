@@ -55,13 +55,23 @@
       if (E.taskBar._w !== w) { E.taskBar._w = w; E.taskBar.style.width = w; }
     }
 
+    // Icone di ora e meteo (🌙 🌧️ …) accanto agli indicatori.
+    const envChip = $('envChip'), envN = $('envN');
+    function setEnv(txt) { envChip.hidden = !txt; envN.textContent = txt; }
+    // Suggerimenti del tutorial: un fumetto in basso con un tasto per saltare.
+    const hintEl = $('hint'), hintTxt = $('hintTxt');
+    function hint(txt) { if (!txt) { hintEl.hidden = true; return; } if (hintTxt.textContent !== txt) hintTxt.textContent = txt; hintEl.hidden = false; }
+    $('hintSkip').onclick = () => { hintEl.hidden = true; if (hud_skip) hud_skip(); };
+    let hud_skip = null;
+
     const stick = $('stick'), knob = $('knob');
     function showStick(x, y) { stick.style.display = 'block'; stick.style.left = x + 'px'; stick.style.top = y + 'px'; knob.style.transform = 'translate(-50%,-50%)'; }
     function moveKnob(dx, dy) { knob.style.transform = `translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`; }
     function hideStick() { stick.style.display = 'none'; }
 
     return {
-      label, put, toast, floatText, updateFloats, setStats, setTask, showStick, moveKnob, hideStick,
+      label, put, toast, floatText, updateFloats, setStats, setTask, showStick, moveKnob, hideStick, setEnv, hint,
+      onHintSkip(fn) { hud_skip = fn; },
       setCamera(c) { cam = c; },
       hideIntro() { $('intro').classList.add('hidden'); },
       showWin(title, text, next, nextId) {
