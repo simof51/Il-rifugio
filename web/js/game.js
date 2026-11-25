@@ -52,7 +52,18 @@
     let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
     const cols = []; // ostacoli come rettangoli [x0, x1, z0, z1]
     const lake = level.lake;
-    const inLake = (x, z, pad) => !!lake && Math.hypot(x - lake.x, z - lake.z) < lake.r + (pad || 0);
+    // Ogni città ha il suo ambiente: Valle = cappella tra i monti, Borgo dei Mulini = campi coltivati e un canale, Porto = mare con molo e barche.
+    // Qui si dicono le zone "occupate" (acqua, campi, cappella): alberi, decorazioni e strutture le evitano come il lago.
+    const CITYID = level.cityId || 'valle', SEASON_ID = level.season;
+    const SEA_Z = CITYID === 'porto' ? 16.5 : null;
+    const FARMS = CITYID === 'mulini' ? [[18, 3.5, 10, 5.5], [18, 10, 10, 5.5], [-28, 17.2, 17, 4.2]] : []; // campi: x, z, larghezza, profondità
+    const CANAL = CITYID === 'mulini' ? [22.8, 24.8] : null;
+    const CHAPEL = CITYID === 'valle' ? { x: 22, z: -8 } : null;
+    const inLake = (x, z, pad) => {
+      pad = pad || 0;
+      return (!!lake && Math.hypot(x - lake.x, z - lake.z) < lake.r + pad) || (SEA_Z != null && z > SEA_Z - pad) || (!!CANAL && z > CANAL[0] - pad && z < CANAL[1] + pad) ||
+        FARMS.some(f => x > f[0] - pad && x < f[0] + f[2] + pad && z > f[1] - pad && z < f[1] + f[3] + pad) || (!!CHAPEL && Math.hypot(x - CHAPEL.x, z - CHAPEL.z) < 3.2 + pad);
+    };
     // Monumento della città (mulino o faro): occupa un angolo della mappa, senza alberi né decorazioni intorno.
     const LM = level.landmark === 'windmill' ? { x: 23.5, z: -11.5, r: 4.4 } : level.landmark === 'lighthouse' ? { x: -25, z: -12.5, r: 3.8 } : null;
     const inLM = (x, z, pad) => !!LM && Math.hypot(x - LM.x, z - LM.z) < LM.r + (pad || 0);
@@ -139,6 +150,7 @@
     if (TH.edge === 'mountains') {
       const cone = new T.ConeGeometry(1, 1, 7, 1, true), rock = [[], [], [], []], snow = [[], [], [], []], base = new T.Color(TH.hill);
       ringPoints(12.5, 7, 2).forEach(([side, x, z]) => {
+        if (SEA_Z != null && side === 1) return; // al Porto a sud c'è il mare, non i monti
         const h = 26 + rnd() * 16, r = 8 + rnd() * 2.5, ry = rnd() * 6;
         const col = (k) => base.clone().multiplyScalar(0.8 + rnd() * 0.35).getHex() + 0 * k;
         rock[side].push({ geo: cone, x, y: h / 2, z, s: [r, h, r], ry, color: col(0) });
@@ -154,12 +166,13 @@
       const blob = new T.SphereGeometry(1, 7, 5), trunk = new T.CylinderGeometry(0.15, 0.25, 1.4, 5).translate(0, 0.7, 0), forest = [[], [], [], []];
       const BL = [[0, 2.45, 0, 1.2], [0.75, 2.15, 0.3, 0.85], [-0.7, 2.2, -0.2, 0.9]]; // tre palloni per albero di bordo: da lontano non si vede la differenza
       [[1, 2.4, 1.6], [4.5, 2.6, 2], [8.5, 2.9, 2.4]].slice(0, Q.density < 0.5 ? 1 : Q.density < 1 ? 2 : 3).forEach(([off, step, sc0]) => ringPoints(off, step, 1.6).forEach(([side, x, z]) => {
-        const sc = sc0 * (0.85 + rnd() * 0.5) / 1.6 + 0.4;
+        if (SEA_Z != null && side === 1) return; // il mare non ha alberi
+        const sc =sc0 * (0.85 + rnd() * 0.5) / 1.6 + 0.4;
         forest[side].push({ geo: trunk, x, y: 0, z, s: sc, color: 0x7a4a30 });
         BL.forEach(([bx, by, bz, br], k) => forest[side].push({ geo: blob, x: x + bx * sc, y: by * sc, z: z + bz * sc, s: [br * sc, br * 0.88 * sc, br * sc], color: (TH.leafCols || [0x57c455, 0x34a448])[(k + side) % (TH.leafCols || [0, 0]).length] }));
       }));
       for (let s = 0; s < 4; s++) scene.add(new T.Mesh(B.mergeParts(forest[s]), mats.accent));
-      ringPoints(24, 16, 6).forEach(([, x, z]) => { const h = 12 + rnd() * 10, r = 12 + rnd() * 5, m = new T.Mesh(new T.ConeGeometry(r, h, 14), mats.hill); m.position.set(x, h / 2, z); scene.add(m); });
+      ringPoints(24, 16, 6).forEach(([side, x, z]) => { if (SEA_Z != null && side === 1) return; const h = 12 + rnd() * 10, r = 12 + rnd() * 5, m = new T.Mesh(new T.ConeGeometry(r, h, 14), mats.hill); m.position.set(x, h / 2, z); scene.add(m); });
     }
     const moundGeo = new T.SphereGeometry(1, 14, 8);
     for (let i = 0; i < 14; i++) {
@@ -593,8 +606,10 @@
     }
     // La reception sta quasi attaccata alla stanza più a sinistra e scivola di lato ogni volta che si apre una nuova stanza.
     function recepTarget() {
-      if (PL.layout.recep === 'right') { let m = -1e9; for (const r of rooms) if (r.open) m = Math.max(m, r.cx + RW / 2); if (m < -1e8) m = RW / 2; return m + 2.35; }
-      let e = 1e9; for (const r of rooms) if (r.open) e = Math.min(e, r.cx - RW / 2); if (e > 1e8) e = -RW / 2; return e - 2.35; }
+      // sta fuori da tutte le stanze del suo lato (anche quelle non ancora aperte: il loro riquadro non deve finirle addosso)
+      if (PL.layout.recep === 'right') { let m = RW / 2; for (const r of rooms) m = Math.max(m, r.cx + RW / 2); return m + 2.35; }
+      let e = 1e9; for (const r of rooms) e = Math.min(e, r.cx - RW / 2); if (e < 1e8) return e - 2.35;
+      e = 1e9; for (const r of rooms) if (r.open) e = Math.min(e, r.cx - RW / 2); if (e > 1e8) e = -RW / 2; return e - 2.35; }
     function syncRecep() {
       const x = RECEP.x, z = RECEP.z, c = recep.col;
       recep.g.position.set(x, 0, z); c[0] = x - 1.9; c[1] = x + 1.9; c[2] = z - 1.95; c[3] = z + 0.65;
@@ -702,6 +717,41 @@
         structPlaced.push([x, z]); break;
       }
     });
+
+    // --- ambiente della città: mare e molo (Porto), campi e canale (Mulini), cappella (Valle) ---
+    {
+      const iceSea = SEASON_ID === 'inverno', waterM = c => new T.MeshPhongMaterial({ color: c, shininess: 60, specular: 0x88aacc });
+      if (SEA_Z != null) {
+        const sea = new T.Mesh(new T.PlaneGeometry(140, 40).rotateX(-Math.PI / 2), waterM(iceSea ? 0x9fd0e8 : 0x3ba3d9)); sea.position.set(0, 0.03, SEA_Z + 20); scene.add(sea);
+        box(140, 0.06, 2.4, B.tint(iceSea ? 0xf4f8ff : 0xf2e2b3), 0, 0.045, SEA_Z - 0.9, null, 0.01); // spiaggia
+        cols.push([-40, 40, SEA_Z + 0.6, 60]);
+        box(2.6, 0.2, 10, mats.plank, 7, 0.17, SEA_Z + 3.5, null, 0.02);                                    // molo
+        for (let k = 0; k < 5; k++) [-1.25, 1.25].forEach(dx => cyl(0.1, 0.1, 0.8, mats.wood, 7 + dx, 0.25, SEA_Z + 0.5 + k * 2.2, null, 6));
+        [[-7, SEA_Z + 5, 0.3, 0x2d6cdf], [15, SEA_Z + 8, -0.5, 0xd9433b], [-17, SEA_Z + 10, 0.8, 0xf4f1e6]].forEach(([x, z, ry, c]) => { // barche in mare
+          const g = new T.Group(); g.position.set(x, 0.05, z); g.rotation.y = ry; scene.add(g);
+          box(2.6, 0.5, 1.0, B.tint(c), 0, 0.25, 0, g, 0.12); box(2.0, 0.08, 0.7, mats.plank, 0, 0.52, 0, g, 0.02); cyl(0.05, 0.05, 2.2, mats.wood, -0.2, 1.5, 0, g, 6); box(0.04, 1.4, 0.9, mats.white, 0.1, 1.6, 0, g, 0.01);
+        });
+      }
+      if (CANAL) {
+        const mid = (CANAL[0] + CANAL[1]) / 2;
+        const cm = new T.Mesh(new T.PlaneGeometry(140, CANAL[1] - CANAL[0]).rotateX(-Math.PI / 2), waterM(iceSea ? 0xb9dcef : 0x4fb6e8)); cm.position.set(0, 0.03, mid); scene.add(cm);
+        box(140, 0.1, 0.3, mats.stone, 0, 0.05, CANAL[0] - 0.15, null, 0.02); box(140, 0.1, 0.3, mats.stone, 0, 0.05, CANAL[1] + 0.15, null, 0.02);
+        cols.push([-40, 40, CANAL[0] - 0.3, CANAL[1] + 0.3]);
+        const crop = { inverno: [0xf2f6ff, 0xdfe8f5], primavera: [0xff5d8f, 0xffd23a, 0xa066ff], estate: [0xffd23a, 0x7ac943], autunno: [0xd98a3a, 0xb8862b, 0x8b5a2b] }[SEASON_ID] || [0x7ac943];
+        const bgeo = B.cached('fieldbox', () => new T.BoxGeometry(1, 0.1, 1)), parts = [];
+        FARMS.forEach(f => { for (let r = 0, n = Math.floor(f[3] / 0.8); r < n; r++) parts.push({ geo: bgeo, x: f[0] + f[2] / 2, y: 0.06, z: f[1] + 0.5 + r * 0.8, s: [f[2] - 0.5, 1, 0.55], color: r % 2 ? 0x6b4a2f : crop[(r >> 1) % crop.length] }); });
+        const fm = new T.Mesh(B.mergeParts(parts), mats.accent); fm.receiveShadow = true; scene.add(fm);
+      }
+      if (CHAPEL) {
+        const g = new T.Group(); g.position.set(CHAPEL.x, 0, CHAPEL.z); g.rotation.y = -0.5; scene.add(g);
+        box(2.6, 2.2, 2.6, mats.white, 0, 1.1, 0, g, 0.04); box(0.8, 1.6, 0.8, mats.white, 0, 2.9, -0.6, g, 0.03);
+        const roof = new T.Mesh(B.cached('chroof', () => new T.ConeGeometry(2.1, 1.2, 4)), B.tint(0xb02e26)); roof.position.y = 2.8; roof.rotation.y = Math.PI / 4; roof.castShadow = true; g.add(roof);
+        const tr = new T.Mesh(B.cached('chtroof', () => new T.ConeGeometry(0.75, 0.8, 4)), B.tint(0xb02e26)); tr.position.set(0, 4.1, -0.6); tr.rotation.y = Math.PI / 4; g.add(tr);
+        box(0.06, 0.5, 0.06, mats.dark, 0, 4.75, -0.6, g); box(0.3, 0.06, 0.06, mats.dark, 0, 4.85, -0.6, g);
+        box(0.7, 1.2, 0.1, mats.dark, 0, 0.6, 1.33, g); [-0.85, 0.85].forEach(x => box(0.4, 0.6, 0.08, B.tint(0xbfe6ff), x, 1.3, 1.32, g));
+        cols.push([CHAPEL.x - 1.6, CHAPEL.x + 1.6, CHAPEL.z - 1.6, CHAPEL.z + 1.6]);
+      }
+    }
 
     // --- percorsi per gli aiutanti -------------------------------------------
     // Griglia di 0,5 m sul mondo: una cella è chiusa se è vicina a un ostacolo (muri, letti, camino, banco, lago, alberi, mascotte).

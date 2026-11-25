@@ -9,6 +9,16 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.25.0 · 2026-11-26 · Ambienti diversi per ogni città, reception non più sovrapposta
+
+- **Ambiente di ogni città**:
+  - **Valle del Rifugio**: monti/bosco e una cappella con campanile.
+  - **Borgo dei Mulini**: campi coltivati a righe (tulipani, girasoli, zucche o neve a seconda della stagione) e un canale con sponde di pietra, oltre al mulino.
+  - **Porto delle Luci**: il mare a sud con spiaggia, molo e barche, oltre al faro; niente alberi né monti dal lato del mare.
+  Alberi, decorazioni e strutture evitano acqua, campi e cappella.
+- **Reception**: ora sta fuori da tutte le stanze del suo lato, anche quelle non ancora aperte, quindi non si sovrappone più alla seconda stanza (succedeva soprattutto nella seconda città).
+- **Per tornare indietro**: `git checkout 03a58b0 -- web Changelog`.
+
 ## v0.24.2 · 2026-11-26 · Freccia guida 3D
 
 - La freccia del tutorial attorno all'omino ora è in 3D (asta e punta, con luce e ombreggiatura), ad altezza busto e più staccata dal giocatore (2,3 m).
