@@ -139,11 +139,6 @@
       `<b class="small">Lingua</b>${opts([{ v: 'auto', l: '🌐 Auto' }].concat(Object.keys(R.i18n.LANGS).map(k => ({ v: k, l: R.i18n.LANGS[k] }))), st.get('lang'), 'data-lang')}` +
       `<b class="small">Qualità grafica (si applica ricaricando)</b>${opts(Object.keys(Qs).map(k => ({ v: k, l: Qs[k].label })), st.get('quality'), 'data-q')}`;
   }
-  let snapMsg = '';
-  function saveHtml() { // copia di sicurezza automatica (resta); il salvataggio portatile con il codice non c'è più
-    return `<div class="small">Il gioco tiene una copia di sicurezza ogni pochi minuti: se qualcosa va storto puoi tornare indietro.</div>` +
-      `<div class="row"><button class="btn ghost" id="snapBack"${state.hasSnap() ? '' : ' disabled'}>Torna a qualche minuto fa</button></div>${snapMsg ? `<div class="small"><b>${snapMsg}</b></div>` : ''}`;
-  }
   function privacyHtml() {
     return `<div class="small">Il Rifugio salva i progressi solo su questo dispositivo e non raccoglie dati personali. Oggi il gioco non mostra pubblicità né vende acquisti.</div>` +
       `<div class="set"><span>Consenso alla pubblicità personalizzata</span><button class="tg${consent().ads ? ' on' : ''}" data-ads="1">${consent().ads ? 'Sì' : 'No'}</button></div>`;
@@ -218,7 +213,7 @@
         section('game', '🎮 Mini-gioco', MT.gameHtml()) +
         section('deco', '🏠 Nome del rifugio', MT.decoNameHtml());
     } else {
-      h = H('⚙️ Impostazioni') + settingsHtml() + H('💾 Copia di sicurezza') + saveHtml() + H('🔒 Privacy e consenso') + privacyHtml() +
+      h = H('⚙️ Impostazioni') + settingsHtml() + H('🔒 Privacy e consenso') + privacyHtml() +
         (SHOW_DEBUG || debug ? section('dbg', '🛠 Debug', `<div class="dbg">${debugPanel()}</div>`) : '');
     }
     $('menuBody').innerHTML = h;
@@ -254,7 +249,14 @@
     if (r === 'ok') audio.sfx('buy');
     rerender();
   }
-  function metaAct(k) {
+  function startMinigame() {
+    showPop('🎯 Pioggia di monete', '<div id="mgBox"></div>', [{ t: 'Esci', ghost: true, fn: () => { closePop(); rerender(); } }]);
+    popStop = MT.minigame($('mgBox'), (score, gems) => {
+      $('mgBox').innerHTML = `<div class="reward"><i>🪙</i><b>${score} monete!</b><span>${gems ? `Hai vinto ${gems} 💎` : 'Ci vogliono almeno 4 monete per una gemma.'}</span></div>`;
+      audio.sfx(gems ? 'buy' : 'click');
+    });
+  }
+  async function metaAct(k) {
     if (k === 'daily') {
       const r = MT.claimDaily(); if (!r) return;
       audio.sfx('buy'); hud.toast(`🎁 +${r.gems} 💎 · serie di ${r.streak} ${r.streak === 1 ? 'giorno' : 'giorni'}`); rerender();
@@ -262,13 +264,14 @@
       const r = MT.openChest(); if (!r) return;
       audio.sfx('goal');
       showPop('🎁 Scrigno aperto!', `<div class="reward"><i>${r.e}</i><b>${r.text}</b></div>`, [{ t: 'Che bello!', fn: () => { closePop(); rerender(); } }]);
-    } else if (k === 'game') {
-      if (MT.gameWait() > 0) return;
-      showPop('🎯 Pioggia di monete', '<div id="mgBox"></div>', [{ t: 'Esci', ghost: true, fn: () => { closePop(); rerender(); } }]);
-      popStop = MT.minigame($('mgBox'), (score, gems) => {
-        $('mgBox').innerHTML = `<div class="reward"><i>🪙</i><b>${score} monete!</b><span>${gems ? `Hai vinto ${gems} 💎` : 'Ci vogliono almeno 5 monete per una gemma.'}</span></div>`;
-        audio.sfx(gems ? 'buy' : 'click');
-      });
+    } else if (k === 'game') {          // una partita gratis al giorno
+      if (!MT.gameInfo().free) return;
+      MT.useGame('free'); startMinigame();
+    } else if (k === 'gameAd') {        // fino a 3 partite al giorno guardando un video, una ogni 5 minuti
+      const i = MT.gameInfo(); if (i.adLeft <= 0 || i.adWait > 0 || !R.ads.available()) return;
+      const r = await R.ads.watch(0, true);
+      if (r === 'ok') { MT.useGame('ad'); startMinigame(); }
+      else { hud.toast(r === 'closed' ? 'Video chiuso prima della fine: niente partita' : 'Nessun video disponibile adesso: riprova fra poco'); rerender(); }
     } else if (k === 'name') {
       const el = $('lodgeName'), r = MT.decoName(el ? el.value : '');
       if (r === 'gems') { hud.toast(`Servono ${MT.nameCost()} 💎 per cambiare di nuovo il nome`); return; }
@@ -285,7 +288,6 @@
     else if (d.tg) { audio.set(d.tg, !audio.state[d.tg]); audio.unlock(); rerender(); audio.sfx('click'); }
     else if (d.st) { st.set(d.st, !st.get(d.st)); audio.refresh(); rerender(); }
     else if (d.lang) { st.set('lang', d.lang); reloadSaved(); }
-    else if (t.id === 'snapBack') { if (state.restoreSnap()) { snapMsg = 'Ripristino riuscito, riavvio…'; rerender(); setTimeout(() => location.reload(), 700); } else { snapMsg = 'Nessun salvataggio precedente disponibile.'; rerender(); } }
     else if (d.q) { st.set('quality', d.q); reloadSaved(); }
     else if (d.buy) { buyFlow(d.buy); }
     else if (d.ad) { adFlow(); }

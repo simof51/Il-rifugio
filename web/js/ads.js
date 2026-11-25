@@ -38,11 +38,11 @@
 
   // Un video a premio. Risultati: 'ok' (premio dato), 'limit' (finiti per oggi), 'wait' (troppo presto), 'closed' (chiuso prima della fine),
   // 'failed' (nessun annuncio disponibile), 'busy', 'unavailable'.
-  async function watch(gems) { // gems: premio in gemme (di norma CFG.GEMS; 0 se il premio è un altro, es. raddoppio delle monete)
+  async function watch(gems, own) { // gems: premio in gemme (di norma CFG.GEMS; 0 se il premio è un altro). own: i limiti li gestisce chi chiama (es. mini-gioco)
     if (busy) return 'busy';
     const u = usage();
-    if (u.n >= CFG.PER_DAY) return 'limit';
-    if (R.ads.wait() > 0) return 'wait';
+    if (!own && u.n >= CFG.PER_DAY) return 'limit';
+    if (!own && R.ads.wait() > 0) return 'wait';
     if (!ready && !sim) return 'unavailable';
     busy = true;
     try {
@@ -63,7 +63,8 @@
         finally { hs.forEach(h => { try { h.remove(); } catch (e2) { /* ignorato */ } }); }
       } else { earned = true; } // simulazione (solo menu Debug): nessun annuncio vero
       if (!earned) return 'closed';
-      mark(); st.addGems(gems == null ? CFG.GEMS : gems);
+      if (!own) mark();
+      st.addGems(gems == null ? CFG.GEMS : gems);
       return 'ok';
     } finally { busy = false; }
   }

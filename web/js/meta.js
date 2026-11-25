@@ -6,7 +6,7 @@
   const st = R.settings;
   let toast = () => {};
 
-  const fresh = () => ({ streak: 0, lastClaim: '', nameChanges: 0, album: {}, albumDone: false, deco: { sign: 'red', rug: 'red', name: '' }, prestige: 0, chest: { pts: 0, opened: 0 }, vip: {}, game: { last: 0, best: 0 } });
+  const fresh = () => ({ streak: 0, lastClaim: '', nameChanges: 0, album: {}, albumDone: false, deco: { sign: 'red', rug: 'red', name: '' }, prestige: 0, chest: { pts: 0, opened: 0 }, vip: {}, game: { best: 0, day: '', freeUsed: false, adN: 0, lastEnd: 0 } });
   function M() {
     let m = st.get('meta');
     if (!m || typeof m !== 'object') { m = fresh(); st.set('meta', m); return m; }
@@ -139,19 +139,25 @@
   const prestige = () => M().prestige;
   function addPrestige() { const m = M(); m.prestige = Math.min(10, m.prestige + 1); save(); addPts(3); return m.prestige; }
 
-  // --- mini-gioco "Pioggia di monete": 20 secondi, tocca le monete che cadono; ogni 2 ore ---
-  const GAME_WAIT = 2 * 3600 * 1000;
-  const gameWait = () => Math.max(0, Math.ceil((M().game.last + GAME_WAIT - Date.now()) / 1000));
+  // --- mini-gioco "Pioggia di monete": 20 secondi, tocca le monete che cadono ---
+  // Regole: una partita gratis al giorno; poi fino a 3 partite al giorno guardando un video, con almeno 5 minuti fra una partita e la successiva.
+  const GAME_AD_PER_DAY = 3, GAME_AD_GAP = 300, GAME_PER_GEM = 4, GAME_MAX_GEMS = 5;
+  function gameState() { const m = M(), g = m.game, d = today(); if (g.day !== d) { g.day = d; g.freeUsed = false; g.adN = 0; save(); } return g; }
+  function gameInfo() {
+    const g = gameState();
+    return { free: !g.freeUsed, adLeft: Math.max(0, GAME_AD_PER_DAY - (g.adN || 0)), adWait: Math.max(0, Math.ceil(((g.lastEnd || 0) + GAME_AD_GAP * 1000 - Date.now()) / 1000)), best: g.best || 0 };
+  }
+  function useGame(kind) { const g = gameState(); if (kind === 'free') g.freeUsed = true; else g.adN = (g.adN || 0) + 1; save(); }
   function minigame(box, onEnd) {
     const cv = document.createElement('canvas'); cv.width = 320; cv.height = 400; cv.style.cssText = 'width:100%;max-width:320px;display:block;margin:0 auto;border-radius:18px;touch-action:none;background:linear-gradient(#8fd3ff,#d9f1ff)';
     box.innerHTML = ''; box.appendChild(cv);
     const g = cv.getContext('2d'); let coins = [], score = 0, t = 20, last = performance.now(), raf = 0, spawn = 0, over = false;
     const pop = [];
-    function end() { if (over) return; over = true; cancelAnimationFrame(raf); const m = M(); m.game.last = Date.now(); m.game.best = Math.max(m.game.best, score); save(); const gems = Math.min(6, Math.floor(score / 5)); if (gems) st.addGems(gems); onEnd(score, gems); }
+    function end() { if (over) return; over = true; cancelAnimationFrame(raf); const m = M(); m.game.lastEnd = Date.now(); m.game.best = Math.max(m.game.best, score); save(); const gems = Math.min(GAME_MAX_GEMS, Math.floor(score / GAME_PER_GEM)); if (gems) st.addGems(gems); onEnd(score, gems); }
     function frame(now) {
       if (over) return;
       const dt = Math.min(0.05, (now - last) / 1000); last = now; t -= dt; spawn -= dt;
-      if (spawn <= 0) { spawn = 0.35 - Math.min(0.2, (20 - t) * 0.01); const gold = Math.random() < 0.12; coins.push({ x: 24 + Math.random() * 272, y: -20, v: 110 + Math.random() * 90 + (20 - t) * 6, r: gold ? 24 : 19, gold, ph: Math.random() * 6 }); }
+      if (spawn <= 0) { spawn = 0.7 - Math.min(0.12, (20 - t) * 0.006); const gold = Math.random() < 0.1; /* meno monete: una ogni ~0,6 secondi */ coins.push({ x: 24 + Math.random() * 272, y: -20, v: 110 + Math.random() * 90 + (20 - t) * 6, r: gold ? 24 : 19, gold, ph: Math.random() * 6 }); }
       g.clearRect(0, 0, 320, 400);
       g.fillStyle = '#ffffff'; g.beginPath(); g.ellipse(80, 60, 50, 18, 0, 0, 7); g.ellipse(120, 52, 36, 16, 0, 0, 7); g.ellipse(240, 90, 46, 16, 0, 0, 7); g.fill();
       coins.forEach(c => { c.y += c.v * dt; c.ph += dt * 6; });
@@ -208,16 +214,18 @@
     return one('sign', 'Colore dell\'insegna') + one('rug', 'Colore del tappeto');
   }
   function gameHtml() {
-    const w = gameWait(), m = M();
-    return `<div class="small">Tocca più monete che puoi in 20 secondi! Ogni 5 monete vinci 1 💎 (fino a 6). Record: ${m.game.best}.</div>` +
-      `<div class="row"><button class="btn" data-meta="game"${w > 0 ? ' disabled' : ''}>${w > 0 ? `Si ripete fra ${w > 3600 ? Math.ceil(w / 3600) + ' h' : Math.ceil(w / 60) + ' min'}` : '🎯 Gioca ora'}</button></div>`;
+    const i = gameInfo(), adOk = !!(R.ads && R.ads.available && R.ads.available()), wt = i.adWait;
+    const adTxt = !adOk ? '🎬 Con un video (solo nell\'app)' : i.adLeft <= 0 ? '🎬 Video finiti per oggi' : wt > 0 ? `🎬 Con un video fra ${Math.floor(wt / 60)}:${('0' + (wt % 60)).slice(-2)}` : `🎬 Guarda un video e gioca (${i.adLeft}/${GAME_AD_PER_DAY})`;
+    return `<div class="small">Tocca le monete che cadono in 20 secondi: ogni ${GAME_PER_GEM} monete vinci 1 💎 (fino a ${GAME_MAX_GEMS}). Record: ${i.best}. Una partita gratis al giorno, poi fino a ${GAME_AD_PER_DAY} partite al giorno guardando un video (una ogni 5 minuti).</div>` +
+      `<div class="row"><button class="btn" data-meta="game"${i.free ? '' : ' disabled'}>${i.free ? '🎯 Gioca gratis' : '🎯 Gratis: usata oggi'}</button></div>` +
+      `<div class="row"><button class="btn ghost" data-meta="gameAd"${adOk && i.adLeft > 0 && wt <= 0 ? '' : ' disabled'}>${adTxt}</button></div>`;
   }
   const badge = () => dailyInfo().can || chestReady();
 
   R.meta = {
     bind: hud => { toast = m => hud.toast(m); },
     data: M, dailyInfo, claimDaily, eventNow, EVENTS, payMul, addPts, chestReady, chestInfo, openChest, see, albumCount, ALBUM, PERSONAS, vipPersona, vipServed,
-    DECO, decoGet, decoSet, decoName, nameCost, lodgeName, prestige, addPrestige, minigame, gameWait, badge, dailyHtml, chestHtml, albumHtml, decoHtml, decoNameHtml, gameHtml,
+    DECO, decoGet, decoSet, decoName, nameCost, lodgeName, prestige, addPrestige, minigame, gameInfo, useGame, badge, dailyHtml, chestHtml, albumHtml, decoHtml, decoNameHtml, gameHtml,
     onEv(name) { if (name === 'goal') addPts(2); else if (name === 'win') addPts(5); }
   };
 })(window.Rifugio);

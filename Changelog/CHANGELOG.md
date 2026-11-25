@@ -9,6 +9,14 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.22.0 · 2026-11-26 · Obiettivi da 1, alberi trasparenti più stretti, mini-gioco con limiti
+
+- **Obiettivi** di nuovo da 1 in ogni stagione e città. Il tutorial "Come si gioca" resta solo la primissima volta.
+- **Alberi trasparenti**: l'area attorno all'omino è più piccola (solo gli alberi davanti a lui, entro 1,5 m).
+- **Copia di sicurezza** tolta dal menu.
+- **Mini-gioco**: una partita gratis al giorno; poi fino a 3 partite al giorno guardando un video a premio, con almeno 5 minuti fra una partita e l'altra (i limiti dei video del mini-gioco sono separati da quelli dei video per le gemme). Cadono circa la metà delle monete e servono 4 monete per 1 💎 (massimo 5).
+- **Per tornare indietro**: `git checkout ef950ba -- web tests Changelog`.
+
 ## v0.21.1 · 2026-11-26 · Tasto per la tappa successiva, tutorial solo la prima volta
 
 - **Tasto "➜ Vai a …"**: a tappa finita, anche dopo "Continua a giocare", resta un tasto fisso in basso che porta alla città e stagione successiva (senza chiudere e riaprire l'app).

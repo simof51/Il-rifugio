@@ -353,8 +353,8 @@
     // Gli alberi vicini al personaggio o fra lui e la camera diventano semitrasparenti, così lui resta sempre visibile.
     function fadeTree(t, p, dt) {
       const dx = t.x - p.x, dz = t.z - p.z;
-      const covers = dz > -0.8 && dz < 7 && Math.abs(dx) < 1.3 + 0.8 * t.sc; // la camera guarda da sud (+z)
-      const target = covers || Math.hypot(dx, dz) < 2.2 ? 0.35 : 1;
+      const covers = dz > -0.5 && dz < 4.2 && Math.abs(dx) < 0.8 + 0.45 * t.sc; // la camera guarda da sud (+z): solo gli alberi davanti all'omino
+      const target = covers || Math.hypot(dx, dz) < 1.5 ? 0.35 : 1;
       t.fade += (target - t.fade) * Math.min(1, dt * 8);
       const fallFade = t.state === 'down' ? Math.max(0, 1 - Math.max(0, t.downT - 1) / 0.8) : 1;
       const o = Math.round(Math.min(t.fade, fallFade) * 50) / 50; // arrotondato: si aggiornano i materiali solo quando cambia
@@ -1084,9 +1084,9 @@
       return gu;
     }
     // --- tutorial a fumetti: solo la prima volta e solo nella prima stagione ---
-    // Il tutorial (e i primi obiettivi che insegnano le basi) c'è solo la primissima volta che si gioca: nelle altre stagioni e città si parte dal 5° obiettivo.
+    // I suggerimenti del tutorial compaiono solo la primissima volta che si gioca; gli obiettivi partono sempre dal primo.
     const FIRST_LEVEL = level.id === R.order[0];
-    if (S.done === 0 && !S.won && (R.settings.get('tutorial') || !FIRST_LEVEL)) { S.done = Math.min(4, objectives.length); R.settings.set('tutorial', true); }
+    if (!FIRST_LEVEL && !R.settings.get('tutorial')) R.settings.set('tutorial', true);
     const tut = { on: !R.settings.get('tutorial') && FIRST_LEVEL && S.done === 0, i: 0, moved: 0, lx: null, lz: null };
     const TSTEPS = [
       ['👆 Trascina il dito sullo schermo per muoverti', () => tut.moved > 3],
