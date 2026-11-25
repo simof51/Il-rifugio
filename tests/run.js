@@ -19,7 +19,7 @@ const ctx = {
 };
 ctx.window = ctx; vm.createContext(ctx);
 const load = f => vm.runInContext(fs.readFileSync(path.join(WEB, f), 'utf8'), ctx, { filename: f });
-['js/namespace.js', 'js/levels/common.js', 'js/levels/inverno.js', 'js/levels/primavera.js', 'js/levels/estate.js', 'js/levels/autunno.js', 'js/levels/cities.js', 'js/settings.js', 'js/i18n.js', 'js/extras.js', 'js/state.js'].forEach(load);
+['js/namespace.js', 'js/levels/common.js', 'js/levels/inverno.js', 'js/levels/primavera.js', 'js/levels/estate.js', 'js/levels/autunno.js', 'js/levels/cities.js', 'js/settings.js', 'js/i18n.js', 'js/extras.js', 'js/meta.js', 'js/state.js'].forEach(load);
 const R = ctx.Rifugio;
 
 // 1. Ogni tappa ha i dati che servono, senza duplicati e con numeri sensati.
@@ -76,6 +76,30 @@ ok(R.extras.dailies().list.every(m => m.done), 'missioni segnate come fatte');
 R.extras.ev('guest', 50);
 ok(!!(R.settings.get('medals') || {}).m2, 'medaglia Albergatore a 50 ospiti');
 ok(R.extras.missionsHtml().indexOf('Medaglie') >= 0, 'la pagina delle missioni si costruisce');
+
+// 4b. Premio giornaliero, scrigni, album, guadagno da assenti, prestigio e decorazioni.
+{
+  const MT = R.meta, g0b = R.settings.get('gems');
+  const i1 = MT.dailyInfo(); ok(i1.can && i1.idx === 0 && i1.gems === 2, 'primo giorno: premio 2 gemme');
+  const c1 = MT.claimDaily(); ok(c1 && R.settings.get('gems') === g0b + 2, 'si ritira il premio giornaliero');
+  ok(MT.claimDaily() === null && !MT.dailyInfo().can, 'il premio si ritira una volta al giorno');
+  const m = MT.data(); m.lastClaim = '2000-01-01'; m.streak = 5; MT.dailyInfo(); // molti giorni dopo: la serie riparte
+  ok(MT.dailyInfo().streak === 1, 'dopo molti giorni la serie riparte da 1');
+  const yd = new Date(Date.now() - 864e5), ys = yd.getFullYear() + '-' + ('0' + (yd.getMonth() + 1)).slice(-2) + '-' + ('0' + yd.getDate()).slice(-2);
+  m.lastClaim = ys; m.streak = 6; ok(MT.dailyInfo().idx === 6 && MT.dailyInfo().gems === 15, 'giorno dopo giorno: il 7° dà 15 gemme');
+  ok(MT.see('g_vip') === true && MT.see('g_vip') === false, 'una figurina si trova una sola volta');
+  ok(MT.albumCount() >= 1 && MT.albumHtml().indexOf('Figurine') >= 0, 'l\'album si costruisce');
+  const p0 = MT.chestInfo().pts; MT.addPts(25); ok(MT.chestReady() && MT.chestInfo().left >= 2, 'con 25 punti ci sono scrigni da aprire');
+  const rc = MT.openChest(); ok(rc && (rc.kind === 'gems' || rc.kind === 'item'), 'lo scrigno dà un premio');
+  m.lastSeen = Date.now() - 3 * 3600e3; const aw = MT.awayCoins({ guests: 40 });
+  ok(aw.coins > 0 && aw.min >= 179 && aw.min <= 181, 'dopo 3 ore la reception ha incassato (' + aw.coins + ' monete)');
+  m.lastSeen = Date.now() - 20 * 3600e3; const cap = MT.awayCoins({ guests: 40 }); ok(cap.min === 480, 'il guadagno da assenti si ferma a 8 ore');
+  m.lastSeen = Date.now() - 2 * 60e3; ok(MT.awayCoins({ guests: 40 }).coins === 0, 'sotto i 10 minuti non c\'è nulla');
+  ok(MT.vipPersona() && MT.vipPersona().name, 'gli ospiti VIP hanno un nome');
+  const mul0 = MT.payMul(); MT.addPrestige(); ok(MT.payMul() > mul0 - 1e-9 && MT.prestige() === 1, 'la nuova gestione aumenta i guadagni');
+  MT.decoName('Casa <b>Mia</b> con un nome lunghissimo'); ok(MT.lodgeName().indexOf('<') < 0 && MT.lodgeName().length <= 16, 'il nome del rifugio è pulito e corto');
+  ok(MT.decoHtml().indexOf('lodgeName') > 0 && MT.dailyHtml().indexOf('days') > 0 && MT.chestHtml().indexOf('chestbox') > 0 && MT.gameHtml().indexOf('Record') > 0, 'le pagine del profilo si costruiscono');
+}
 
 // 5. Salvataggio: copia di sicurezza e ripristino di qualche minuto fa.
 const st = R.createState('rifugio-test');

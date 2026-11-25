@@ -5,7 +5,7 @@
   'use strict';
   const defaults = () => ({
     coins: 0, wood: 0, fed: 0, guests: 0, collected: 0, cocoa: 0, happy: 0, done: 0, trees: 0,
-    bought: {}, paid: {}, piles: [0, 0, 0], won: false
+    bought: {}, paid: {}, piles: [0, 0, 0], recep: 0, won: false
   });
   // Quanto è avanzata una partita: obiettivi, cose sbloccate, ospiti serviti, legna tagliata.
   const score = d => !d ? -1 : (d.done || 0) * 1e6 + Object.keys(d.bought || {}).length * 1e4 + (d.guests || 0) * 10 + Math.min(9, d.wood || 0);

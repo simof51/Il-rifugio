@@ -166,7 +166,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 #toast{background:rgba(18,30,48,.82);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.12);box-shadow:var(--soft);border-radius:16px}
 .modal{background:rgba(12,26,46,.5)}
 .card{background:linear-gradient(#fff,#f6f9ff);border:1px solid rgba(255,255,255,.8);border-radius:28px;box-shadow:0 24px 70px rgba(8,20,40,.45)}
-.card h1{color:var(--ink);text-shadow:none;font-weight:700;letter-spacing:-.5px;background:linear-gradient(100deg,#ff5a3c,#ff9a3d);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.card h1{color:#f2552f;text-shadow:none;font-weight:700;letter-spacing:-.5px}
 .btn{background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:16px;box-shadow:0 8px 20px rgba(255,90,60,.38);letter-spacing:.2px}
 .btn:active{transform:scale(.97);box-shadow:0 4px 12px rgba(255,90,60,.35)}
 .btn.ghost{background:rgba(31,42,55,.07);color:var(--ink);box-shadow:none}
@@ -187,3 +187,33 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 #tabbar button.on{background:linear-gradient(135deg,rgba(255,138,61,.92),rgba(255,90,60,.92));color:#fff;border-color:rgba(255,255,255,.5);box-shadow:0 8px 20px rgba(255,90,60,.45)}
 #tabbar button:active{transform:scale(.95)}
 @media(prefers-contrast:more){.chip,#task,.pad{border:2px solid #1f2a37}body::before{display:none}}
+
+/* Icone disegnate (al posto delle emoji), animazioni e schede nuove */
+svg.ic{width:26px;height:26px;display:block}
+#tabbar button i svg.ic{width:26px;height:26px;margin:0 auto}
+.menuBtn svg.ic{width:26px;height:26px;margin:auto}
+.menuBtn{display:grid;place-items:center}
+#tabbar button{position:relative}
+#tabbar button.dot::after{content:'';position:absolute;top:6px;right:calc(50% - 22px);width:11px;height:11px;border-radius:50%;background:#ff3d5a;border:2px solid #fff;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.25)}}
+@keyframes cardin{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:none}}
+.card{animation:cardin .28s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes toastin{from{transform:translate(-50%,20px)}to{transform:translate(-50%,0)}}
+.chip b{font-variant-numeric:tabular-nums}
+.conf{position:fixed;top:-14px;width:9px;height:14px;border-radius:2px;pointer-events:none;z-index:60;animation:confall linear forwards}
+@keyframes confall{to{top:105%;transform:translateX(40px) rotate(720deg)}}
+body:has(#pop:not(.hidden)) #tabbar{display:none}
+#pop{z-index:50}
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin:8px 0}
+.day{background:rgba(31,42,55,.05);border:1px solid rgba(31,42,55,.08);border-radius:12px;padding:6px 0;text-align:center;line-height:1.1}
+.day i{display:block;font-style:normal;font-size:17px}.day b{display:block;font-size:14px}.day span{font-size:10px;color:#5b6b7c}
+.day.got{background:rgba(34,197,139,.18);border-color:rgba(34,197,139,.6)}
+.day.now{background:rgba(255,196,60,.28);border-color:#ffab2e;box-shadow:0 0 0 2px rgba(255,171,46,.45);animation:pulse 1.4s ease-in-out infinite}
+.chestbox{display:flex;align-items:center;gap:12px;background:rgba(31,42,55,.04);border:1px solid rgba(31,42,55,.08);border-radius:16px;padding:10px 12px;margin:6px 0}
+.chestbox>div{flex:1}.cico{font-size:42px;line-height:1}
+.chestbox.ready{background:rgba(255,196,60,.18);border-color:#ffab2e}.chestbox.ready .cico{animation:wob .8s ease-in-out infinite}
+@keyframes wob{25%{transform:rotate(-10deg)}75%{transform:rotate(10deg)}}
+.reward{text-align:center;padding:10px 0}.reward i{display:block;font-style:normal;font-size:64px;line-height:1.1;animation:cardin .5s}.reward b{display:block;font-size:26px}.reward span{display:block;color:#5b6b7c;margin-top:4px}
+.txt{flex:1;min-width:0;font:inherit;font-size:16px;padding:9px 12px;border:1px solid rgba(31,42,55,.15);border-radius:12px;background:#fff;color:var(--ink);user-select:text;-webkit-user-select:text}
+#popBody p{margin:0 0 12px}
+@media(prefers-reduced-motion:reduce){.card,.conf,.day.now,.chestbox.ready .cico,#tabbar button.dot::after{animation:none}}

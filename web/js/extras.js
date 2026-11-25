@@ -51,13 +51,14 @@
 
   function ev(name, n) {
     n = n || 1;
+    if (R.meta) R.meta.onEv(name);
     const s = st.get('stats') || {}; s[name] = (s[name] || 0) + n; st.set('stats', s);
     const d = dailies(); let changed = false;
     d.list.forEach(m => {
       const def = MISSIONS.find(x => x.id === m.id);
       if (m.done || !def || def.ev !== name) return;
       m.p = Math.min(m.n, m.p + n); changed = true;
-      if (m.p >= m.n) { m.done = true; st.addGems(3); toast('Missione completata! +3 gemme 💎'); }
+      if (m.p >= m.n) { m.done = true; st.addGems(3); if (R.meta) R.meta.addPts(1); toast('Missione completata! +3 gemme 💎'); }
     });
     if (!d.bonus && d.list.every(m => m.done)) { d.bonus = true; st.addGems(5); toast('Tutte le missioni di oggi! +5 gemme 💎'); changed = true; }
     if (changed) st.set('daily', d);

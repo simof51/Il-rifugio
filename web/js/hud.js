@@ -92,6 +92,13 @@
         $('winTitle').textContent = title; $('winTxt').textContent = text; $('winNext').textContent = next;
         $('nextLevel').hidden = !nextId; if (nextId) $('nextLevel').dataset.level = nextId;
         $('win').classList.remove('hidden');
+        // coriandoli che cadono dietro la finestra (solo CSS, spariscono da soli)
+        const w = $('win'), cols = ['#ff4d4d', '#ffd23a', '#3d8bff', '#4cd964', '#ff7ac6', '#a066ff'];
+        for (let i = 0; i < 36; i++) {
+          const c = document.createElement('i'); c.className = 'conf';
+          c.style.cssText = `left:${Math.random() * 100}%;background:${cols[i % cols.length]};animation-delay:${(Math.random() * 1.2).toFixed(2)}s;animation-duration:${(2.4 + Math.random() * 1.8).toFixed(2)}s;transform:rotate(${Math.round(Math.random() * 360)}deg)`;
+          w.appendChild(c); setTimeout(() => c.remove(), 5200);
+        }
       },
       hideWin() { $('win').classList.add('hidden'); }
     };

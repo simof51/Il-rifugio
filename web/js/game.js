@@ -5,6 +5,7 @@
 
   const FEED_Z = -7.6, PILE_Z = -3.2, COCOA_PICK = [11, -5.6];
   const SPAWN = [17, 1.2];
+  const RECEP = { x: 20.5, z: -2.4 }; // reception: bancone con la receptionist; gli ospiti che partono pagano qui, l'omino riscuote davanti
   const COATS = [0x4f8cff, 0xa066ff, 0xff9a2a, 0x2ec4b6, 0xff5d8f, 0x6bcf3a];
   const CONFETTI = [0xff4d4d, 0xffd23a, 0x3d8bff, 0x4cd964, 0xff7ac6, 0xa066ff];
   const SHORTS = [0x3b6fd4, 0xe8c66a, 0xf2f2f2, 0x2ec4b6, 0xff8a65];
@@ -12,6 +13,7 @@
   R.createGame = function ({ hud, level, state, audio }) {
     const T = THREE, P = level.tuning, S = state.data, objectives = level.objectives, TH = level.theme, TX = level.text;
     const EX = R.extras; EX.bind(hud);
+    const MT = R.meta; MT.bind(hud); // premi, figurine, eventi di stagione, decorazioni
     const seasonNote = EX.applySeason(P, level); // ogni stagione cambia un po' il modo di giocare
     const A = audio || { sfx() {} }; // suoni (se manca l'audio il gioco funziona lo stesso)
     const OUTFIT = TH.outfit || 'winter'; // guardaroba degli omini: 'winter', 'spring' o 'summer'
@@ -273,6 +275,7 @@
       const x = bx0 + rnd() * (bx1 - bx0), z = bz0 + rnd() * (bz1 - bz0), sc = 0.8 + rnd() * 0.7;
       if (x > -16 && x < 18 && z > -11 && z < 15) continue;
       if (inLake(x, z, 2) || inLM(x, z, 1.5)) continue;
+      if (x > RECEP.x - 3.5 && x < RECEP.x + 3.5 && z > RECEP.z - 6 && z < RECEP.z + 4) continue; // spazio per la reception
       if (trees.some(t => Math.hypot(t.x - x, t.z - z) < 1.9)) continue; // lascia sempre un passaggio fra gli alberi
       plantTree(x, z, sc); planted++;
     }
@@ -508,6 +511,86 @@
     const cupMeshes = [0, 1, 2, 3, 4, 5].map(i => { const c = add(new T.Mesh(B.cupGeo, mats.cup), cocoa.g); c.position.set(10.55 + i * 0.28, 1.21, -6.55); c.visible = false; return c; });
     cocoa.g.visible = false;
     function openCocoa() { if (cocoa.open) return; cocoa.open = true; cocoa.g.visible = true; cols.push([9.9, 12.1, -7.35, -6.25]); }
+
+    // --- reception ------------------------------------------------------------
+    // Bancone di legno con campanello, ciotola per le monete, scaffale con le chiavi, insegna e una receptionist.
+    // Gli ospiti soddisfatti passano di qui prima di partire e lasciano i soldi sul bancone: l'omino li prende restando sul tappeto rosso.
+    const recep = { g: new T.Group(), n: S.recep || 0, bowl: new T.Group(), hop: 0, shown: -1, el: hud.label('pill', ''), who: null };
+    scene.add(recep.g);
+    {
+      const rg = recep.g, rx = RECEP.x, rz = RECEP.z;
+      box(3.4, 1.0, 1.0, mats.wood, rx, 0.5, rz, rg, 0.03);
+      box(3.7, 0.12, 1.3, mats.plank, rx, 1.06, rz + 0.05, rg, 0.03);
+      box(2.2, 0.55, 0.05, mats.red, rx, 0.5, rz + 0.52, rg, 0.01);                                   // pannello rosso sul fronte
+      box(3.4, 1.7, 0.25, mats.wood, rx, 0.85, rz - 1.7, rg, 0.02);                                   // parete dello scaffale
+      box(3.0, 0.08, 0.35, mats.plank, rx, 1.25, rz - 1.5, rg, 0.02);
+      for (let k = 0; k < 7; k++) box(0.14, 0.26, 0.08, B.tint(CONFETTI[k % CONFETTI.length]), rx - 1.2 + k * 0.4, 1.42, rz - 1.52, rg, 0.015); // chiavi
+      cyl(0.045, 0.045, 3.0, mats.wood, rx - 1.45, 1.5, rz - 1.7, rg, 8); cyl(0.045, 0.045, 3.0, mats.wood, rx + 1.45, 1.5, rz - 1.7, rg, 8);
+      const cv = document.createElement('canvas'); cv.width = 384; cv.height = 96; const cx2 = cv.getContext('2d');
+      const signCol = MT.decoGet('sign').col, lodge = MT.lodgeName();
+      cx2.fillStyle = '#fff6df'; cx2.fillRect(0, 0, 384, 96); cx2.strokeStyle = signCol; cx2.lineWidth = 8; cx2.strokeRect(6, 6, 372, 84);
+      cx2.fillStyle = signCol; cx2.textAlign = 'center'; cx2.textBaseline = 'middle';
+      if (lodge) { cx2.font = '600 24px Fredoka, system-ui, sans-serif'; cx2.fillText('RECEPTION', 192, 26); let fs = 50; cx2.font = `700 ${fs}px Fredoka, system-ui, sans-serif`; while (cx2.measureText(lodge).width > 340 && fs > 22) { fs -= 2; cx2.font = `700 ${fs}px Fredoka, system-ui, sans-serif`; } cx2.fillText(lodge, 192, 62); }
+      else { cx2.font = '700 54px Fredoka, system-ui, sans-serif'; cx2.fillText('RECEPTION', 192, 52); }
+      const tex = new T.CanvasTexture(cv); tex.anisotropy = 4;
+      const board = new T.Mesh(new T.PlaneGeometry(3.0, 0.75), new T.MeshBasicMaterial({ map: tex })); board.position.set(rx, 2.6, rz - 1.56); rg.add(board);
+      cyl(0.16, 0.16, 0.05, mats.gold, rx - 1.1, 1.15, rz + 0.1, rg, 14); ball(0.07, mats.gold, rx - 1.1, 1.22, rz + 0.1, rg, 10, 8); // campanello
+      cyl(0.5, 0.42, 0.14, mats.white, rx + 0.95, 1.15, rz + 0.1, rg, 18);                           // ciotola per le monete
+      ball(0.3, B.tint(0x2f9e5a), rx - 1.5, 1.35, rz + 0.1, rg, 12, 8); cyl(0.17, 0.13, 0.2, mats.stone, rx - 1.5, 1.2, rz + 0.1, rg, 10); // vasetto con pianta
+      box(2.6, 0.03, 1.5, B.tint(MT.decoGet('rug').col), rx, 0.02, rz + 1.7, rg, 0.01);              // tappeto colorato: qui si riscuote
+      box(2.2, 0.035, 1.1, B.tint(0xffd9a0), rx, 0.03, rz + 1.7, rg, 0.01);
+      recep.bowl.position.set(rx + 0.95, 1.22, rz + 0.1); rg.add(recep.bowl);
+      recep.who = B.person(0xc23b5a, 0xf2d6a2, false, OUTFIT, { shorts: 0x3f4a63 }); recep.who.position.set(rx + 0.3, 0, rz - 1.0); rg.add(recep.who);
+      cols.push([rx - 1.9, rx + 1.9, rz - 1.95, rz + 0.65]);
+    }
+    // Bagliori: alone morbido e luminoso (sprite additivo) sui fuochi e sulla ciotola delle monete.
+    const haloTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.35, 'rgba(255,255,255,.45)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); return new T.CanvasTexture(c); })();
+    const makeGlow = (col, x, y, z) => { const s = new T.Sprite(new T.SpriteMaterial({ map: haloTex, color: col, blending: T.AdditiveBlending, transparent: true, depthWrite: false, fog: false, opacity: 0 })); s.position.set(x, y, z); s.visible = false; scene.add(s); return s; };
+    rooms.forEach(r => { r.glow = makeGlow(0xff9a3d, r.cx, r.fireY + (lido ? 0.35 : 0.15), r.fireZ + 0.35); });
+    recep.glow = makeGlow(0xffd23a, RECEP.x + 0.95, 1.5, RECEP.z + 0.1);
+    // Decorazioni dell'evento di stagione (Natale, Carnevale, Pasqua, estate, Halloween) ai lati della reception.
+    {
+      const ev = MT.eventNow();
+      if (ev) {
+        [-3.4, 3.4].forEach((dx, k) => {
+          const x = RECEP.x + dx, z = RECEP.z + 0.6, g = new T.Group(); g.position.set(x, 0, z); scene.add(g);
+          if (ev.decor === 'tree') {
+            cyl(0.1, 0.12, 0.4, mats.wood, 0, 0.2, 0, g, 8);
+            [[0.8, 1.1, 0.7], [0.62, 1.0, 1.5], [0.44, 0.9, 2.2]].forEach(([r, h, y]) => { const c = new T.Mesh(B.cached('xcone' + r, () => new T.ConeGeometry(r, h, 10)), B.tint(0x2e8b57)); c.position.y = y + 0.3; c.castShadow = true; g.add(c); });
+            for (let i = 0; i < 9; i++) { const a = i * 2.4, y = 0.9 + i * 0.22; ball(0.07, new T.MeshBasicMaterial({ color: CONFETTI[i % CONFETTI.length] }), Math.cos(a) * (0.7 - i * 0.065), y, Math.sin(a) * (0.7 - i * 0.065), g, 8, 6); }
+            ball(0.14, new T.MeshBasicMaterial({ color: 0xffe066 }), 0, 3.25, 0, g, 10, 8);
+          } else if (ev.decor === 'pumpkin') {
+            const pm = ball(0.55, B.tint(0xff8a1f), 0, 0.5, 0, g, 14, 10); pm.scale.set(1.15, 0.85, 1.15); cyl(0.07, 0.09, 0.2, B.tint(0x4a7a2a), 0, 1.02, 0, g, 6);
+            ball(0.07, new T.MeshBasicMaterial({ color: 0xfff3a0 }), -0.2, 0.62, 0.5, g, 6, 5); ball(0.07, new T.MeshBasicMaterial({ color: 0xfff3a0 }), 0.2, 0.62, 0.5, g, 6, 5);
+          } else if (ev.decor === 'egg') {
+            [0, 1, 2].forEach(i => { const e = ball(0.28, B.tint(CONFETTI[(i + k * 2) % CONFETTI.length]), (i - 1) * 0.55, 0.3, i === 1 ? 0.25 : 0, g, 12, 9); e.scale.set(0.85, 1.15, 0.85); });
+            box(1.8, 0.05, 0.7, mats.plank, 0, 0.03, 0.1, g, 0.01);
+          } else {
+            for (let i = 0; i < 4; i++) { const col = CONFETTI[(i + k * 3) % CONFETTI.length]; cyl(0.015, 0.015, 1.5 + i * 0.25, mats.white, (i - 1.5) * 0.4, 0.75 + i * 0.12, 0, g, 4); const b = ball(0.3, B.tint(col), (i - 1.5) * 0.4, 1.75 + i * 0.25, 0, g, 12, 9); b.scale.y = 1.2; }
+          }
+        });
+      }
+    }
+    function drawRecep() {
+      B.clear(recep.bowl);
+      const n = Math.min(Math.ceil(recep.n / 5), 26);
+      for (let i = 0; i < n; i++) { const c = new T.Mesh(B.coinGeo, mats.gold); c.position.set((i % 4) * 0.2 - 0.3, 0.06 + Math.floor(i / 4) * 0.07, ((i * 5) % 3) * 0.12 - 0.12); c.rotation.y = i; add(c, recep.bowl); }
+    }
+    drawRecep();
+    // Incasso: l'ospite lascia i soldi nella ciotola (con un tintinnio e un volo di monete).
+    function payAtReception(amount) {
+      recep.n += amount; drawRecep(); recep.hop = 0.45;
+      hud.floatText('+' + amount, RECEP.x + 0.95, 2.0, RECEP.z + 0.1);
+      burst(RECEP.x + 0.95, 1.5, RECEP.z + 0.1, 8, [0xffd23a, 0xfff2a8], 2.2, 4, 0.7, 0.1); A.sfx('coin');
+    }
+    function collectRecep() {
+      const n = recep.n; if (n <= 0) return;
+      S.coins += n; S.collected += n; recep.n = 0; S.recep = 0; drawRecep(); recep.hop = 0.6; MT.see('r_pay');
+      hud.floatText('+' + n, player.position.x, 2.4, player.position.z);
+      _v.set(RECEP.x + 0.95, 1.4, RECEP.z + 0.1);
+      for (let k = 0; k < Math.min(n, 10); k++) fly('coin', _v, o => o.set(player.position.x, 1.3, player.position.z), 0.4, 0.8, null, k * 0.045);
+      burst(RECEP.x + 0.95, 1.5, RECEP.z + 0.1, 8, [0xffd23a, 0xfff2a8], 2, 4, 0.6, 0.1); A.sfx('coin');
+    }
 
     // --- percorsi per gli aiutanti -------------------------------------------
     // Griglia di 0,5 m sul mondo: una cella è chiusa se è vicina a un ostacolo (muri, letti, camino, banco, lago, alberi, mascotte).
@@ -947,7 +1030,7 @@
       [`🌲 Fermati vicino all'${V.tree || 'albero'}: la ${V.wood || 'legna'} si taglia da sola!`, () => S.wood >= 4],
       [`🔥 Porta la ${V.wood || 'legna'} al ${V.fire || 'camino'}, dove c'è la barra del fuoco`, () => S.fed >= 1],
       [`${V.guestEmoji || '🧑'} Presto arriverà un ${V.guest || 'ospite'}: tieni il ${V.fire || 'camino'} acceso`, () => S.guests >= 1],
-      [`🪙 Raccogli le monete lasciate davanti alla ${V.room || 'stanza'}`, () => S.collected >= 1],
+      ['🪙 Gli ospiti pagano alla reception: ritira le monete dal bancone, sul tappeto rosso', () => S.collected >= 1],
       ['✨ Spendile nei riquadri a terra: la barra si riempie!', () => Object.keys(S.bought).length >= 1 || S.done >= 5]
     ];
     function endTutorial() { tut.on = false; hud.hint(null); R.settings.set('tutorial', true); }
@@ -971,7 +1054,7 @@
       if (!free) return;
       const kinds = ['vip', 'scout', 'rush'].filter(k => (k !== 'scout' || free >= 2) && (k !== 'rush' || cocoa.open));
       const k = kinds[Math.floor(Math.random() * kinds.length)];
-      if (k === 'vip') { if (spawnGuest('vip')) hud.toast(`⭐ Sta arrivando un ${V.guest || 'ospite'} VIP: paga il triplo!`); }
+      if (k === 'vip') { const vg = spawnGuest('vip'); if (vg) { vg.persona = MT.vipPersona(); hud.toast(`⭐ Arriva ${vg.persona.name} ${vg.persona.e}: paga il triplo!`); } }
       else if (k === 'rush') { if (spawnGuest('rush')) hud.toast(`⏱ Un ${V.guest || 'ospite'} affamato! Portagli subito l'ordinazione ${V.foodEmoji || ''}: +40 monete`); }
       else { for (let i = 0; i < Math.min(3, free); i++) spawnGuest('scout'); hud.toast('🏕️ Arriva una squadra di scout! Pagano di più'); }
       A.sfx('guest'); fauna.celebrate();
@@ -980,10 +1063,10 @@
       const g = gu.g; g.rotation.set(0, 0, 0); g.position.set(gu.b.x, 0, -4.6); gu.b.guest = null; gu.state = 'out'; g.userData.blob.visible = true;
       gu.path = [[gu.r.cx, -2.8], [SPAWN[0], SPAWN[1]]];
       if (happy) {
-        const pay = Math.round((P.pay + (gu.served ? P.tip : 0)) * (gu.vip ? 3 : gu.scout ? 1.5 : 1) * (R.shop.has('boost') ? 1.5 : 1)); // "Ospiti generosi" dallo shop: +50%
-        gu.r.pileN += pay; drawPile(gu.r); S.happy++; S.guests++; EX.ev('guest'); if (gu.vip) EX.ev('vip');
-        hud.floatText('+' + pay, gu.r.cx + 1.7, 1.2, PILE_Z);
-        burst(gu.r.cx + 1.7, 0.6, PILE_Z, 8, [0xffd23a, 0xfff2a8], 2.2, 4, 0.7, 0.1);
+        const pay = Math.round((P.pay + (gu.served ? P.tip : 0)) * (gu.vip ? 3 : gu.scout ? 1.5 : 1) * (R.shop.has('boost') ? 1.5 : 1) * MT.payMul()); // "Ospiti generosi" dallo shop: +50%; poi evento di stagione e nuove gestioni
+        // passa dalla reception e lascia i soldi sul bancone
+        gu.pay = pay; gu.path = [[gu.r.cx, -2.8], [RECEP.x - 0.9 + Math.random() * 1.8, RECEP.z + 1.35]];
+        S.happy++; S.guests++; EX.ev('guest'); if (gu.vip) { EX.ev('vip'); MT.vipServed(gu.persona); }
       } else {
         S.happy = Math.max(0, S.happy - P.cold_penalty);
         hud.toast(TX.coldLeave); A.sfx('cold');
@@ -999,7 +1082,7 @@
       const treeTarget = () => { const t = nearTree(p, 99); return t ? [t.x, t.z] : null; };
       if (guide === 'tree') return carry.logs >= logCap() ? [rooms[0].cx, FEED_Z] : treeTarget();
       if (guide === 'feed') return carry.logs ? [rooms[0].cx, FEED_Z] : treeTarget();
-      if (guide === 'pile') { const r = rooms.filter(r => r.pileN > 0).sort((a, b) => b.pileN - a.pileN)[0]; return r ? [r.cx + 1.7, PILE_Z] : null; }
+      if (guide === 'pile') { if (recep.n > 0) return [RECEP.x, RECEP.z + 1.7]; const r = rooms.filter(r => r.pileN > 0).sort((a, b) => b.pileN - a.pileN)[0]; return r ? [r.cx + 1.7, PILE_Z] : null; }
       if (guide === 'cocoa') {
         if (!carry.cups) return [COCOA_PICK[0], COCOA_PICK[1] + 0.2];
         const g = guests.find(g => g.state === 'bed' && g.want && !g.served); return g ? [g.b.x, -6] : null;
@@ -1048,7 +1131,7 @@
     }
 
     // --- salvataggio --------------------------------------------------------
-    function save() { S.piles = rooms.map(r => r.pileN); state.save(); }
+    function save() { S.piles = rooms.map(r => r.pileN); S.recep = recep.n; state.save(); }
     document.addEventListener('visibilitychange', () => { if (document.hidden) { save(); endJoy(); } });
     addEventListener('pagehide', save);
 
@@ -1081,6 +1164,7 @@
           fly('log', _v, o => stackG.getWorldPosition(o), 0.32, 0.6, () => { inLogs--; refreshStack(); });
         });
       }
+      if (recep.n > 0 && Math.hypot(p.x - RECEP.x, p.z - (RECEP.z + 1.7)) < 1.9) collectRecep();
       for (const r of rooms) {
         if (!r.open) continue;
         if (carry.logs > 0 && r.fuel + r.pend + 1 <= P.fuel_max && feedCd <= 0 && Math.hypot(p.x - r.cx, p.z - FEED_Z) < P.feed_range) {
@@ -1147,13 +1231,19 @@
         if (gu.state === 'in') {
           if (B.follow(gu.g, gu.path, 2.6, dt)) {
             gu.state = 'bed'; seatGuest(gu); A.sfx('guest'); fauna.react();
+            MT.see('g_' + (gu.vip ? 'vip' : gu.scout ? 'scout' : gu.rush > 0 ? 'rush' : 'hiker'));
             gu.want = cocoa.open && (gu.vip || gu.scout || gu.rush > 0 || Math.random() < P.cocoa_chance);
           }
         } else if (gu.state === 'bed') {
           if (gu.rush > 0 && !gu.served) gu.rush -= dt;
           if (gu.r.fuel > 0) { gu.stay -= dt; gu.cold = Math.max(0, gu.cold - dt * 2); } else gu.cold += dt;
           if (gu.cold > P.guest_cold_limit) leave(gu, false); else if (gu.stay <= 0) leave(gu, true);
-        } else if (B.follow(gu.g, gu.path, 2.8, dt)) { scene.remove(gu.g); gu.el.remove(); guests.splice(i, 1); }
+        } else if (gu.wait > 0) { // al bancone della reception: lascia i soldi, poi esce
+          gu.wait -= dt; gu.g.rotation.y = Math.PI;
+          if (gu.wait <= 0) { payAtReception(gu.pay); gu.pay = 0; gu.path = [[SPAWN[0], SPAWN[1]]]; }
+        } else if (B.follow(gu.g, gu.path, 2.8, dt)) {
+          if (gu.pay > 0) gu.wait = 0.8; else { scene.remove(gu.g); gu.el.remove(); guests.splice(i, 1); }
+        }
       }
       helpers.forEach(h => h && updateHelper(h, dt));
       waiters.forEach(h => h && updateWaiter(h, dt));
@@ -1180,7 +1270,16 @@
         r.flame.visible = lit; r.flame.scale.set(s, s * (1 + 0.18 * Math.sin(tt * 13 + r.i)), s);
         r.light.intensity = lit ? (0.6 + r.fuel / P.fuel_max + 0.15 * Math.sin(tt * 17 + r.i) + r.flare * 0.8) * (1 - (env ? env.night : 0) * 0.35) : 0; // di notte il fuoco illumina meno (prima di più: abbagliava)
         r.light.distance = 8;
+        if (r.glow) { r.glow.visible = lit; if (lit) { const gs = 1.6 + s * 1.5 + 0.15 * Math.sin(tt * 11 + r.i); r.glow.scale.set(gs, gs, 1); r.glow.material.opacity = Math.min(0.9, 0.3 + (env ? env.night : 0) * 0.35 + r.flare * 0.3); } }
         r.pile.rotation.y = tt * 0.8; r.pile.position.y = 0.05 + 0.04 * Math.sin(tt * 3 + r.i);
+      }
+      // receptionist: guarda l'omino quando è vicino, saltella quando arrivano o se ne vanno i soldi
+      if (recep.glow) { recep.glow.visible = recep.n > 0; if (recep.n > 0) { const gs = 1.0 + 0.2 * Math.sin(tt * 5); recep.glow.scale.set(gs, gs, 1); recep.glow.material.opacity = 0.5 + 0.2 * Math.sin(tt * 5); } }
+      if (recep.who) {
+        const near = Math.hypot(p.x - RECEP.x, p.z - RECEP.z) < 9;
+        const want = near ? Math.max(-1.1, Math.min(1.1, Math.atan2(p.x - recep.who.position.x, p.z - recep.who.position.z))) : Math.sin(tt * 0.7) * 0.12;
+        recep.who.rotation.y += (want - recep.who.rotation.y) * Math.min(1, dt * 6);
+        recep.hop = Math.max(0, recep.hop - dt); recep.who.position.y = recep.hop > 0 ? Math.sin(Math.PI * (1 - recep.hop / 0.5)) * 0.22 : 0;
       }
       for (const t of trees) { animateTree(t, dt); fadeTree(t, p, dt); }
       pads.forEach(pd => {
@@ -1229,7 +1328,16 @@
       sun.target.updateMatrixWorld();
     }
 
+    let albumT = 0;
     function overlays(dt) {
+      albumT -= dt;
+      if (albumT <= 0 && env && running) { // ogni 3 secondi: meteo e notte danno figurine dell'album
+        albumT = 3; const ei = env.info();
+        if (ei.weather && ei.weather !== 'clear') MT.see('w_' + ei.weather);
+        if (ei.night > 0.7) MT.see('n_night');
+      }
+      if (recep.shown !== recep.n) { recep.shown = recep.n; recep.el.textContent = recep.n > 0 ? '💰 ' + recep.n : ''; }
+      hud.put(recep.el, RECEP.x + 0.95, 2.1, RECEP.z + 0.1, recep.n > 0);
       rooms.forEach(r => { hud.put(r.el, r.cx, 2.35, -8.6, r.open); const w = (r.fuel / P.fuel_max * 100).toFixed(1) + '%'; if (r.bar._w !== w) { r.bar._w = w; r.bar.style.width = w; } });
       pads.forEach(pd => {
         const v = pd.m.visible;
@@ -1270,7 +1378,16 @@
     requestAnimationFrame(frame);
 
     return {
-      start() { running = true; if (S.done > 0) hud.toast(`${level.cityEmoji || ''} ${level.cityName || ''} · ${level.emoji} ${level.name}`); },
+      start() {
+        running = true;
+        MT.see('s_' + level.season); const pk = R.settings.get('pet'); if (pk === 'dog' || pk === 'cat') MT.see('p_' + pk);
+        const ev = MT.eventNow();
+        if (ev) { MT.see('e_event'); hud.toast(`${ev.e} ${ev.name}: ${ev.text}`); }
+        else if (S.done > 0) hud.toast(`${level.cityEmoji || ''} ${level.cityName || ''} · ${level.emoji} ${level.name}`);
+      },
+      // Soldi lasciati sul bancone mentre il giocatore era via.
+      addReception(n) { recep.n += n; drawRecep(); recep.hop = 0.6; save(); },
+      receptionCoins: () => recep.n,
       resume() { running = true; },
       seasonNote,
       // Foto ricordo: ridisegna la scena e la mette in una cornice (le scritte HTML non compaiono).

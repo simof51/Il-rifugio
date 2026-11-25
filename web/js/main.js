@@ -68,6 +68,18 @@
   if (game.seasonNote) $('levelNote').textContent += ' ' + game.seasonNote;
   if (debug) window.rifugioDebug = game.debug;
   const dbg = game.debug;
+  const MT = R.meta;
+
+  // Finestra a comparsa (premio giornaliero, bentornato, scrigno, mini-gioco): il gioco resta in pausa finché è aperta.
+  let popStop = null;
+  function showPop(title, html, btns) {
+    $('popTitle').textContent = title; $('popBody').innerHTML = html;
+    const b = $('popBtns'); b.innerHTML = '';
+    btns.forEach(x => { const e = document.createElement('button'); e.className = 'btn' + (x.ghost ? ' ghost' : ''); e.textContent = x.t; if (x.dis) e.disabled = true; e.onclick = () => x.fn(e); b.appendChild(e); });
+    $('pop').classList.remove('hidden'); game.pause(true);
+  }
+  function closePop() { if (popStop) { popStop(); popStop = null; } $('pop').classList.add('hidden'); if (!menuIsOpen()) game.pause(false); }
+  const popOpen = () => !$('pop').classList.contains('hidden');
 
   // --- menu: città, aspetto, impostazioni, salvataggio, privacy e strumenti di prova ---
   let confirmReset = false, dbgMsg = '', codeText = '', codeMsg = '', lookMsg = '';
@@ -197,19 +209,35 @@
     const S = state.data; let h;
     if (tab === 'map') {
       h = H('🗺️ Le tue città') + R.cities.map(cityCard).join('') +
-        (levelDone() ? '' : `<div class="row"><button class="btn ghost" id="menuReset">${confirmReset ? 'Sicuro? Tocca di nuovo' : 'Ricomincia questa stagione'}</button></div>`);
+        (levelDone() ? '' : `<div class="row"><button class="btn ghost" id="menuReset">${confirmReset ? 'Sicuro? Tocca di nuovo' : 'Ricomincia questa stagione'}</button></div>`) + prestigeHtml();
     } else if (tab === 'shop') {
       h = H('🛍️ Shop') + shopHtml() + H('🎁 Video a premio') + adsHtml();
     } else if (tab === 'profile') {
       h = H('👤 Profilo') + `<div class="stats"><div><b>${S.coins}</b><span>monete</span></div><div><b>${S.guests}</b><span>ospiti</span></div><div><b>${S.wood}</b><span>legna</span></div><div><b>${st.get('gems')}</b><span>gemme 💎</span></div></div>` +
-        H('🎯 Missioni e medaglie') + R.extras.missionsHtml() + H('👕 Il tuo omino') + lookHtml();
+        H('🎁 Premio giornaliero') + MT.dailyHtml() + H('📦 Scrigno') + MT.chestHtml() +
+        H('🎯 Missioni e medaglie') + R.extras.missionsHtml() +
+        section('album', `📖 Album (${MT.albumCount()}/${MT.ALBUM.length})`, MT.albumHtml()) +
+        section('game', '🎮 Mini-gioco', MT.gameHtml()) +
+        section('deco', '🏠 Il tuo rifugio', MT.decoHtml()) +
+        H('👕 Il tuo omino') + lookHtml();
     } else {
       h = H('⚙️ Impostazioni') + settingsHtml() + H('♿ Accessibilità') + accessHtml() + H('💾 Salvataggio portatile') + saveHtml() + H('🔒 Privacy e consenso') + privacyHtml() +
         (SHOW_DEBUG || debug ? section('dbg', '🛠 Debug', `<div class="dbg">${debugPanel()}</div>`) : '');
     }
     $('menuBody').innerHTML = h;
+    updateBadge();
     document.querySelectorAll('#tabbar button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab && !$('menu').classList.contains('hidden')));
   }
+  // Nuova gestione (prestigio): una stagione già completata si può rifare; da lì in poi si guadagna il 10% in più, per sempre.
+  let confirmPrest = '';
+  function prestigeHtml() {
+    const won = ORDER.map(id => R.levels[id]).filter(wonOf);
+    if (!won.length) return '';
+    return H('⭐ Nuova gestione') + `<div class="small">Ricomincia una stagione già completata: il rifugio diventa più famoso e guadagni +10% per sempre (adesso +${MT.prestige() * 10}%, massimo +100%). Le gemme e le figurine restano tue.</div>` +
+      won.map(l => `<div class="lrow"><div class="lhead"><b>${l.cityEmoji} ${l.emoji} ${l.cityName} · ${l.name}</b></div><button class="mini" data-prest="${l.id}">${confirmPrest === l.id ? 'Sicuro? Tocca ancora' : '⭐ Ricomincia con il bonus'}</button></div>`).join('');
+  }
+  const updateBadge = () => { const b = document.querySelector('#tabbar [data-tab=profile]'); if (b) b.classList.toggle('dot', MT.badge()); };
+  setInterval(updateBadge, 15000);
   const menuIsOpen = () => !$('menu').classList.contains('hidden');
   function openMenu(t) { if (t) tab = t; confirmReset = false; dbgMsg = ''; const was = menuIsOpen(); $('menu').classList.remove('hidden'); renderMenu(); $('menu').scrollTop = 0; if (!was) game.pause(true); audio.sfx('click'); }
   function closeMenu() { $('menu').classList.add('hidden'); renderMenu(); game.pause(false); audio.sfx('click'); }
@@ -219,7 +247,7 @@
     const AppP = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
     if (AppP && AppP.addListener) AppP.addListener('backButton', () => {
       const intro = !$('intro').classList.contains('hidden'), menuOpen = !$('menu').classList.contains('hidden');
-      if (!$('photo').classList.contains('hidden')) $('photoClose').onclick(); else if (menuOpen) closeMenu(); else if (intro) { if (AppP.exitApp) AppP.exitApp(); } else if ($('win').classList.contains('hidden')) openMenu();
+      if (popOpen()) closePop(); else if (!$('photo').classList.contains('hidden')) $('photoClose').onclick(); else if (menuOpen) closeMenu(); else if (intro) { if (AppP.exitApp) AppP.exitApp(); } else if ($('win').classList.contains('hidden')) openMenu();
     });
   } catch (e) { /* ignorato */ }
   // Acquisto: parte subito (la conferma con il PIN o l'impronta la chiede Google Play).
@@ -228,6 +256,25 @@
     shopMsg = r === 'ok' ? 'Acquisto riuscito, grazie! ' + (R.shop.byId(id).kind === 'gems' ? `+${R.shop.byId(id).gems} gemme` : 'Miglioramento attivo.') : r === 'cancel' ? 'Acquisto annullato.' : r === 'pending' ? 'Pagamento in attesa di conferma da Google Play: arriverà appena confermato.' : 'Acquisto non disponibile ora: nessun addebito. Riprova più tardi.';
     if (r === 'ok') audio.sfx('buy');
     rerender();
+  }
+  function metaAct(k) {
+    if (k === 'daily') {
+      const r = MT.claimDaily(); if (!r) return;
+      audio.sfx('buy'); hud.toast(`🎁 +${r.gems} 💎 · serie di ${r.streak} ${r.streak === 1 ? 'giorno' : 'giorni'}`); rerender();
+    } else if (k === 'chest') {
+      const r = MT.openChest(); if (!r) return;
+      audio.sfx('goal');
+      showPop('🎁 Scrigno aperto!', `<div class="reward"><i>${r.e}</i><b>${r.text}</b></div>`, [{ t: 'Che bello!', fn: () => { closePop(); rerender(); } }]);
+    } else if (k === 'game') {
+      if (MT.gameWait() > 0) return;
+      showPop('🎯 Pioggia di monete', '<div id="mgBox"></div>', [{ t: 'Esci', ghost: true, fn: () => { closePop(); rerender(); } }]);
+      popStop = MT.minigame($('mgBox'), (score, gems) => {
+        $('mgBox').innerHTML = `<div class="reward"><i>🪙</i><b>${score} monete!</b><span>${gems ? `Hai vinto ${gems} 💎` : 'Ci vogliono almeno 5 monete per una gemma.'}</span></div>`;
+        audio.sfx(gems ? 'buy' : 'click');
+      });
+    } else if (k === 'name') {
+      const el = $('lodgeName'); MT.decoName(el ? el.value : ''); audio.sfx('buy'); reloadSaved();
+    }
   }
   const rerender = () => { const y = $('menu').scrollTop; renderMenu(); $('menu').scrollTop = y; };
   const reloadSaved = () => { game.save(); location.reload(); };
@@ -254,6 +301,18 @@
     else if (t.id === 'codeMake') { codeText = st.exportCode(); codeMsg = 'Codice creato: copialo (tocca il riquadro e seleziona tutto).'; try { if (navigator.clipboard) navigator.clipboard.writeText(codeText).then(() => { codeMsg = 'Codice creato e copiato negli appunti.'; rerender(); }).catch(() => {}); } catch (e2) { /* ignorato */ } rerender(); }
     else if (t.id === 'codeUse') { const box = $('codeBox'); codeText = box ? box.value : codeText; if (st.importCode(codeText)) { codeMsg = 'Codice caricato! Riavvio…'; rerender(); setTimeout(() => location.reload(), 600); } else { codeMsg = 'Codice non valido.'; rerender(); } }
     else if (t.id === 'menuReset') { if (confirmReset) reset(); else { confirmReset = true; rerender(); } }
+    else if (d.meta) metaAct(d.meta);
+    else if (d.deco) {
+      const [kind, id] = d.deco.split(':'), cost = +d.cost, key = `deco:${kind}:${id}`;
+      if (cost && !st.has(key) && !st.buy(key, cost)) { hud.toast('Gemme insufficienti'); return; }
+      MT.decoSet(kind, id); audio.sfx('buy'); reloadSaved();
+    }
+    else if (d.prest) {
+      if (confirmPrest !== d.prest) { confirmPrest = d.prest; rerender(); return; }
+      const l = R.levels[d.prest]; confirmPrest = '';
+      if (l === level) state.reset(); else R.createState(l.saveKey).reset();
+      MT.addPrestige(); location.reload();
+    }
     else if (d.act != null) { const before = dbgMsg; dbgActs[+d.act](); if (dbgMsg === before) dbgMsg = 'Fatto: ' + t.textContent; rerender(); }
   });
   $('menuBody').addEventListener('input', e => {
@@ -274,7 +333,31 @@
   $('photoClose').onclick = () => { $('photo').classList.add('hidden'); game.pause(false); };
   $('photoShare').onclick = () => R.extras.sharePhoto(shot).then(r => { $('photoMsg').textContent = r === 'shared' ? 'Condivisa!' : r === 'saved' ? 'Foto salvata nei download.' : r === 'cancel' ? '' : 'Non riesco a condividere la foto su questo dispositivo.'; });
 
-  $('start').onclick = () => { audio.unlock(); audio.playMusic(level.season); hud.hideIntro(); game.start(); };
+  // All'avvio: premio giornaliero e, se sei stato via, i soldi che la reception ha incassato nel frattempo (si possono raddoppiare con un video).
+  function afterStart() {
+    const away = MT.awayCoins(state.data); MT.touch(); started = true;
+    const steps = [];
+    if (MT.dailyInfo().can) steps.push(next => {
+      showPop('🎁 Premio di oggi', MT.dailyHtml(false), [{ t: 'Ritira', fn: () => { const r = MT.claimDaily(); closePop(); if (r) { audio.sfx('buy'); hud.toast(`🎁 +${r.gems} 💎 · serie di ${r.streak} ${r.streak === 1 ? 'giorno' : 'giorni'}`); } updateBadge(); next(); } }]);
+    });
+    if (away.coins > 0) steps.push(next => {
+      const h = Math.floor(away.min / 60), m = away.min % 60, when = h ? `${h} h ${m} min` : `${m} min`;
+      const canAd = R.ads.available() && R.ads.left() > 0 && R.ads.wait() === 0;
+      const btns = [{ t: `Ritira ${away.coins} 🪙`, fn: () => { game.addReception(away.coins); closePop(); audio.sfx('coin'); next(); } }];
+      if (canAd) btns.push({ t: '🎬 Raddoppia con un video', ghost: true, fn: async e => {
+        e.disabled = true; const r = await R.ads.watch(0);
+        game.addReception(r === 'ok' ? away.coins * 2 : away.coins); closePop(); audio.sfx(r === 'ok' ? 'buy' : 'coin');
+        if (r !== 'ok') hud.toast('Video non completato: ritirate le monete normali'); next();
+      } });
+      showPop('👋 Bentornato!', `<p>Mentre eri via (${when}) la receptionist ha incassato <b>${away.coins} 🪙</b>: le trovi sul bancone.</p>`, btns);
+    });
+    const next = () => { const f = steps.shift(); if (f) f(next); };
+    setTimeout(next, 700);
+  }
+  let started = false; // l'ora dell'ultima visita si aggiorna solo dopo "Inizia" (prima serve per calcolare quanto sei stato via)
+  setInterval(() => { if (started) MT.touch(); }, 30000);
+  addEventListener('pagehide', () => { if (started) MT.touch(); });
+  $('start').onclick = () => { audio.unlock(); audio.playMusic(level.season); hud.hideIntro(); game.start(); afterStart(); };
   $('keep').onclick = () => { hud.hideWin(); game.resume(); };
 
   // Aggiornamenti in tempo reale: ogni 90 s chiede a GitHub l'ultimo commit; se è cambiato mostra un pulsante per ricaricare.

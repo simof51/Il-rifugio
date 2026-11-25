@@ -9,6 +9,21 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.17.0 · 2026-11-26 · Reception, premi giornalieri, album, eventi e tanto altro
+
+- **Reception** (a destra, oltre l'ingresso): bancone con insegna, campanello, scaffale con le chiavi e una receptionist che ti guarda e saltella. Gli ospiti soddisfatti passano di lì prima di partire e lasciano i soldi nella ciotola; l'omino li ritira restando sul tappeto. I soldi non restano più davanti alle stanze (le vecchie monete dei salvataggi si possono ancora prendere). La freccia guida, il tutorial e l'obiettivo "raccogli monete" portano lì.
+- **Premio giornaliero** con serie di 7 giorni (2, 3, 4, 5, 6, 8 e 15 💎 + scrigno al 7°). Chi salta un giorno non perde la serie.
+- **Guadagno mentre sei via**: la reception incassa anche a gioco chiuso (fino a 8 ore); al ritorno appare "Bentornato!" e, nell'app, si può raddoppiare con un video a premio.
+- **Album** con 17 figurine (ospiti, animali, meteo, notte, stagioni, evento) e **8 ospiti VIP con nome e frase** da incontrare.
+- **Scrigni**: i punti arrivano da obiettivi, missioni, figurine e premi; dentro ci sono gemme o oggetti nuovi per l'omino.
+- **Eventi di stagione a data** (Natale, Carnevale, Pasqua, estate, Halloween): guadagni +15/25% e decorazioni ai lati della reception. Si prova con `?event=natale`.
+- **Il tuo rifugio**: nome sull'insegna e colori di insegna e tappeto (alcuni con le gemme).
+- **Nuova gestione** (prestigio): si rifà una stagione finita e i guadagni salgono del 10% per sempre (fino a +100%).
+- **Mini-gioco** "Pioggia di monete" (20 secondi, premio in gemme, ogni 2 ore).
+- **Grafica**: icone disegnate al posto delle emoji (barra in basso, foto, gemme), bagliore morbido sui fuochi e sulle monete, coriandoli a fine livello, finestre che entrano con animazione, pallino rosso sul Profilo quando c'è un premio da ritirare.
+- Non fatti (per scelta): salvataggio nel cloud con Google Play Giochi e notifiche (servono configurazione Play e un nuovo APK, vanno con la pubblicazione); modelli 3D nuovi.
+- **Per tornare indietro**: `git checkout 0d767cc -- web tests Changelog`.
+
 ## v0.16.0 · 2026-11-26 · Grafica moderna, tutorial senza fumetto
 
 - Tutorial: tolto il tasto "Salta" e il fumetto in basso (codice compreso); l'avviso "Vai verso il bosco" non compare più, il suo messaggio è già nel passo 2 del tutorial, nella scheda in alto.
