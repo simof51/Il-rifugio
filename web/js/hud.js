@@ -71,6 +71,8 @@
     const envChip = $('envChip'), envN = $('envN');
     function setEnv(txt) { envChip.hidden = !txt; envN.textContent = txt; }
     // Suggerimenti del tutorial: stanno nella scheda dell'obiettivo (stessa posizione), con un tasto per saltare.
+    const goNext = $('goNext');
+    function setNext(txt) { if (goNext._t === txt) return; goNext._t = txt; goNext.hidden = !txt; if (txt) goNext.textContent = txt; }
     function hint(txt, i, n) {
       if (!txt) { tutOn = false; return; }
       tutOn = true;
@@ -85,7 +87,7 @@
     function hideStick() { stick.style.display = 'none'; }
 
     return {
-      label, put, toast, floatText, updateFloats, setStats, setTask, showStick, moveKnob, hideStick, setEnv, setGems, hint,
+      label, put, toast, floatText, updateFloats, setStats, setTask, showStick, moveKnob, hideStick, setEnv, setGems, hint, setNext,
       setCamera(c) { cam = c; },
       hideIntro() { $('intro').classList.add('hidden'); },
       showWin(title, text, next, nextId) {

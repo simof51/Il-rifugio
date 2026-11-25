@@ -341,6 +341,7 @@
   }
   $('start').onclick = () => { audio.unlock(); audio.playMusic(level.season); hud.hideIntro(); game.start(); afterStart(); };
   $('keep').onclick = () => { hud.hideWin(); game.resume(); };
+  $('goNext').onclick = () => { game.save(); location.reload(); }; // la tappa vinta è salvata: al riavvio parte la successiva
 
   // Aggiornamenti in tempo reale: ogni 90 s chiede a GitHub l'ultimo commit; se è cambiato mostra un pulsante per ricaricare.
   // Con "no-cache" il WebView usa l'ETag e le risposte "non cambiato" non consumano il limite di 60 richieste l'ora di GitHub.

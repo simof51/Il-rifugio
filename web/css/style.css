@@ -204,6 +204,9 @@ body:has(#pop:not(.hidden)) #tabbar{display:none}
 .reward{text-align:center;padding:10px 0}.reward i{display:block;font-style:normal;font-size:64px;line-height:1.1;animation:cardin .5s}.reward b{display:block;font-size:26px}.reward span{display:block;color:#5b6b7c;margin-top:4px}
 .txt{flex:1;min-width:0;font:inherit;font-size:16px;padding:9px 12px;border:1px solid rgba(31,42,55,.15);border-radius:12px;background:#fff;color:var(--ink);user-select:text;-webkit-user-select:text}
 #popBody p{margin:0 0 12px}
+#goNext{position:fixed;left:50%;bottom:calc(96px + var(--safe-b));transform:translateX(-50%);z-index:5;max-width:calc(100vw - 24px);animation:nudge 1.6s ease-in-out infinite}
+@keyframes nudge{50%{transform:translateX(-50%) scale(1.05)}}
+body:has(.modal:not(.hidden)) #goNext{display:none}
 /* Prestazioni e colori: niente sfocature dietro ai pannelli (pesanti sul telefono) e più colore nell'interfaccia */
 *{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 body::before{display:none}

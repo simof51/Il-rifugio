@@ -9,6 +9,12 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.21.1 · 2026-11-26 · Tasto per la tappa successiva, tutorial solo la prima volta
+
+- **Tasto "➜ Vai a …"**: a tappa finita, anche dopo "Continua a giocare", resta un tasto fisso in basso che porta alla città e stagione successiva (senza chiudere e riaprire l'app).
+- **Tutorial una volta sola**: il tutorial e i primi 4 obiettivi che insegnano le basi (legna, camino, primo ospite, prime monete) ci sono solo la primissima volta che si gioca. Nelle altre stagioni e città si parte dal 5° obiettivo.
+- **Per tornare indietro**: `git checkout 1179e8d -- web Changelog`.
+
 ## v0.21.0 · 2026-11-26 · Impostazioni semplici, strade unite, ghiaia nitida, decorazioni a lato
 
 - **Tolto** il salvataggio portatile con il codice (resta la copia di sicurezza automatica con il tasto "Torna a qualche minuto fa", sotto "Copia di sicurezza"), il testo grande, i colori per daltonici e la modalità una mano.

@@ -1084,7 +1084,10 @@
       return gu;
     }
     // --- tutorial a fumetti: solo la prima volta e solo nella prima stagione ---
-    const tut = { on: !R.settings.get('tutorial') && level.id === 'inverno' && S.done === 0, i: 0, moved: 0, lx: null, lz: null };
+    // Il tutorial (e i primi obiettivi che insegnano le basi) c'è solo la primissima volta che si gioca: nelle altre stagioni e città si parte dal 5° obiettivo.
+    const FIRST_LEVEL = level.id === R.order[0];
+    if (S.done === 0 && !S.won && (R.settings.get('tutorial') || !FIRST_LEVEL)) { S.done = Math.min(4, objectives.length); R.settings.set('tutorial', true); }
+    const tut = { on: !R.settings.get('tutorial') && FIRST_LEVEL && S.done === 0, i: 0, moved: 0, lx: null, lz: null };
     const TSTEPS = [
       ['👆 Trascina il dito sullo schermo per muoverti', () => tut.moved > 3],
       [`🪓 Vai verso ${V.treeArt || 'un albero'}: segui la freccia gialla`, () => S.wood >= 1 || !!nearTree(player.position, P.chop_range)],
@@ -1161,6 +1164,9 @@
         const vt = n > 1 ? `${o.decimals ? v.toFixed(o.decimals) : Math.floor(v)}/${n}` : '';
         hud.setTask(`Obiettivo ${S.done + 1} di ${objectives.length}`, o.text, vt, v / n);
       } else hud.setTask('Livello completato', 'Continua a far crescere il rifugio! 🎉', '', 1);
+      // a livello finito: tasto fisso per passare alla tappa successiva (senza chiudere e riaprire l'app)
+      const nx = S.done >= objectives.length && level.next ? R.levels[level.next] : null;
+      hud.setNext(nx ? `➜ Vai a ${nx.cityEmoji || ''} ${nx.cityName || ''} · ${nx.emoji} ${nx.name}` : null);
     }
 
     // --- input --------------------------------------------------------------
@@ -1284,6 +1290,7 @@
       if (moving && dustT <= 0) { dustT = 0.17; burst(p.x - Math.sin(player.rotation.y) * 0.18, 0.08, p.z - Math.cos(player.rotation.y) * 0.18, 1, [TH.dust || 0xffffff, 0xffffff], 0.3, 0.7, 0.45, 0.11, 2.5); }
       // alberi che ricrescono
       regrowTrees(dt);
+      if (tut.on && S.won) endTutorial();
       if (tut.on) updateTutorial(dt); else tips();
       // eventi a sorpresa
       eventT -= dt; if (S.done >= 3 && S.fed > 0 && eventT <= 0) { eventT = 75 + Math.random() * 60; runEvent(); }
