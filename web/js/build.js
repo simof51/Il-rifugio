@@ -13,14 +13,21 @@
     // Luce calcolata per pixel (Phong): le superfici curve restano lisce invece di mostrare le sfaccettature.
     const M = (c, extra) => new T.MeshPhongMaterial(Object.assign({ color: c, shininess: 6, specular: 0x111111 }, extra));
     // Texture a puntini (ghiaia, sabbia) disegnata al volo: nessun file da scaricare.
+    // Con "stones" (ghiaia e sabbia dei sentieri) la texture è più grande e nitida, con sassolini dal bordo scuro e un riflesso chiaro.
     function speckle(o) {
-      const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');
-      x.fillStyle = o.base; x.fillRect(0, 0, 128, 128);
-      for (let i = 0; i < o.n; i++) {
-        x.fillStyle = o.cols[i % o.cols.length]; const s = o.min + Math.random() * (o.max - o.min);
-        x.beginPath(); x.ellipse(Math.random() * 128, Math.random() * 128, s, s * 0.75, Math.random() * 3, 0, 6.3); x.fill();
+      const S = o.stones ? 256 : 128, k = S / 128;
+      const c = document.createElement('canvas'); c.width = c.height = S; const x = c.getContext('2d');
+      x.fillStyle = o.base; x.fillRect(0, 0, S, S);
+      const n = o.stones ? Math.round(o.n * k * k * 0.7) : o.n;
+      for (let i = 0; i < n; i++) {
+        const col = o.cols[i % o.cols.length], s = (o.min + Math.random() * (o.max - o.min)) * (o.stones ? k * 0.8 : 1), px = Math.random() * S, py = Math.random() * S, rot = Math.random() * 3;
+        x.fillStyle = col; x.beginPath(); x.ellipse(px, py, s, s * 0.75, rot, 0, 6.3); x.fill();
+        if (o.stones) {
+          x.strokeStyle = 'rgba(0,0,0,.22)'; x.lineWidth = 0.7 * k; x.stroke();
+          x.fillStyle = 'rgba(255,255,255,.22)'; x.beginPath(); x.ellipse(px - s * 0.25, py - s * 0.25, s * 0.4, s * 0.25, rot, 0, 6.3); x.fill();
+        }
       }
-      const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; return t;
+      const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; t.anisotropy = 8; return t;
     }
     // Terreno con una leggera texture a macchie dello stesso colore (neve, erba, terra): più vivo di un colore piatto.
     const gc = new T.Color(theme.ground != null ? theme.ground : 0xf6f9ff), gh = {}; gc.getHSL(gh);
@@ -28,7 +35,7 @@
     const groundTex = speckle({ base: '#' + gc.getHexString(), cols: [shade(0.035), shade(-0.035), shade(0.06), shade(-0.06)], n: 1100, min: 1.2, max: 5 });
     groundTex.repeat.set(34, 34);
     const mats = {
-      snow: M(0xf6f9ff), ground: M(0xffffff, { map: groundTex }), blob: new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.13, depthWrite: false }), path: theme.pathTex ? M(0xffffff, { map: speckle(theme.pathTex) }) : M(theme.path || 0xe8dcc4),
+      snow: M(0xf6f9ff), ground: M(0xffffff, { map: groundTex }), blob: new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.13, depthWrite: false }), path: theme.pathTex ? M(0xffffff, { map: speckle(Object.assign({ stones: true }, theme.pathTex)) }) : M(theme.path || 0xe8dcc4),
       hill: M(theme.hill || 0x8fb0d8), peak: M(theme.peak || 0xf6f9ff),
       foliage: M(0xffffff, { vertexColors: true }), accent: M(0xffffff, { vertexColors: true }), face: M(0xffffff, { vertexColors: true, shininess: 0, specular: 0x000000 }),
       trunk: M(0x7a4a30), wood: M(0xb07848),

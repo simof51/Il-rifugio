@@ -111,11 +111,7 @@ ok(st3.hasSnap() && st3.restoreSnap() && JSON.parse(store['rifugio-test']).done 
 const st4 = R.createState('rifugio-test'); st4.reset();
 ok(!store['rifugio-test'] && !store['rifugio-test-bak'] && !store['rifugio-test-snap'], 'reset cancella tutte le copie');
 
-// 6. Il codice portatile si crea e si rilegge.
-store['rifugio-x'] = '{"a":1}';
-const code = R.settings.exportCode(); delete store['rifugio-x'];
-ok(code.indexOf('RIF1.') === 0 && R.settings.importCode(code) && store['rifugio-x'] === '{"a":1}', 'codice portatile: esporta e importa');
-ok(!R.settings.importCode('RIF1.xxxx'), 'un codice sbagliato è rifiutato');
+// 6. (il salvataggio portatile con il codice è stato tolto)
 
 // 7. Ogni file di script elencato in index.html esiste ed è nel service worker.
 const html = fs.readFileSync(path.join(WEB, 'index.html'), 'utf8'), sw = fs.readFileSync(path.join(WEB, 'sw.js'), 'utf8');

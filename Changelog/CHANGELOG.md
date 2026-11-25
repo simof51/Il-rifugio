@@ -9,6 +9,15 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.21.0 · 2026-11-26 · Impostazioni semplici, strade unite, ghiaia nitida, decorazioni a lato
+
+- **Tolto** il salvataggio portatile con il codice (resta la copia di sicurezza automatica con il tasto "Torna a qualche minuto fa", sotto "Copia di sicurezza"), il testo grande, i colori per daltonici e la modalità una mano.
+- **Suoni**: un solo interruttore e un solo volume per effetti e suoni d'ambiente (vento, pioggia, uccellini).
+- **Strade unite**: la texture della ghiaia segue le coordinate del mondo, quindi non ci sono più cuciture dove due strade si incontrano; le strade entrano l'una nell'altra nella stessa direzione.
+- **Ghiaia migliorata**: texture più grande e nitida, sassolini con bordo scuro e riflesso, filtro anisotropo.
+- **Lanterne, pupazzo di neve e decorazioni** non stanno più sulle strade: lanterne a lato della passeggiata, pupazzo/mascotte in un punto libero, e niente cumuli, sassi, cespugli, fiori o alberi sulle strade.
+- **Per tornare indietro**: `git checkout fddb7bd -- web tests Changelog`.
+
 ## v0.20.0 · 2026-11-26 · Banco rivolto al giocatore, grafica più nitida, nome a pagamento
 
 - **Banco delle bevande** rivolto verso il giocatore (sud), con un camminamento che gli passa davanti: si stacca dalla passeggiata a ovest e vi torna a est. Si prendono le bevande dal camminamento. I riquadri degli upgrade (zaini, ascia, motosega, banco, cartello) sono stati riordinati a sud del camminamento.

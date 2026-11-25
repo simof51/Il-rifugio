@@ -85,7 +85,7 @@
       lfo.connect(lg); lg.connect(cg.gain); cr.connect(cg); cg.connect(lev); lev.connect(master); cr.start(); lfo.start();
       amb = { master, wind, rain, waves, crick: lev };
       birdT = setInterval(() => {
-        if (!ctx || ctx.state !== 'running' || !settings().ambient || ambOpt.night > 0.5 || ambOpt.rain > 0.3 || (ambOpt.season !== 'primavera' && ambOpt.season !== 'estate' && ambOpt.season !== 'autunno')) return;
+        if (!ctx || ctx.state !== 'running' || !st.sfx || ambOpt.night > 0.5 || ambOpt.rain > 0.3 || (ambOpt.season !== 'primavera' && ambOpt.season !== 'estate' && ambOpt.season !== 'autunno')) return;
         if (Math.random() > 0.55) return;
         const t0 = ctx.currentTime, f = 2400 + Math.random() * 1600, n = 2 + Math.floor(Math.random() * 3);
         for (let i = 0; i < n; i++) tone(f + i * 120, 0.07, 'sine', 0.07, t0 + i * 0.1, f * 1.25, amb.master);
@@ -93,7 +93,8 @@
     }
     function applyAmbient() {
       if (!amb) return;
-      const s = settings(), v = s.ambient ? s.ambVol * 0.5 : 0, o = ambOpt, t = ctx.currentTime, set = (g, x) => g.gain.setTargetAtTime(x, t, 0.8);
+      const v = st.sfx ? st.sfxVol * 0.6 : 0, o = ambOpt, // i suoni d'ambiente seguono l'interruttore e il volume dei "Suoni"
+        t = ctx.currentTime, set = (g, x) => g.gain.setTargetAtTime(x, t, 0.8);
       amb.master.gain.setTargetAtTime(v, t, 0.3);
       const cold = o.season === 'inverno';
       set(amb.wind, (cold ? 0.35 : 0.15) + o.wind * 0.4 + o.storm * 0.25);
@@ -139,7 +140,7 @@
       ambient(o) { if (!ctx || ctx.state !== 'running') return; Object.assign(ambOpt, o); ensureAmbient(); applyAmbient(); },
       refresh() { applyAmbient(); },
       playMusic(id) { song = SONGS[id] || SONGS.inverno; step = 0; nextT = 0; startTimer(); },
-      set(key, value) { st[key] = value; save(); apply(); }
+      set(key, value) { st[key] = value; save(); apply(); if (key === 'sfx' || key === 'sfxVol') applyAmbient(); }
     };
   };
 })(window.Rifugio);

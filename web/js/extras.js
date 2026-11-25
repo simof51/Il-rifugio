@@ -1,4 +1,4 @@
-// Extra: missioni giornaliere e medaglie, effetti delle stagioni, accessibilità e foto ricordo.
+// Extra: missioni giornaliere e medaglie, effetti delle stagioni e foto ricordo.
 // Il gioco manda qui gli eventi (R.extras.ev('guest'), 'cup', 'wood'…); i dati stanno nelle impostazioni (sul dispositivo).
 (function (R) {
   'use strict';
@@ -94,12 +94,6 @@
     return SEASON_NOTE[s] || '';
   }
 
-  // --- accessibilità: testo grande, colori per daltonici, modalità una mano ---
-  function applyAccess() {
-    const c = document.documentElement.classList;
-    c.toggle('a-big', !!st.get('big')); c.toggle('a-cb', !!st.get('cb')); c.toggle('a-one', !!st.get('one'));
-  }
-
   // --- foto ricordo: la scena con una cornice e il nome del posto ---
   function photo(src, caption) {
     const w = src.width, h = src.height, pad = Math.round(w * 0.02), foot = Math.round(h * 0.09);
@@ -124,6 +118,5 @@
     }, 'image/png'));
   }
 
-  R.extras = { ev, missionsHtml, applySeason, applyAccess, photo, sharePhoto, MISSIONS, MEDALS, dailies, bind: hud => { toast = m => hud.toast(m); }, hash };
-  applyAccess();
+  R.extras = { ev, missionsHtml, applySeason, photo, sharePhoto, MISSIONS, MEDALS, dailies, bind: hud => { toast = m => hud.toast(m); }, hash };
 })(window.Rifugio);

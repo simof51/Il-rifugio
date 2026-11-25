@@ -82,7 +82,8 @@
         const taper = e < cap ? Math.sqrt(Math.max(0.02, 1 - Math.pow(1 - e / cap, 2))) : 1; // estremità tonde
         const hw = (w / 2 + extra) * taper * (1 + (wobble ? 0.07 * Math.sin(s * 1.7 + pts[0][0]) : 0));
         pos.push(P0[i].x + nx * hw, y, P0[i].z + nz * hw, P0[i].x - nx * hw, y, P0[i].z - nz * hw);
-        uv.push(s / uvScale, 0, s / uvScale, hw * 2 / uvScale);
+        // texture in coordinate del mondo: la ghiaia è continua anche dove due strade si incontrano (niente cuciture)
+        uv.push((P0[i].x + nx * hw) / uvScale, (P0[i].z + nz * hw) / uvScale, (P0[i].x - nx * hw) / uvScale, (P0[i].z - nz * hw) / uvScale);
         if (i < n) { const k = i * 2; idx.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); }
       }
       const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new T.Float32BufferAttribute(uv, 2)); geo.setIndex(idx); geo.computeVertexNormals();
@@ -98,21 +99,26 @@
         const a = r.P0[i - 1], b = r.P0[i + 1], tl = Math.hypot(b.x - a.x, b.z - a.z) || 1, side = k % 2 ? 1 : -1, off = (w / 2 + 0.45) * side;
         pebbles.push({ geo: pebbleGeo, x: r.P0[i].x - (b.z - a.z) / tl * off, y: 0.04, z: r.P0[i].z + (b.x - a.x) / tl * off, s: [0.13, 0.08, 0.13], ry: k, color: new T.Color(pc[k % pc.length]).getHex() });
       }
+      r.P0.forEach((p, i) => { if (i % 6 === 0) roadPts.push([p.x, p.z]); });
       return r.P0;
     }
+    const roadPts = [];
+    // True se il punto è vicino a una strada: lì niente cumuli di neve, sassi, alberi, pupazzi, decorazioni o lanterne.
+    const nearRoad = (x, z, r) => { for (const p of roadPts) if (Math.hypot(p[0] - x, p[1] - z) < r) return true; return false; };
     const pebbleGeo = new T.SphereGeometry(1, 6, 4);
     const sampleRoad = (P0, step) => P0.filter((_, i) => i % step === 0 || i === P0.length - 1).map(p => [p.x, p.z]);
     // Passeggiata davanti alle camere: da lì i clienti escono verso est, fino al bordo della mappa.
     const WALK = [[-13.5, -2.9], [-7, -2.9 + wv(1) * 0.3], [0, -2.9 + wv(2) * 0.3], [7, -2.8 + wv(3) * 0.25], [13, -2.5 + wv(4) * 0.3], [19, -1.2 + wv(5) * 0.4], [25, 0.6 + wv(6) * 0.3], [32, 1.4]];
     const walkP0 = pathPlane(WALK, ROAD_W), exitRoad = sampleRoad(walkP0, 8);
     // Camminamento del banco: si stacca dalla passeggiata a ovest, passa davanti al banco delle bevande e torna sulla passeggiata a est.
-    pathPlane([[-6.2, -2.9], [-5.4, -0.5], [-3.6, 1.6], [-0.8, 2.6 + wv(11) * 0.15], [3, 2.7], [6.8, 2.6 + wv(12) * 0.15], [9.6, 2.0], [11.8, 0.2], [12.7, -2.6]], ROAD_W);
+    // Le estremità entrano nella passeggiata nella stessa direzione, così le due strade si fondono senza spigoli.
+    pathPlane([[-8.4, -2.9], [-6.4, -2.85], [-5, -1.5], [-3.6, 0.7], [-1.6, 2.2], [1, 2.7 + wv(11) * 0.15], [4.5, 2.7], [7.4, 2.5 + wv(12) * 0.15], [10, 1.6], [12, -0.2], [13.6, -2.0], [15.6, -2.4]], ROAD_W);
     // Strade d'ingresso: arrivano dal bordo ovest della mappa, ognuna da una parte diversa (due o tre, attorno al lago se c'è).
     const inRoads = [];
     const addIn = pts => { inRoads.push(sampleRoad(pathPlane(pts, ROAD_W), 9)); };
-    addIn([[-32, -6], [-26, -5.6 + wv(7) * 0.5], [-20, -4.4 + wv(8) * 0.5], [-16, -3.3], [-13.5, -2.9]]);
-    addIn([[-32, 15], [-25, 14], [-17, 11 + wv(9) * 0.4], [-14, 5], [-12.8, 0.5], [-13.5, -2.9]]);
-    if (!lake && !LM && (rh >> 7) % 2) addIn([[-32, -11], [-26, -9.6 + wv(10) * 0.4], [-20, -8.2], [-15.5, -6.4], [-13.4, -4.3], [-13.5, -2.9]]);
+    addIn([[-32, -6], [-26, -5.6 + wv(7) * 0.5], [-20, -4.4 + wv(8) * 0.5], [-16, -3.3], [-13.5, -2.9], [-11.5, -2.9]]);
+    addIn([[-32, 15], [-25, 14], [-17, 11 + wv(9) * 0.4], [-14, 5], [-13, 0.4], [-12.6, -1.8], [-11.2, -2.85], [-9.5, -2.9]]);
+    if (!lake && !LM && (rh >> 7) % 2) addIn([[-32, -11], [-26, -9.6 + wv(10) * 0.4], [-20, -8.2], [-15.5, -6.4], [-13.4, -4.3], [-12.2, -3.1], [-10.5, -2.9]]);
     if (pebbles.length) scene.add(new T.Mesh(B.mergeParts(pebbles), mats.accent));
 
     // Bordi della mappa ben definiti: d'inverno una catena di montagne alte con la cima innevata, d'estate una foresta fitta.
@@ -155,6 +161,7 @@
       s.scale.set(1 + rnd() * 1.5, 0.35, 1 + rnd()); s.position.set(-16 + rnd() * 32, 0, -12 + rnd() * 28);
       if (Math.abs(s.position.z + 6) < 4 && Math.abs(s.position.x) < 13) continue;
       if (nearPad(s.position.x, s.position.z, Math.max(s.scale.x, s.scale.z) + 1.5)) continue; // niente cumuli di neve sopra i riquadri
+      if (nearRoad(s.position.x, s.position.z, Math.max(s.scale.x, s.scale.z) + ROAD_W / 2 + 0.6)) continue; // né sulle strade
       if (inLake(s.position.x, s.position.z, 3)) continue;
       add(s);
     }
@@ -164,7 +171,7 @@
       const parts = [];
       for (let i = 0, nf = Math.round((TH.flowerCount || 170) * Q.density); i < nf; i++) {
         const x = -30 + rnd() * 60, z = -20 + rnd() * 46;
-        if (inLake(x, z, 2.2) || (x > -3 && x < 18 && z > -3.8 && z < 2.2) || (x > -8 && x < 8 && z < -3.6 && z > -9.4) || (x > 8 && x < 13 && z > -8 && z < -3)) continue;
+        if (inLake(x, z, 2.2) || nearRoad(x, z, ROAD_W / 2 + 0.3) || (x > -3 && x < 18 && z > -3.8 && z < 2.2) || (x > -8 && x < 8 && z < -3.6 && z > -9.4) || (x > 8 && x < 13 && z > -8 && z < -3)) continue;
         const c = FL[Math.floor(rnd() * FL.length)];
         parts.push({ geo: petal, x, y: 0.05, z, s: 0.8 + rnd() * 0.6, color: c }, { geo: heart, x, y: 0.07, z, color: c === 0xffd23a ? 0xff9a2a : 0xffd23a });
       }
@@ -176,7 +183,7 @@
       const spot = () => {
         for (let k = 0; k < 25; k++) {
           const x = bx0 + 1 + rnd() * (bx1 - bx0 - 2), z = bz0 + 1 + rnd() * (bz1 - bz0 - 2);
-          if (!(inLake(x, z, 2.4) || inLM(x, z, 1.8) || nearPad(x, z, 2.2) || (x > -17 && x < 19 && z > -10.5 && z < 5.5))) return [x, z];
+          if (!(inLake(x, z, 2.4) || inLM(x, z, 1.8) || nearPad(x, z, 2.2) || nearRoad(x, z, ROAD_W / 2 + 1.1) || (x > -17 && x < 19 && z > -10.5 && z < 5.5))) return [x, z];
         }
         return null;
       };
@@ -285,7 +292,7 @@
     while (near < P.trees && tries < 800) {
       tries++;
       const x = -12 + rnd() * 24, z = 5 + rnd() * 8;
-      if (trees.some(t => Math.hypot(t.x - x, t.z - z) < 2.5) || inLake(x, z, 1.5) || inLM(x, z, 1) || nearPad(x, z, 2.6)) continue;
+      if (trees.some(t => Math.hypot(t.x - x, t.z - z) < 2.5) || inLake(x, z, 1.5) || inLM(x, z, 1) || nearPad(x, z, 2.6) || nearRoad(x, z, ROAD_W / 2 + 1.3)) continue;
       plantTree(x, z, 1); near++;
     }
     for (let i = 0, planted = 0; i < P.forest_trees * 16 && planted < P.forest_trees; i++) {
@@ -905,7 +912,17 @@
     function buildLamps() {
       if (lamps.length) return;
       const BC = [0xffd27a]; // tutte le lanterne hanno la stessa luce calda
-      const spots = [[-10, -1.7], [-5.5, -1.7], [6, -1.7], [10, -1.7], [14.5, -1.3], [19, 0.3], [-13, -1.7], [24, 1.8]];
+      // lanterne a lato della passeggiata (mai sopra la strada, i riquadri o il banco)
+      const spots = [];
+      for (let i = 6; i < walkP0.length - 4 && spots.length < 10; i += 12) {
+        const a = walkP0[i - 1], b = walkP0[i + 1], tl = Math.hypot(b.x - a.x, b.z - a.z) || 1;
+        for (const extra of [1.2, 1.9, 2.6]) { // più vicino alla strada, poi più lontano se c'è un riquadro in mezzo
+          const off = ROAD_W / 2 + extra, x = walkP0[i].x - (b.z - a.z) / tl * off, z = walkP0[i].z + (b.x - a.x) / tl * off;
+          if (nearPad(x, z, 1.6) || nearRoad(x, z, ROAD_W / 2 + 0.8) || (Math.abs(x - STAND.x) < 2.6 && Math.abs(z - STAND.z) < 1.8) || x < -12 || x > 27) continue;
+          if (spots.some(s => Math.hypot(s[0] - x, s[1] - z) < 4)) continue;
+          spots.push([x, z]); break;
+        }
+      }
       const iron = B.tint(0x2b2f3a), poolGeo = B.cached('lpool', () => new T.PlaneGeometry(5, 5).rotateX(-Math.PI / 2)), glassGeo = B.cached('lglass', () => new T.CylinderGeometry(0.13, 0.11, 0.32, 10));
       BC.forEach(c => { lampMats[c] = {
         halo: new T.SpriteMaterial({ map: glowTex, color: c, blending: T.AdditiveBlending, transparent: true, depthWrite: false, opacity: 0.3 }),

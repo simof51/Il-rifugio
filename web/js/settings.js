@@ -7,7 +7,7 @@
     quality: 'high', daynight: true, weather: true, haptics: true, ambient: true, ambVol: 0.5, pet: 'none',
     look: { hat: 'default', color: 0, acc: 'none' }, owned: ['hat:default', 'acc:none', 'color:0', 'color:1', 'pet:none'], gems: 0,
     tutorial: false, tips: {}, consent: null, purchases: {}, shopTest: false,
-    lang: 'auto', big: false, cb: false, one: false, daily: null, stats: {}, medals: {}
+    lang: 'auto', daily: null, stats: {}, medals: {}
   });
   let data = defaults();
   // Se le impostazioni sono rovinate si riparte dalla copia di sicurezza (chiave + '-bak').
@@ -47,25 +47,8 @@
     pet: [{ id: 'none', name: 'Nessuno', cost: 0 }, { id: 'dog', name: '🐶 Cane', cost: 25 }, { id: 'cat', name: '🐱 Gatto', cost: 25 }]
   };
 
-  // Salvataggio portatile: tutte le chiavi "rifugio-*" in un unico codice di testo.
-  function exportCode() {
-    const o = {};
-    try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.indexOf('rifugio-') === 0 && k !== 'rifugio-next-level') o[k] = localStorage.getItem(k); } } catch (e) { /* ignorato */ }
-    return 'RIF1.' + btoa(unescape(encodeURIComponent(JSON.stringify(o))));
-  }
-  function importCode(code) {
-    try {
-      code = String(code || '').trim(); if (code.indexOf('RIF1.') !== 0) return false;
-      const o = JSON.parse(decodeURIComponent(escape(atob(code.slice(5)))));
-      const keys = Object.keys(o).filter(k => k.indexOf('rifugio-') === 0 && typeof o[k] === 'string');
-      if (!keys.length) return false;
-      keys.forEach(k => localStorage.setItem(k, o[k]));
-      return true;
-    } catch (e) { return false; }
-  }
-
   R.settings = {
-    data, save, QUALITY, CATALOG, exportCode, importCode,
+    data, save, QUALITY, CATALOG,
     get: k => data[k],
     set(k, v) { data[k] = v; save(); },
     quality: () => QUALITY[data.quality] || QUALITY.high,

@@ -74,7 +74,7 @@
       { id: 'cocoa2', title: v.stand2Title, cost: k(102), pos: [6.6, 5], requires: P(7), effect: 'cocoa2' },
       { id: 'helper2', title: `${v.helperTitle} 2`, cost: k(205), pos: [-11, 2.8], requires: P(7), effect: 'helper', room: 1, needRoom: 1 },
       { id: 'waiter', title: `Cameriere ${v.roomShort} 1`, cost: k(92), pos: [-2.2, -0.4], requires: P(7), effect: 'waiter', room: 0, needRoom: 0 },
-      { id: 'mascot', title: v.mascotName, cost: k(105), pos: lake ? [-12.6, 7.2] : [-14.5, -2.5], requires: P(8), effect: 'mascot' },
+      { id: 'mascot', title: v.mascotName, cost: k(105), pos: lake ? [-10, 9] : [-18, 1], requires: P(8), effect: 'mascot' },
       { id: 'waiter2', title: `Cameriere ${v.roomShort} 2`, cost: k(112), pos: [9.6, -1.8], requires: P(9), effect: 'waiter', room: 1, needRoom: 1 },
       { id: 'helper3', title: `${v.helperTitle} 3`, cost: k(235), pos: [-13.5, 2.4], requires: P(9), effect: 'helper', room: 2, needRoom: 2 },
       { id: 'waiter3', title: `Cameriere ${v.roomShort} 3`, cost: k(132), pos: [-9.2, -2.2], requires: P(11), effect: 'waiter', room: 2, needRoom: 2 }

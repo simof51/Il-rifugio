@@ -121,18 +121,6 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;backgrou
 .medal.ok{opacity:1;border-color:#ffd23a;background:#fffbe8}
 .medal i{display:block;font-style:normal;font-size:28px}.medal b{display:block;font-size:14px}.medal span{display:block;font-size:11px;color:#5b6b7c}
 
-/* Accessibilità: testo grande, colori per daltonici (strisce e simboli oltre al colore), modalità una mano */
-.a-big .chip{font-size:22px}.a-big #taskTxt{font-size:21px}.a-big #task small{font-size:16px}.a-big #toast{font-size:20px}
-.a-big .pad{font-size:17px}.a-big .pad b{font-size:18px}.a-big .pill{font-size:17px}.a-big .float{font-size:30px}
-.a-big .card,.a-big .set,.a-big .small,.a-big .opt,.a-big .mrow,.a-big .btn{font-size:120%}.a-big .small{font-size:16px}.a-big .medal b{font-size:17px}.a-big .medal span{font-size:14px}
-.a-cb .bar i,.a-cb .fuel i{background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.55) 0 6px,rgba(255,255,255,0) 6px 12px)}
-.a-cb .pill.cold::before,.a-cb .cold::before{content:'❄️ '}
-.a-cb .pad{border:3px dashed #1f2a37}
-.a-cb .tg.on::before{content:'✔ '}.a-cb .tg:not(.on)::before{content:'✖ '}
-.a-cb .mrow.ok,.a-cb .medal.ok{border-style:double;border-width:5px}
-.a-one #photoBtn{top:auto;bottom:calc(150px + var(--safe-b));right:calc(16px + var(--safe-r))}
-.a-one #hud{right:calc(12px + var(--safe-r))}
-.a-one #toast{bottom:calc(150px + var(--safe-b))}
 @media(prefers-contrast:more){.chip,#task,.pad{border:2px solid #1f2a37}}
 
 /* Barra in basso: mappa, shop, profilo, impostazioni */
@@ -146,7 +134,7 @@ body:has(#intro:not(.hidden)) #tabbar,body:has(#consent:not(.hidden)) #tabbar,bo
 #menu{padding-bottom:calc(92px + var(--safe-b))}
 #menu .card{max-height:calc(100dvh - 120px - var(--safe-b))}
 #menu h2:first-child{margin-top:0}
-.a-big #tabbar button{font-size:14px}#menu h1{display:none}
+#menu h1{display:none}
 
 /* Aspetto moderno: pannelli di vetro, ombre morbide, colori più profondi, niente bordi spessi e ombre "a gradino" */
 :root{--glass:rgba(255,255,255,.74);--glass-line:rgba(255,255,255,.65);--soft:0 6px 22px rgba(18,38,66,.18);--accent:#ff5a3c;--accent2:#ff8a3d;--ok:#22c58b}

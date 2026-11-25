@@ -82,7 +82,7 @@
   const popOpen = () => !$('pop').classList.contains('hidden');
 
   // --- menu: città, aspetto, impostazioni, salvataggio, privacy e strumenti di prova ---
-  let confirmReset = false, dbgMsg = '', codeText = '', codeMsg = '', lookMsg = '';
+  let confirmReset = false, dbgMsg = '', lookMsg = '';
   const secs = {}; // sezioni aperte
   const dataOf = l => l === level ? state.data : savedData(l);
   const doneOf = l => Math.min(dataOf(l).done || 0, l.objectives.length);
@@ -132,20 +132,17 @@
   }
   function settingsHtml() {
     const Qs = st.QUALITY;
+    // "Suoni" comprende anche i suoni d'ambiente (vento, pioggia, uccellini): un solo interruttore e un solo volume.
     return tgA('sfx', 'Suoni') + slider('sfxVol', 'Volume suoni', 'audio', audio.state.sfxVol) + tgA('music', 'Musica') + slider('musVol', 'Volume musica', 'audio', audio.state.musVol) +
-      tgS('ambient', 'Suoni d\'ambiente') + slider('ambVol', 'Volume ambiente', 'st', st.get('ambVol')) + tgS('haptics', 'Vibrazione') +
+      tgS('haptics', 'Vibrazione') +
       tgS('daynight', 'Giorno e notte') + tgS('weather', 'Meteo (pioggia, nebbia, temporali)') +
       `<b class="small">Lingua</b>${opts([{ v: 'auto', l: '🌐 Auto' }].concat(Object.keys(R.i18n.LANGS).map(k => ({ v: k, l: R.i18n.LANGS[k] }))), st.get('lang'), 'data-lang')}` +
       `<b class="small">Qualità grafica (si applica ricaricando)</b>${opts(Object.keys(Qs).map(k => ({ v: k, l: Qs[k].label })), st.get('quality'), 'data-q')}`;
   }
-  function accessHtml() { return tgS('big', 'Testo grande') + tgS('cb', 'Colori per daltonici') + tgS('one', 'Modalità una mano'); }
   let snapMsg = '';
-  function saveHtml() {
+  function saveHtml() { // copia di sicurezza automatica (resta); il salvataggio portatile con il codice non c'è più
     return `<div class="small">Il gioco tiene una copia di sicurezza ogni pochi minuti: se qualcosa va storto puoi tornare indietro.</div>` +
-      `<div class="row"><button class="btn ghost" id="snapBack"${state.hasSnap() ? '' : ' disabled'}>Torna a qualche minuto fa</button></div>${snapMsg ? `<div class="small"><b>${snapMsg}</b></div>` : ''}` +
-      `<div class="small">Per cambiare telefono: crea un codice, copialo e incollalo nel nuovo telefono. Il collegamento con l'account Google non è ancora attivo.</div>` +
-      `<div class="row"><button class="btn ghost" id="codeMake">Crea codice</button><button class="btn ghost" id="codeUse">Usa il codice</button></div>` +
-      `<textarea class="code" id="codeBox" placeholder="Il codice appare qui, oppure incollalo qui">${codeText}</textarea><div class="small">${codeMsg}</div>`;
+      `<div class="row"><button class="btn ghost" id="snapBack"${state.hasSnap() ? '' : ' disabled'}>Torna a qualche minuto fa</button></div>${snapMsg ? `<div class="small"><b>${snapMsg}</b></div>` : ''}`;
   }
   function privacyHtml() {
     return `<div class="small">Il Rifugio salva i progressi solo su questo dispositivo e non raccoglie dati personali. Oggi il gioco non mostra pubblicità né vende acquisti.</div>` +
@@ -221,7 +218,7 @@
         section('game', '🎮 Mini-gioco', MT.gameHtml()) +
         section('deco', '🏠 Nome del rifugio', MT.decoNameHtml());
     } else {
-      h = H('⚙️ Impostazioni') + settingsHtml() + H('♿ Accessibilità') + accessHtml() + H('💾 Salvataggio portatile') + saveHtml() + H('🔒 Privacy e consenso') + privacyHtml() +
+      h = H('⚙️ Impostazioni') + settingsHtml() + H('💾 Copia di sicurezza') + saveHtml() + H('🔒 Privacy e consenso') + privacyHtml() +
         (SHOW_DEBUG || debug ? section('dbg', '🛠 Debug', `<div class="dbg">${debugPanel()}</div>`) : '');
     }
     $('menuBody').innerHTML = h;
@@ -286,7 +283,7 @@
     const d = t.dataset;
     if (d.sec) { secs[d.sec] = !secs[d.sec]; rerender(); }
     else if (d.tg) { audio.set(d.tg, !audio.state[d.tg]); audio.unlock(); rerender(); audio.sfx('click'); }
-    else if (d.st) { st.set(d.st, !st.get(d.st)); audio.refresh(); R.extras.applyAccess(); rerender(); }
+    else if (d.st) { st.set(d.st, !st.get(d.st)); audio.refresh(); rerender(); }
     else if (d.lang) { st.set('lang', d.lang); reloadSaved(); }
     else if (t.id === 'snapBack') { if (state.restoreSnap()) { snapMsg = 'Ripristino riuscito, riavvio…'; rerender(); setTimeout(() => location.reload(), 700); } else { snapMsg = 'Nessun salvataggio precedente disponibile.'; rerender(); } }
     else if (d.q) { st.set('quality', d.q); reloadSaved(); }
@@ -302,8 +299,6 @@
       audio.sfx('buy'); reloadSaved();
     }
     else if (d.ads) { st.set('consent', { ads: !consent().ads, ts: Date.now() }); rerender(); }
-    else if (t.id === 'codeMake') { codeText = st.exportCode(); codeMsg = 'Codice creato: copialo (tocca il riquadro e seleziona tutto).'; try { if (navigator.clipboard) navigator.clipboard.writeText(codeText).then(() => { codeMsg = 'Codice creato e copiato negli appunti.'; rerender(); }).catch(() => {}); } catch (e2) { /* ignorato */ } rerender(); }
-    else if (t.id === 'codeUse') { const box = $('codeBox'); codeText = box ? box.value : codeText; if (st.importCode(codeText)) { codeMsg = 'Codice caricato! Riavvio…'; rerender(); setTimeout(() => location.reload(), 600); } else { codeMsg = 'Codice non valido.'; rerender(); } }
     else if (t.id === 'menuReset') { if (confirmReset) reset(); else { confirmReset = true; rerender(); } }
     else if (d.meta) metaAct(d.meta);
     else if (d.deco) {
@@ -323,7 +318,7 @@
     const k = e.target.dataset.vol; if (!k) return;
     if (e.target.dataset.src === 'st') { st.set(k, +e.target.value); audio.refresh(); } else audio.set(k, +e.target.value);
   });
-  $('menuBody').addEventListener('change', e => { if (e.target.dataset.vol) audio.sfx('coin'); if (e.target.id === 'codeBox') codeText = e.target.value; });
+  $('menuBody').addEventListener('change', e => { if (e.target.dataset.vol) audio.sfx('coin'); });
 
   // Foto ricordo: scatta, mostra l'anteprima e permette di condividerla (o scaricarla).
   let shot = null;
