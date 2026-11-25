@@ -9,6 +9,12 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.24.1 · 2026-11-26 · Obiettivi da 1 anche nelle vecchie partite, freccia guida in tutorial
+
+- **Obiettivi da 1**: le partite iniziate con la v0.21.1 partivano dal 5° obiettivo (salvato). Ora, se i primi 4 non sono davvero fatti, si riparte dall'1.
+- **Freccia a mezz'aria** attorno all'omino durante il tutorial: indica la direzione da seguire e si vede anche dietro agli alberi. La freccia grande sul bersaglio è un po' più piccola.
+- **Per tornare indietro**: `git checkout f3c4abe -- web Changelog`.
+
 ## v0.24.0 · 2026-11-26 · Città diverse, ruota della fortuna, notte più chiara
 
 - **Ogni tappa ha la sua personalità** (nuovo file `web/js/levels/places.js`):

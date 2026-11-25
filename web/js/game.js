@@ -1112,6 +1112,9 @@
 
     // --- freccia guida e caduta (neve o petali) ------------------------------
     const arrow = new T.Mesh(new T.ConeGeometry(0.35, 0.7, 20), mats.arrow); arrow.rotation.x = Math.PI; scene.add(arrow);
+    // Freccia a mezz'aria attorno all'omino: durante il tutorial indica la direzione da seguire (si vede anche dietro agli alberi).
+    const guideArrow = new T.Mesh(new T.ConeGeometry(0.3, 0.95, 14).rotateX(Math.PI / 2), new T.MeshBasicMaterial({ color: 0xffd23a, depthTest: false }));
+    guideArrow.renderOrder = 100; guideArrow.scale.set(1.5, 0.3, 1.4); /* piatta: si legge bene dall'alto */ guideArrow.visible = false; scene.add(guideArrow);
     const leafy = TH.fall === 'leaves', NS = Math.round((snowy ? 500 : leafy ? 110 : 200) * Math.max(0.4, Q.density)), snowPos = new Float32Array(NS * 3), fallSpeed = snowy ? 1.3 : leafy ? 0.9 : 0.7;
     for (let i = 0; i < NS; i++) { snowPos[i * 3] = -20 + Math.random() * 40; snowPos[i * 3 + 1] = Math.random() * 14; snowPos[i * 3 + 2] = -20 + Math.random() * 40; }
     const snowGeo = new T.BufferGeometry(); snowGeo.setAttribute('position', new T.BufferAttribute(snowPos, 3));
@@ -1215,6 +1218,8 @@
     // --- obiettivi e freccia ------------------------------------------------
     const objTarget = o => o.n || 1;
     const objValue = o => o.bought ? +state.isBought(o.bought) : (o.stat === 'stars' ? stars() : (S[o.stat] || 0));
+    // Vecchie partite (v0.21.1) saltavano i primi 4 obiettivi: li si rifà, così si parte dal numero 1 (si torna indietro solo se non erano davvero fatti).
+    while (S.done > 0 && S.done <= 4 && S.done <= objectives.length && !objectives[S.done - 1].bought && objValue(objectives[S.done - 1]) < objTarget(objectives[S.done - 1])) S.done--;
     function taskTarget() {
       if (S.done >= objectives.length) return null;
       const guide = objectives[S.done].guide || '', p = player.position;
@@ -1450,7 +1455,11 @@
       });
       const tg = running ? taskTarget() : null;
       arrow.visible = !!tg && Math.hypot(tg[0] - p.x, tg[1] - p.z) > 1.4;
-      arrow.scale.setScalar(tut.on ? 3.2 : 1.6); // la freccia guida è grande, enorme durante il tutorial
+      if (tut.on && tg) {
+        const gx = tg[0] - p.x, gz = tg[1] - p.z, gl = Math.hypot(gx, gz);
+        if (gl > 2.5) { guideArrow.visible = true; guideArrow.position.set(p.x + gx / gl * 1.5, 2.1 + Math.sin(tt * 5) * 0.12, p.z + gz / gl * 1.5); guideArrow.rotation.y = Math.atan2(gx, gz); } else guideArrow.visible = false;
+      } else guideArrow.visible = false;
+      arrow.scale.setScalar(tut.on ? 2.4 : 1.6); // la freccia guida è grande, enorme durante il tutorial
       if (tg) { arrow.position.set(tg[0], (tut.on ? 3.8 : 3.2) + Math.sin(tt * 4) * 0.3, tg[1]); arrow.rotation.y = tt * 2; }
       // salto di gioia quando si completa qualcosa
       if (hopT > 0) { hopT = Math.max(0, hopT - dt); p.y = Math.sin(Math.PI * (1 - hopT / 0.5)) * 0.55; } else p.y = 0;
