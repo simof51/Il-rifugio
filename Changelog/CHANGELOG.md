@@ -9,6 +9,13 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.23.1 · 2026-11-26 · Traduzioni dei testi nuovi
+
+- Tradotti in inglese, spagnolo, francese e tedesco i testi nuovi: reception e premi (giornaliero, scrigno, album con figurine e ospiti famosi), mini-gioco, nuova gestione, negozio delle gemme (cappelli, colori, accessori, compagni, insegna e tappeto), Shop e video, eventi di stagione, tutorial "Come si gioca" e i messaggi brevi.
+- Tolte le vecchie traduzioni di frasi che non esistono più (salvataggio portatile, copia di sicurezza, accessibilità).
+- Restano in italiano i nomi di città e stagioni, le frasi dei livelli e i testi del tutorial che dipendono dalla stagione (legna, camino, ospiti).
+- **Per tornare indietro**: `git checkout bdc7f7c -- web Changelog`.
+
 ## v0.23.0 · 2026-11-26 · Cambi estetici al volo, testi dei menu ridotti all'osso
 
 - **Cambi estetici senza riavvio**: cappello, colore, accessorio, compagno, colori e nome dell'insegna cambiano subito, senza ricaricare il gioco. (Lingua e qualità grafica ricaricano ancora.)
