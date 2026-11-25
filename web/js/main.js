@@ -201,7 +201,7 @@
       h = H('🗺️ Le tue città') + R.cities.map(cityCard).join('') +
         (levelDone() ? '' : `<div class="row"><button class="btn ghost" id="menuReset">${confirmReset ? 'Sicuro? Tocca di nuovo' : 'Ricomincia questa stagione'}</button></div>`) + prestigeHtml();
     } else if (tab === 'shop') {
-      h = H('🛍️ Shop') + shopHtml() + H('🎁 Video a premio') + adsHtml() + H('💎 Negozio delle gemme') + lookHtml();
+      h = H('🛍️ Shop') + shopHtml() + H('🎁 Video a premio') + adsHtml() + H('🎡 Ruota della fortuna') + MT.wheelHtml(R.ads.available()) + H('💎 Negozio delle gemme') + lookHtml();
     } else if (tab === 'profile') {
       h = H('👤 Profilo') + `<div class="stats"><div><b>${S.coins}</b><span>monete</span></div><div><b>${S.guests}</b><span>ospiti</span></div><div><b>${S.wood}</b><span>legna</span></div><div><b>${st.get('gems')}</b><span>gemme 💎</span></div></div>` +
         H('🎁 Premio giornaliero') + MT.dailyHtml() + H('📦 Scrigno') + MT.chestHtml() +
@@ -269,6 +269,23 @@
       const r = await R.ads.watch(0, true);
       if (r === 'ok') { MT.useGame('ad'); startMinigame(); }
       else { hud.toast(r === 'closed' ? 'Video chiuso prima della fine: niente partita' : 'Nessun video disponibile adesso: riprova fra poco'); rerender(); }
+    } else if (k.indexOf('wheel:') === 0) { // ruota della fortuna: 1 gratis al giorno, 1 con un video, poi 25 💎
+      const kind = k.slice(6), wi = MT.wheelInfo();
+      if (kind === 'free' && !wi.free) return;
+      if (kind === 'ad') {
+        if (!wi.ad || !R.ads.available()) return;
+        const r = await R.ads.watch(0, true);
+        if (r !== 'ok') { hud.toast(r === 'closed' ? 'Video chiuso: nessun premio' : 'Nessun video ora'); rerender(); return; }
+      }
+      const res = MT.wheelSpin(kind);
+      if (!res) { hud.toast('Gemme insufficienti'); return; }
+      const s = res.seg; if (s.kind === 'coins') game.addCoins(s.n); // le monete si aggiungono subito (anche se chiudi prima della fine)
+      showPop('🎡 Ruota della fortuna', '<div id="whBox"></div><div id="whMsg" class="reward"></div>', [{ t: 'Chiudi', ghost: true, fn: () => { closePop(); rerender(); } }]);
+      popStop = MT.wheelAnimate($('whBox'), res.i, () => {
+        const txt = s.kind === 'coins' ? `+${s.n} 🪙` : s.kind === 'gems' ? `+${s.n} 💎` : `+${s.n} 📦`;
+        $('whMsg').innerHTML = `<i>${s.sup ? '👑' : s.kind === 'coins' ? '🪙' : s.kind === 'gems' ? '💎' : '📦'}</i><b>${s.sup ? 'SUPER PREMIO! ' : ''}${txt}</b>`;
+        audio.sfx(s.sup ? 'goal' : 'buy');
+      });
     } else if (k === 'name') {
       const el = $('lodgeName'), r = MT.decoName(el ? el.value : '');
       if (r === 'gems') { hud.toast(`Servono ${MT.nameCost()} 💎 per cambiare di nuovo il nome`); return; }

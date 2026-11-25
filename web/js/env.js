@@ -7,7 +7,7 @@
 
   R.createEnv = function (ctx) {
     const T = ctx.T, TH = ctx.TH, A = ctx.A, st = R.settings, Q = ctx.Q;
-    const baseSky = new T.Color(TH.sky), nightSky = new T.Color(0x141c3a), duskSky = new T.Color(0xff9a6a), grey = new T.Color(0x9aa3ad), flashCol = new T.Color(0xe6eeff);
+    const baseSky = new T.Color(TH.sky), nightSky = new T.Color(0x2b3768), duskSky = new T.Color(0xff9a6a), grey = new T.Color(0x9aa3ad), flashCol = new T.Color(0xe6eeff);
     const hemi = ctx.hemi, sun = ctx.sun, scene = ctx.scene;
     const hemiBase = hemi.intensity, hemiSky = hemi.color.clone(), hemiGnd = hemi.groundColor.clone(), sunBase = sun.intensity, sunCol = sun.color.clone();
     const nightHemi = new T.Color(0x7c92d8), nightGnd = new T.Color(0x232b4d), nightSun = new T.Color(0xa9bcff), duskSun = new T.Color(0xffa766);
@@ -44,7 +44,7 @@
     const rainMat = new T.LineBasicMaterial({ color: 0xb7cdee, transparent: true, opacity: 0, depthWrite: false });
     const rain = new T.LineSegments(rg, rainMat); rain.frustumCulled = false; rain.visible = false; scene.add(rain);
     // Luce che segue l'omino di notte, così si vede sempre.
-    const lamp = new T.PointLight(0xffd9a0, 0, 7, 2); scene.add(lamp);
+    const lamp = new T.PointLight(0xffd9a0, 0, 10, 2); scene.add(lamp);
 
     function update(dt) {
       const p = ctx.player.position, on = st.get('weather'), dn = st.get('daynight');
@@ -77,12 +77,12 @@
       scene.background.copy(sky); scene.fog.color.copy(sky);
       const fogK = 1 - Math.min(0.7, amt.fog * 0.55 + amt.rain * 0.18);
       scene.fog.near = fogN * fogK * (1 - 0.3 * night); scene.fog.far = fogF * fogK * (1 - 0.25 * night);
-      hemi.intensity = hemiBase * (0.42 + 0.58 * (1 - night)) * (1 - 0.22 * wet) + flash * 1.4;
+      hemi.intensity = hemiBase * (0.68 + 0.32 * (1 - night)) * (1 - 0.22 * wet) + flash * 1.4;
       hemi.color.copy(hemiSky).lerp(nightHemi, night * 0.8); hemi.groundColor.copy(hemiGnd).lerp(nightGnd, night * 0.8);
-      sun.intensity = sunBase * (1 - night) * (1 - 0.5 * wet) + 0.04 + flash * 0.6;
+      sun.intensity = sunBase * (1 - night) * (1 - 0.5 * wet) + 0.16 + flash * 0.6;
       sun.color.copy(sunCol).lerp(duskSun, dusk * 0.7).lerp(nightSun, night);
       ctx.mats.ground.color.setScalar(1 - 0.13 * wet);
-      lamp.position.set(p.x, 2.2, p.z); lamp.intensity = night * 0.32 + amt.storm * 0.05; // luce piccola attorno all'omino
+      lamp.position.set(p.x, 2.2, p.z); lamp.intensity = night * 1.0 + amt.storm * 0.08; // il giocatore emana una leggera luce calda
       ctx.nightK = night;
       // --- pioggia ---
       const ra = Math.min(1, amt.rain);

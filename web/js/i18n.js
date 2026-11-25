@@ -265,6 +265,12 @@
     ["Mantello", "Cape", "Capa", "Cape", "Umhang"],
     ["Ali", "Wings", "Alas", "Ailes", "Flügel"],
     // tutorial e scheda obiettivo
+    ["🎡 Ruota della fortuna", "🎡 Wheel of fortune", "🎡 Rueda de la fortuna", "🎡 Roue de la fortune", "🎡 Glücksrad"],
+    ["🎡 Gira gratis", "🎡 Spin free", "🎡 Girar gratis", "🎡 Tourner gratuitement", "🎡 Gratis drehen"],
+    ["🎡 Gratis: usata", "🎡 Free: used", "🎡 Gratis: usada", "🎡 Gratuit : utilisé", "🎡 Gratis: genutzt"],
+    ["🎬 Gira con un video", "🎬 Spin with a video", "🎬 Girar con un vídeo", "🎬 Tourner avec une vidéo", "🎬 Mit Video drehen"],
+    ["🎬 Video: usato", "🎬 Video: used", "🎬 Vídeo: usado", "🎬 Vidéo : utilisé", "🎬 Video: genutzt"],
+    ["SUPER PREMIO!", "SUPER PRIZE!", "¡SÚPER PREMIO!", "SUPER LOT !", "SUPERPREIS!"],
     ["Come si gioca", "How to play", "Cómo se juega", "Comment jouer", "So wird gespielt"],
     ["👆 Trascina il dito sullo schermo per muoverti", "👆 Drag your finger on the screen to move", "👆 Arrastra el dedo por la pantalla para moverte", "👆 Fais glisser ton doigt sur l'écran pour te déplacer", "👆 Zieh den Finger über den Bildschirm, um dich zu bewegen"],
     ["🪙 Gli ospiti pagano alla reception: ritira le monete dal bancone, sul tappeto rosso", "🪙 Guests pay at reception: collect the coins from the counter, on the red rug", "🪙 Los invitados pagan en la recepción: recoge las monedas del mostrador, sobre la alfombra roja", "🪙 Les invités paient à la réception : récupère les pièces sur le comptoir, sur le tapis rouge", "🪙 Die Gäste zahlen an der Rezeption: Hol die Münzen vom Tresen, auf dem roten Teppich"],
@@ -314,7 +320,9 @@
     [/^➜ Vai a (.*)$/, ['➜ Go to $1', '➜ Ir a $1', '➜ Aller à $1', '➜ Weiter zu $1']],
     [/^🎁 \+(\d+) 💎 · serie di (\d+) giorn[io]$/, ['🎁 +$1 💎 · $2-day streak', '🎁 +$1 💎 · racha de $2 días', '🎁 +$1 💎 · série de $2 jours', '🎁 +$1 💎 · $2 Tage in Folge']],
     [/^(\d+) gemme$/, ['$1 gems', '$1 gemas', '$1 gemmes', '$1 Edelsteine']],
-    [/^(\d+) monete$/, ['$1 coins', '$1 monedas', '$1 pièces', '$1 Münzen']]
+    [/^(\d+) monete$/, ['$1 coins', '$1 monedas', '$1 pièces', '$1 Münzen']],
+    [/^💎 Gira · (\d+) 💎$/, ['💎 Spin · $1 💎', '💎 Girar · $1 💎', '💎 Tourner · $1 💎', '💎 Drehen · $1 💎']],
+    [/^(\S+) Arriva (.+): ospite speciale, paga il quadruplo!$/, ['$1 $2 arrives: special guest, pays four times!', '$1 Llega $2: ¡invitado especial, paga cuatro veces más!', '$1 $2 arrive : invité spécial, paie quatre fois plus !', '$1 $2 kommt: Ehrengast, zahlt das Vierfache!']]
   ];
 
   let cur = 'it';

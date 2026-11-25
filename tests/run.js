@@ -19,7 +19,7 @@ const ctx = {
 };
 ctx.window = ctx; vm.createContext(ctx);
 const load = f => vm.runInContext(fs.readFileSync(path.join(WEB, f), 'utf8'), ctx, { filename: f });
-['js/namespace.js', 'js/levels/common.js', 'js/levels/inverno.js', 'js/levels/primavera.js', 'js/levels/estate.js', 'js/levels/autunno.js', 'js/levels/cities.js', 'js/settings.js', 'js/i18n.js', 'js/extras.js', 'js/meta.js', 'js/state.js'].forEach(load);
+['js/namespace.js', 'js/levels/common.js', 'js/levels/inverno.js', 'js/levels/primavera.js', 'js/levels/estate.js', 'js/levels/autunno.js', 'js/levels/cities.js', 'js/levels/places.js', 'js/settings.js', 'js/i18n.js', 'js/extras.js', 'js/meta.js', 'js/state.js'].forEach(load);
 const R = ctx.Rifugio;
 
 // 1. Ogni tappa ha i dati che servono, senza duplicati e con numeri sensati.
@@ -77,6 +77,21 @@ R.extras.ev('guest', 50);
 ok(!!(R.settings.get('medals') || {}).m2, 'medaglia Albergatore a 50 ospiti');
 ok(R.extras.missionsHtml().indexOf('Medaglie') >= 0, 'la pagina delle missioni si costruisce');
 
+// 4a. Ogni tappa ha un posto personalizzato (strutture, ospite speciale, disposizione) e i riquadri non si sovrappongono.
+R.order.forEach(id => {
+  const l = R.levels[id], pl = l.place;
+  ok(pl && pl.structs.length === 4 && pl.host && pl.host.name && pl.layout, id + ': posto personalizzato');
+  if (!pl) return;
+  const ps = l.unlocks;
+  for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++) {
+    const d = Math.hypot(ps[i].pos[0] - ps[j].pos[0], ps[i].pos[1] - ps[j].pos[1]);
+    ok(d >= 1.8, id + ': riquadri troppo vicini: ' + ps[i].id + ' e ' + ps[j].id + ' (' + d.toFixed(1) + ')');
+  }
+  ps.forEach(u => { const dx = Math.max(Math.abs(u.pos[0] - pl.layout.stand) - 1.25, 0), dz = Math.max(Math.abs(u.pos[1] - 0.2) - 0.65, 0); ok(Math.hypot(dx, dz) >= 1.1, id + ': riquadro addosso al banco: ' + u.id); });
+});
+ok(new Set(['valle-inverno', 'mulini-inverno', 'porto-inverno'].map(id => R.levels[id].place.layout.stand)).size === 3, 'le tre città hanno il banco in posti diversi');
+ok(new Set(R.order.map(id => R.levels[id].place.host.name)).size === 12, 'ogni posto ha il suo ospite speciale');
+
 // 4b. Premio giornaliero, scrigni, album, guadagno da assenti, prestigio e decorazioni.
 {
   const MT = R.meta, g0b = R.settings.get('gems');
@@ -95,6 +110,8 @@ ok(R.extras.missionsHtml().indexOf('Medaglie') >= 0, 'la pagina delle missioni s
   const mul0 = MT.payMul(); MT.addPrestige(); ok(MT.payMul() > mul0 - 1e-9 && MT.prestige() === 1, 'la nuova gestione aumenta i guadagni');
   MT.decoName('Casa <b>Mia</b> con un nome lunghissimo'); ok(MT.lodgeName().indexOf('<') < 0 && MT.lodgeName().length <= 16, 'il nome del rifugio è pulito e corto');
   { const gB = R.settings.get('gems'), rn = MT.decoName('Secondo nome'); ok((rn === 'gems' && R.settings.get('gems') === gB) || (rn === 'ok' && R.settings.get('gems') === gB - 100), 'dal secondo cambio il nome costa 100 gemme'); }
+  { const w0 = R.settings.get('gems'); let n = 0; for (let k = 0; k < 40; k++) { const r = MT.wheelSpin('gems'); if (r) { n++; ok(r.seg && r.i >= 0 && r.i < MT.WHEEL.length, 'la ruota dà uno spicchio valido'); } } ok(n >= 0 && R.settings.get('gems') >= 0 && w0 >= 0, 'la ruota non manda le gemme sotto zero'); }
+  { const f1 = MT.wheelSpin('free'), f2 = MT.wheelSpin('free'); ok(f1 && !f2, 'la ruota gratis gira una volta al giorno'); }
   ok(MT.decoNameHtml().indexOf('lodgeName') > 0 && MT.decoHtml().indexOf('data-deco') > 0 && MT.dailyHtml().indexOf('days') > 0 && MT.chestHtml().indexOf('chestbox') > 0 && MT.gameHtml().indexOf('record') > 0, 'le pagine del profilo si costruiscono');
 }
 

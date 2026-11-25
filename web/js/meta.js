@@ -6,7 +6,7 @@
   const st = R.settings;
   let toast = () => {};
 
-  const fresh = () => ({ streak: 0, lastClaim: '', nameChanges: 0, album: {}, albumDone: false, deco: { sign: 'red', rug: 'red', name: '' }, prestige: 0, chest: { pts: 0, opened: 0 }, vip: {}, game: { best: 0, day: '', freeUsed: false, adN: 0, lastEnd: 0 } });
+  const fresh = () => ({ streak: 0, lastClaim: '', nameChanges: 0, wheel: null, album: {}, albumDone: false, deco: { sign: 'red', rug: 'red', name: '' }, prestige: 0, chest: { pts: 0, opened: 0 }, vip: {}, game: { best: 0, day: '', freeUsed: false, adN: 0, lastEnd: 0 } });
   function M() {
     let m = st.get('meta');
     if (!m || typeof m !== 'object') { m = fresh(); st.set('meta', m); return m; }
@@ -181,6 +181,67 @@
     return () => { over = true; cancelAnimationFrame(raf); };
   }
 
+  // --- ruota della fortuna (nello Shop): 8 spicchi con monete, gemme, punti scrigno e un super premio ---
+  // Una giratina gratis al giorno, una guardando un video, poi con le gemme.
+  const WHEEL = [
+    { l: '🪙 80', kind: 'coins', n: 80, w: 24, col: '#ffd23a' },
+    { l: '💎 2', kind: 'gems', n: 2, w: 22, col: '#6aa9ff' },
+    { l: '🪙 200', kind: 'coins', n: 200, w: 16, col: '#ffb02e' },
+    { l: '💎 5', kind: 'gems', n: 5, w: 12, col: '#34d399' },
+    { l: '📦 +5', kind: 'pts', n: 5, w: 10, col: '#c084fc' },
+    { l: '🪙 500', kind: 'coins', n: 500, w: 8, col: '#ff7a3d' },
+    { l: '💎 12', kind: 'gems', n: 12, w: 6, col: '#3d8bff' },
+    { l: '👑 💎 60', kind: 'gems', n: 60, w: 2, col: '#ff4d8a', sup: true }
+  ];
+  const WHEEL_COST = 25;
+  function wheelState() { const m = M(); if (!m.wheel || m.wheel.day !== today()) { m.wheel = { day: today(), free: false, ad: false }; save(); } return m.wheel; }
+  const wheelInfo = () => { const w = wheelState(); return { free: !w.free, ad: !w.ad, cost: WHEEL_COST }; };
+  // Gira: kind = 'free' | 'ad' (il video lo guarda chi chiama) | 'gems'. Restituisce lo spicchio vinto (o null se mancano gemme / già usata).
+  function wheelSpin(kind) {
+    const w = wheelState();
+    if (kind === 'free') { if (w.free) return null; w.free = true; }
+    else if (kind === 'ad') { if (w.ad) return null; w.ad = true; }
+    else { if (st.get('gems') < WHEEL_COST) return null; st.addGems(-WHEEL_COST); }
+    let r = Math.random() * WHEEL.reduce((a, s) => a + s.w, 0), i = 0;
+    for (; i < WHEEL.length - 1; i++) { r -= WHEEL[i].w; if (r < 0) break; }
+    const s = WHEEL[i];
+    if (s.kind === 'gems') st.addGems(s.n); else if (s.kind === 'pts') addPts(s.n);
+    save();
+    return { i, seg: s };
+  }
+  // Disegna e fa girare la ruota nel riquadro "box"; alla fine chiama done().
+  function wheelAnimate(box, target, done) {
+    const cv = document.createElement('canvas'); cv.width = cv.height = 300; cv.style.cssText = 'width:100%;max-width:300px;display:block;margin:0 auto';
+    box.innerHTML = ''; box.appendChild(cv);
+    const g = cv.getContext('2d'), n = WHEEL.length, seg = Math.PI * 2 / n, end = Math.PI * 2 * 5 - (target + 0.5) * seg, t0 = performance.now(), dur = 4200; let raf = 0, over = false;
+    function draw(rot) {
+      g.clearRect(0, 0, 300, 300); g.save(); g.translate(150, 150);
+      for (let i = 0; i < n; i++) {
+        const a0 = rot + i * seg - Math.PI / 2;
+        g.beginPath(); g.moveTo(0, 0); g.arc(0, 0, 138, a0, a0 + seg); g.closePath(); g.fillStyle = WHEEL[i].col; g.fill(); g.strokeStyle = '#fff'; g.lineWidth = 3; g.stroke();
+        g.save(); g.rotate(a0 + seg / 2); g.fillStyle = '#1f2a37'; g.font = '700 17px Fredoka, system-ui, sans-serif'; g.textAlign = 'right'; g.textBaseline = 'middle'; g.fillText(WHEEL[i].l, 126, 0); g.restore();
+      }
+      g.beginPath(); g.arc(0, 0, 16, 0, 7); g.fillStyle = '#fff'; g.fill(); g.strokeStyle = '#1f2a37'; g.lineWidth = 3; g.stroke();
+      g.restore();
+      g.beginPath(); g.moveTo(150, 4); g.lineTo(138, -10); g.lineTo(162, -10); g.closePath(); g.fillStyle = '#e8452f'; g.fill(); // puntatore in alto
+      g.beginPath(); g.moveTo(138, 2); g.lineTo(162, 2); g.lineTo(150, 26); g.closePath(); g.fillStyle = '#e8452f'; g.fill(); g.strokeStyle = '#fff'; g.lineWidth = 2; g.stroke();
+    }
+    function frame(now) {
+      if (over) return;
+      const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      draw(end * e);
+      if (k < 1) raf = requestAnimationFrame(frame); else done();
+    }
+    raf = requestAnimationFrame(frame);
+    return () => { over = true; cancelAnimationFrame(raf); };
+  }
+  function wheelHtml(adOk) {
+    const i = wheelInfo(), gems = st.get('gems');
+    return `<div class="row"><button class="btn" data-meta="wheel:free"${i.free ? '' : ' disabled'}>${i.free ? '🎡 Gira gratis' : '🎡 Gratis: usata'}</button></div>` +
+      `<div class="row"><button class="btn ghost" data-meta="wheel:ad"${i.ad && adOk ? '' : ' disabled'}>${!adOk ? '🎬 Video (solo nell\'app)' : i.ad ? '🎬 Gira con un video' : '🎬 Video: usato'}</button></div>` +
+      `<div class="row"><button class="btn ghost" data-meta="wheel:gems"${gems >= i.cost ? '' : ' disabled'}>💎 Gira · ${i.cost} 💎</button></div>`;
+  }
+
   // --- pagine del profilo ---
   function dailyHtml(withBtn) {
     const i = dailyInfo();
@@ -224,7 +285,7 @@
   R.meta = {
     bind: hud => { toast = m => hud.toast(m); },
     data: M, dailyInfo, claimDaily, eventNow, EVENTS, payMul, addPts, chestReady, chestInfo, openChest, see, albumCount, ALBUM, PERSONAS, vipPersona, vipServed,
-    DECO, decoGet, decoSet, decoName, nameCost, lodgeName, prestige, addPrestige, minigame, gameInfo, useGame, badge, dailyHtml, chestHtml, albumHtml, decoHtml, decoNameHtml, gameHtml,
+    DECO, decoGet, decoSet, decoName, nameCost, lodgeName, prestige, addPrestige, minigame, gameInfo, useGame, badge, WHEEL, wheelInfo, wheelSpin, wheelAnimate, wheelHtml, dailyHtml, chestHtml, albumHtml, decoHtml, decoNameHtml, gameHtml,
     onEv(name) { if (name === 'goal') addPts(2); else if (name === 'win') addPts(5); }
   };
 })(window.Rifugio);

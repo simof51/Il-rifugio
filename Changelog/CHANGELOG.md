@@ -9,6 +9,21 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.24.0 · 2026-11-26 · Città diverse, ruota della fortuna, notte più chiara
+
+- **Ogni tappa ha la sua personalità** (nuovo file `web/js/levels/places.js`):
+  - **Layout per città**: il banco delle bevande sta in un punto diverso (Valle a metà, Borgo a sinistra, Porto a destra), la reception cresce da sinistra o da destra, le stanze si aprono in ordine diverso e i riquadri degli upgrade si spostano di conseguenza.
+  - **Baite**: colore delle pareti, delle cornici e delle tende sulle finestre diversi per città.
+  - **Strutture e decorazioni**: 4 per tappa (2 della città + 2 della stagione): cartelli e panchine, fontana e aiuole di tulipani, casse e barca, slitta e legna, aiuole e pozzo, bancarella e ombrelloni, balle di fieno e zucche. Si piazzano da sole lontano da strade, riquadri e alberi.
+  - **Strade**: camminamento del banco che segue la posizione del banco; larghezza, curve, bordi e sassolini già diversi per tappa.
+  - **Vestiario**: cappotti degli ospiti per città e stagione, cappelli (cowboy a Mulini, cappello da chef/marinaio al Porto), divisa della receptionist diversa.
+  - **Ospite speciale (host)** per ognuna delle 12 tappe (Maestro di sci, Re dei Tulipani, Capitan Barba…): arriva ogni ~2 minuti, paga il quadruplo e lascia 1 💎.
+- **Ruota della fortuna** nello Shop: 8 spicchi (monete, gemme, punti scrigno e un super premio da 60 💎). Una giratina gratis al giorno, una guardando un video, poi 25 💎.
+- **Notte meno buia** e il giocatore emana una leggera luce calda.
+- **Tolta la brutta ombra rotonda** sotto i personaggi (restano le ombre vere).
+- **Freccia guida più grande**, molto più grande durante il tutorial.
+- **Per tornare indietro**: `git checkout 2158cec -- web tests Changelog`.
+
 ## v0.23.1 · 2026-11-26 · Traduzioni dei testi nuovi
 
 - Tradotti in inglese, spagnolo, francese e tedesco i testi nuovi: reception e premi (giornaliero, scrigno, album con figurine e ospiti famosi), mini-gioco, nuova gestione, negozio delle gemme (cappelli, colori, accessori, compagni, insegna e tappeto), Shop e video, eventi di stagione, tutorial "Come si gioca" e i messaggi brevi.

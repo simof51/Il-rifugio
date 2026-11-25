@@ -35,7 +35,7 @@
     const groundTex = speckle({ base: '#' + gc.getHexString(), cols: [shade(0.035), shade(-0.035), shade(0.06), shade(-0.06)], n: 1100, min: 1.2, max: 5 });
     groundTex.repeat.set(34, 34);
     const mats = {
-      snow: M(0xf6f9ff), ground: M(0xffffff, { map: groundTex }), blob: new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.13, depthWrite: false }), path: theme.pathTex ? M(0xffffff, { map: speckle(Object.assign({ stones: true }, theme.pathTex)) }) : M(theme.path || 0xe8dcc4),
+      snow: M(0xf6f9ff), ground: M(0xffffff, { map: groundTex }), blob: new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.13, depthWrite: false, visible: false }), /* niente ombra rotonda sotto i personaggi: c'è già l'ombra vera */ path: theme.pathTex ? M(0xffffff, { map: speckle(Object.assign({ stones: true }, theme.pathTex)) }) : M(theme.path || 0xe8dcc4),
       hill: M(theme.hill || 0x8fb0d8), peak: M(theme.peak || 0xf6f9ff),
       foliage: M(0xffffff, { vertexColors: true }), accent: M(0xffffff, { vertexColors: true }), face: M(0xffffff, { vertexColors: true, shininess: 0, specular: 0x000000 }),
       trunk: M(0x7a4a30), wood: M(0xb07848),

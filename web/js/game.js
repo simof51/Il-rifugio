@@ -13,6 +13,9 @@
 
   R.createGame = function ({ hud, level, state, audio }) {
     const T = THREE, P = level.tuning, S = state.data, objectives = level.objectives, TH = level.theme, TX = level.text;
+    // Personalità del posto (città + stagione): disposizione, colori, vestiario, strutture e ospite speciale (vedi levels/places.js).
+    const PL = level.place || { layout: { stand: 3, recep: 'left' }, coats: [], hats: [], structs: [], host: null };
+    STAND.x = PL.layout.stand; COCOA_PICK[0] = STAND.x; COCOA_PICK[1] = STAND.z + 1.3;
     const EX = R.extras; EX.bind(hud);
     const MT = R.meta; MT.bind(hud); // premi, figurine, eventi di stagione, decorazioni
     const seasonNote = EX.applySeason(P, level); // ogni stagione cambia un po' il modo di giocare
@@ -112,7 +115,10 @@
     const walkP0 = pathPlane(WALK, ROAD_W), exitRoad = sampleRoad(walkP0, 8);
     // Camminamento del banco: si stacca dalla passeggiata a ovest, passa davanti al banco delle bevande e torna sulla passeggiata a est.
     // Le estremità entrano nella passeggiata nella stessa direzione, così le due strade si fondono senza spigoli.
-    pathPlane([[-8.4, -2.9], [-6.4, -2.85], [-5, -1.5], [-3.6, 0.7], [-1.6, 2.2], [1, 2.7 + wv(11) * 0.15], [4.5, 2.7], [7.4, 2.5 + wv(12) * 0.15], [10, 1.6], [12, -0.2], [13.6, -2.0], [15.6, -2.4]], ROAD_W);
+    // Il camminamento segue il banco (che cambia posto da città a città): i punti sono relativi alla sua posizione.
+    const walkZ = x => { let b = walkP0[0], bd = 1e9; for (const p of walkP0) { const d = Math.abs(p.x - x); if (d < bd) { bd = d; b = p; } } return b.z; };
+    const sx = STAND.x;
+    pathPlane([[sx - 11.4, walkZ(sx - 11.4)], [sx - 9.4, walkZ(sx - 9.4)], [sx - 8, -1.5], [sx - 6.6, 0.7], [sx - 4.6, 2.2], [sx - 2, 2.7 + wv(11) * 0.15], [sx + 1.5, 2.7], [sx + 4.4, 2.5 + wv(12) * 0.15], [sx + 7, 1.6], [sx + 9, -0.2], [sx + 10.6, walkZ(sx + 10.6) + 0.5], [sx + 12.6, walkZ(sx + 12.6)]], ROAD_W);
     // Strade d'ingresso: arrivano dal bordo ovest della mappa, ognuna da una parte diversa (due o tre, attorno al lago se c'è).
     const inRoads = [];
     const addIn = pts => { inRoads.push(sampleRoad(pathPlane(pts, ROAD_W), 9)); };
@@ -427,6 +433,7 @@
     // lettini e barbecue, senza muri: bassi parapetti bianchi e una staccionata di bambù). Cambiano solo l'aspetto: ostacoli e regole sono gli stessi.
     const lido = TH.room === 'lido';
     const hedge = !!TH.fence, bambooM = B.tint(TH.fence || 0xd9b36c), railM = B.tint(0xf4f1e6), TOWELS = [0xff6b6b, 0x4fa3ff, 0xffd23a, 0x4cd964, 0xff9a2a, 0xc084fc];
+    const wallM = PL.walls != null ? B.tint(PL.walls) : mats.wood, trimM = PL.trim != null ? B.tint(PL.trim) : mats.plank, awnM = B.tint(PL.awning != null ? PL.awning : 0xd94f3d);
     const rooms = level.rooms.map((def, i) => {
       const cx = def.x, g = new T.Group(); scene.add(g);
       box(RW, 0.2, 5, mats.plank, cx, 0.1, -6.5, g, 0.015);
@@ -450,16 +457,17 @@
         fireY = 1.25; fireZ = -8.5;
       } else {
         // pareti alte (2,4 m) con due finestre sul retro: vetro azzurro di giorno, giallo caldo la sera
-        box(RW, 2.4, 0.3, mats.wood, cx, 1.2, -9.1, g, 0.03);
-        box(RW + 0.1, 0.12, 0.42, mats.plank, cx, 2.46, -9.1, g, 0.02); box(RW, 0.14, 0.34, mats.plank, cx, 0.07, -9.1, g, 0.02); // cornice in alto e zoccolo
-        wallL = box(0.3, 2.4, 5, mats.wood, cx - RW / 2 + 0.15, 1.2, -6.5, g);
-        wallR = box(0.3, 2.4, 5, mats.wood, cx + RW / 2 - 0.15, 1.2, -6.5, g);
+        box(RW, 2.4, 0.3, wallM, cx, 1.2, -9.1, g, 0.03);
+        box(RW + 0.1, 0.12, 0.42, trimM, cx, 2.46, -9.1, g, 0.02); box(RW, 0.14, 0.34, trimM, cx, 0.07, -9.1, g, 0.02); // cornice in alto e zoccolo
+        wallL = box(0.3, 2.4, 5, wallM, cx - RW / 2 + 0.15, 1.2, -6.5, g);
+        wallR = box(0.3, 2.4, 5, wallM, cx + RW / 2 - 0.15, 1.2, -6.5, g);
         glass = new T.MeshBasicMaterial({ color: 0xbfe6ff });
         [-1.95, 1.95].forEach(dx => {
           box(1.05, 0.95, 0.1, mats.white, cx + dx, 1.65, -8.93, g, 0.02);
           const gl = new T.Mesh(B.cached('winGlass', () => new T.BoxGeometry(0.86, 0.76, 0.06)), glass); gl.position.set(cx + dx, 1.65, -8.88); g.add(gl);
           box(0.9, 0.05, 0.09, mats.white, cx + dx, 1.65, -8.86, g, 0.005); box(0.05, 0.8, 0.09, mats.white, cx + dx, 1.65, -8.86, g, 0.005); // crocetta
-          box(1.2, 0.08, 0.22, mats.plank, cx + dx, 1.15, -8.86, g, 0.01);                                                                    // davanzale
+          box(1.2, 0.08, 0.22, trimM, cx + dx, 1.15, -8.86, g, 0.01);                                                                         // davanzale
+          const awn = box(1.3, 0.1, 0.5, awnM, cx + dx, 2.28, -8.78, g, 0.02); awn.rotation.x = 0.35;                                          // tenda colorata sopra la finestra
         });
         box(1.8, 0.03, 1.1, mats.red, cx, 0.21, -7.6, g);
         box(1.5, 1.7, 0.8, mats.stone, cx, 0.85, -8.6, g); box(0.9, 0.65, 0.1, mats.dark, cx, 0.55, -8.17, g); box(1.7, 0.15, 0.9, mats.stone, cx, 1.75, -8.6, g);
@@ -580,11 +588,13 @@
       recep.rug = box(2.6, 0.03, 1.5, B.tint(MT.decoGet('rug').col), rx, 0.02, rz + 1.7, rg, 0.01);             // tappeto colorato: qui si riscuote
       box(2.2, 0.035, 1.1, B.tint(0xffd9a0), rx, 0.03, rz + 1.7, rg, 0.01);
       recep.bowl.position.set(rx + 0.95, 1.22, rz + 0.1); rg.add(recep.bowl);
-      recep.who = B.person(0xc23b5a, 0xf2d6a2, false, OUTFIT, { shorts: 0x3f4a63 }); recep.who.position.set(rx + 0.3, 0, rz - 1.0); rg.add(recep.who);
+      recep.who = B.person(PL.recepCoat != null ? PL.recepCoat : 0xc23b5a, 0xf2d6a2, false, OUTFIT, { shorts: 0x3f4a63 }); recep.who.position.set(rx + 0.3, 0, rz - 1.0); rg.add(recep.who);
       recep.col = [0, 0, 0, 0]; cols.push(recep.col);
     }
     // La reception sta quasi attaccata alla stanza più a sinistra e scivola di lato ogni volta che si apre una nuova stanza.
-    function recepTarget() { let e = 1e9; for (const r of rooms) if (r.open) e = Math.min(e, r.cx - RW / 2); if (e > 1e8) e = -RW / 2; return e - 2.35; }
+    function recepTarget() {
+      if (PL.layout.recep === 'right') { let m = -1e9; for (const r of rooms) if (r.open) m = Math.max(m, r.cx + RW / 2); if (m < -1e8) m = RW / 2; return m + 2.35; }
+      let e = 1e9; for (const r of rooms) if (r.open) e = Math.min(e, r.cx - RW / 2); if (e > 1e8) e = -RW / 2; return e - 2.35; }
     function syncRecep() {
       const x = RECEP.x, z = RECEP.z, c = recep.col;
       recep.g.position.set(x, 0, z); c[0] = x - 1.9; c[1] = x + 1.9; c[2] = z - 1.95; c[3] = z + 0.65;
@@ -646,6 +656,52 @@
       for (let k = 0; k < Math.min(n, 10); k++) fly('coin', _v, o => o.set(player.position.x, 1.3, player.position.z), 0.4, 0.8, null, k * 0.045);
       burst(RECEP.x + 0.95, 1.5, RECEP.z + 0.1, 8, [0xffd23a, 0xfff2a8], 2, 4, 0.6, 0.1); A.sfx('coin');
     }
+
+    // --- strutture del posto: ogni città e stagione ha le sue (fontana, barca, fienili, bancarelle, tulipani…) ---
+    const structPlaced = [];
+    const SLOTS = [[-15, 10], [-10, 9.5], [-5, 11.5], [1, 11], [7, 11.5], [13, 10.5], [19, 8.5], [22.5, 3], [22.5, -3.5], [-20, 3], [-20.5, -4], [16.5, 14]];
+    const STRUCT = {
+      signpost(g) { cyl(0.07, 0.08, 2.1, mats.wood, 0, 1.05, 0, g, 6); [[0.55, 1.75, 0.15], [-0.5, 1.4, -0.2]].forEach(([dx, y, rz]) => { box(1.1, 0.3, 0.06, mats.plank, dx, y, 0, g, 0.01).rotation.z = rz; }); return 0.5; },
+      bench(g) { box(1.5, 0.1, 0.5, mats.plank, 0, 0.5, 0, g, 0.02); box(1.5, 0.45, 0.08, mats.plank, 0, 0.8, -0.24, g, 0.02); [-0.6, 0.6].forEach(x => box(0.1, 0.5, 0.45, mats.wood, x, 0.25, 0, g)); return 0.9; },
+      fountain(g) { cyl(1.2, 1.3, 0.45, mats.stone, 0, 0.22, 0, g, 18); cyl(1.0, 1.0, 0.06, B.tint(0x7ad0ff), 0, 0.46, 0, g, 18); cyl(0.16, 0.22, 1.1, mats.stone, 0, 0.9, 0, g, 8); ball(0.28, mats.stone, 0, 1.5, 0, g, 10, 8); return 1.35; },
+      tulips(g) {
+        const geo = B.cached('tul', () => new T.SphereGeometry(0.15, 6, 4)), parts = [], cs = [0xff4d6d, 0xffd23a, 0xff7ac6, 0xa066ff, 0xff9a2a];
+        for (let r = 0; r < 3; r++) for (let k = 0; k < 9; k++) parts.push({ geo, x: -1.8 + k * 0.45, y: 0.32 + (k % 2) * 0.04, z: -0.6 + r * 0.6, s: 1, color: cs[(k + r) % cs.length] });
+        g.add(new T.Mesh(B.mergeParts(parts), mats.accent)); box(4.2, 0.12, 2.0, B.tint(0x4a9b4a), 0, 0.06, 0, g, 0.02); return 0;
+      },
+      crates(g) { box(0.9, 0.9, 0.9, mats.wood, 0, 0.45, 0, g, 0.03); box(0.8, 0.8, 0.8, mats.plank, 0.95, 0.4, 0.1, g, 0.03); box(0.7, 0.7, 0.7, mats.wood, 0.4, 1.25, 0, g, 0.03); cyl(0.4, 0.4, 0.9, B.tint(0x8a5a35), -0.95, 0.45, 0.2, g, 12); return 1.3; },
+      boat(g) { box(3.0, 0.55, 1.15, B.tint(0x8a5a35), 0, 0.55, 0, g, 0.12); box(2.6, 0.08, 0.9, mats.plank, 0, 0.84, 0, g, 0.02); cyl(0.06, 0.06, 2.6, mats.wood, -0.2, 1.9, 0, g, 6); box(0.05, 1.5, 1.0, mats.white, 0.1, 2.0, 0, g, 0.01); [-0.9, 0.9].forEach(x => box(0.2, 0.3, 1.0, mats.wood, x, 0.15, 0, g)); return 1.7; },
+      sled(g) { box(1.3, 0.12, 0.6, mats.wood, 0, 0.35, 0, g, 0.02); [-0.25, 0.25].forEach(z => box(1.5, 0.06, 0.06, mats.dark, 0, 0.18, z, g)); box(0.5, 0.2, 0.5, mats.red, 0.1, 0.5, 0, g, 0.03); return 0; },
+      logs(g) { for (let r = 0; r < 3; r++) for (let k = 0; k < 4 - r; k++) { cyl(0.2, 0.2, 1.6, mats.wood, 0, 0.22 + r * 0.36, -0.7 + k * 0.45 + r * 0.22, g, 8).rotation.z = Math.PI / 2; } return 1.1; },
+      flowerbed(g) {
+        ball(1.3, B.tint(0x4a9b4a), 0, 0, 0, g, 12, 6).scale.y = 0.3;
+        const geo = B.cached('flw', () => new T.SphereGeometry(0.13, 6, 4)), cs = [0xff4d6d, 0xffd23a, 0xffffff, 0xa066ff, 0xff9a2a], parts = [];
+        for (let i = 0; i < 18; i++) { const a = i * 2.4, r = 0.2 + (i % 6) * 0.17; parts.push({ geo, x: Math.cos(a) * r, y: 0.38, z: Math.sin(a) * r, s: 1, color: cs[i % cs.length] }); }
+        g.add(new T.Mesh(B.mergeParts(parts), mats.accent)); return 0;
+      },
+      well(g) {
+        cyl(0.75, 0.8, 0.8, mats.stone, 0, 0.4, 0, g, 14); cyl(0.55, 0.55, 0.05, B.tint(0x1f3a5a), 0, 0.8, 0, g, 12); [-0.7, 0.7].forEach(x => cyl(0.06, 0.06, 1.6, mats.wood, x, 1.5, 0, g, 6));
+        const r = new T.Mesh(B.cached('wroof', () => new T.ConeGeometry(1.2, 0.7, 4)), B.tint(0xb02e26)); r.position.y = 2.6; r.rotation.y = Math.PI / 4; r.castShadow = true; g.add(r); return 0.95;
+      },
+      stall(g) {
+        box(2.2, 0.9, 0.9, mats.wood, 0, 0.45, 0, g, 0.03); [-1, 1].forEach(x => cyl(0.05, 0.05, 2.2, mats.wood, x, 1.1, -0.4, g, 6));
+        box(2.5, 0.12, 1.2, B.tint(0xff7a3d), 0, 2.2, -0.2, g, 0.02).rotation.x = 0.25; box(2.5, 0.12, 0.5, mats.white, 0, 2.12, 0.35, g, 0.02).rotation.x = 0.25;
+        [[-0.6, 0xff4d4d], [0, 0xffd23a], [0.6, 0x4cd964]].forEach(([x, c]) => ball(0.2, B.tint(c), x, 1.05, 0, g, 8, 6)); return 1.3;
+      },
+      umbrellas(g) { [[-0.9, 0xff4d4d], [1.0, 0x3d8bff]].forEach(([x, c]) => { cyl(0.04, 0.04, 2.3, mats.white, x, 1.15, 0, g, 6); const u = new T.Mesh(B.cached('umb2', () => new T.ConeGeometry(1.3, 0.5, 10)), B.tint(c)); u.position.set(x, 2.35, 0); u.castShadow = true; g.add(u); box(0.9, 0.04, 1.6, B.tint(0xffe08a), x, 0.04, 0.9, g); }); return 0; },
+      hay(g) { [[0, 0], [1.0, 0.2], [0.5, -0.85]].forEach(([x, z], i) => { const b = cyl(0.55, 0.55, 0.95, B.tint(0xd9b45b), x, 0.55, z, g, 12); b.rotation.z = Math.PI / 2; b.rotation.y = i * 0.7; }); return 1.5; },
+      pumpkins(g) { [[0, 0, 0.5], [0.9, 0.3, 0.4], [-0.7, 0.6, 0.35], [0.3, -0.8, 0.45], [-0.4, -0.5, 0.3]].forEach(([x, z, r]) => { ball(r, B.tint(0xff8a1f), x, r * 0.8, z, g, 10, 8).scale.y = 0.8; cyl(0.05, 0.06, 0.18, B.tint(0x4a7a2a), x, r * 1.6, z, g, 5); }); return 0; }
+    };
+    PL.structs.forEach((kind, i) => {
+      const fn = STRUCT[kind]; if (!fn) return;
+      for (let t = 0; t < SLOTS.length; t++) {
+        const [x, z] = SLOTS[(i * 3 + t) % SLOTS.length];
+        if (nearRoad(x, z, ROAD_W / 2 + 2.6) || nearPad(x, z, 3.2) || inLake(x, z, 3.5) || inLM(x, z, 3.5) || x < P.world_min[0] + 3 || x > P.world_max[0] - 3 || structPlaced.some(p => Math.hypot(p[0] - x, p[1] - z) < 5) || trees.some(tr => Math.hypot(tr.x - x, tr.z - z) < 2.4)) continue;
+        const g = new T.Group(); g.position.set(x, 0, z); g.rotation.y = (i * 1.1 + 0.4) % 6; scene.add(g);
+        const r = fn(g); if (r) cols.push([x - r, x + r, z - r, z + r]);
+        structPlaced.push([x, z]); break;
+      }
+    });
 
     // --- percorsi per gli aiutanti -------------------------------------------
     // Griglia di 0,5 m sul mondo: una cella è chiusa se è vicina a un ostacolo (muri, letti, camino, banco, lago, alberi, mascotte).
@@ -1088,10 +1144,13 @@
       for (const r of rooms) if (r.open) for (const b of r.beds) if (!b.guest && !fb) fb = [r, b];
       if (!fb) return null;
       const [r, b] = fb;
-      const look = kind === 'vip' ? { coat: 0xffd23a, hat: 0xffffff, opt: { hat: 'crown' } } : kind === 'scout' ? { coat: 0x4cd964, hat: 0x8b5a2b, opt: {} } : kind === 'rush' ? { coat: 0xff7ac6, hat: 0xffffff, opt: {} } : null;
-      const g = B.person(look ? look.coat : COATS[Math.floor(Math.random() * COATS.length)], look ? look.hat : CONFETTI[Math.floor(Math.random() * CONFETTI.length)], false, OUTFIT,
-        Object.assign({ shorts: SHORTS[Math.floor(Math.random() * SHORTS.length)], shoes: Math.random() < 0.5 ? 0xffffff : 0x3d8bff }, look ? look.opt : {}));
-      g.scale.setScalar(kind === 'vip' ? 1 : 0.88); const road = inRoads[Math.floor(Math.random() * inRoads.length)]; g.position.set(road[0][0], 0, road[0][1]); g.rotation.y = Math.PI / 2;
+      const H = PL.host, look = kind === 'vip' ? { coat: 0xffd23a, hat: 0xffffff, opt: { hat: 'crown' } } : kind === 'scout' ? { coat: 0x4cd964, hat: 0x8b5a2b, opt: {} } : kind === 'rush' ? { coat: 0xff7ac6, hat: 0xffffff, opt: {} } :
+        kind === 'host' && H ? { coat: H.coat, hat: 0xffffff, opt: H.hat ? { hat: H.hat } : {} } : null;
+      const pool = PL.coats && PL.coats.length ? PL.coats : COATS; // vestiario del posto (città + stagione)
+      const hatOpt = !look && PL.hats && PL.hats.length && Math.random() < 0.55 ? { hat: PL.hats[Math.floor(Math.random() * PL.hats.length)] } : {};
+      const g = B.person(look ? look.coat : pool[Math.floor(Math.random() * pool.length)], look ? look.hat : CONFETTI[Math.floor(Math.random() * CONFETTI.length)], false, OUTFIT,
+        Object.assign({ shorts: SHORTS[Math.floor(Math.random() * SHORTS.length)], shoes: Math.random() < 0.5 ? 0xffffff : 0x3d8bff }, look ? look.opt : hatOpt));
+      g.scale.setScalar(kind === 'vip' || kind === 'host' ? 1 : 0.88); const road = inRoads[Math.floor(Math.random() * inRoads.length)]; g.position.set(road[0][0], 0, road[0][1]); g.rotation.y = Math.PI / 2;
       const gu = { g, r, b, state: 'road', path: road.slice(1).map(p => p.slice()), stay: P.guest_stay * (kind === 'vip' ? 1.4 : 1), cold: 0, want: false, served: false, el: hud.label('pill', ''), vip: kind === 'vip', scout: kind === 'scout', rush: kind === 'rush' ? 24 : 0, taken: false };
       b.guest = gu; guests.push(gu);
       return gu;
@@ -1125,7 +1184,7 @@
       if (cocoa.open && carry.cups === 0 && S.cocoa === 0 && R.settings.tip('stand')) hud.toast(`${V.foodEmoji || '☕'} ${upFirst(V.stand || 'il banco')} prepara le ordinazioni: avvicinati per prenderle`);
     }
     // Eventi a sorpresa ogni 75-135 secondi, dopo i primi obiettivi: un VIP, una squadra di scout o un ospite affamato.
-    let eventT = 70;
+    let eventT = 70, hostT = 60;
     function runEvent() {
       const free = rooms.reduce((n, r) => n + (r.open ? r.beds.filter(b => !b.guest).length : 0), 0);
       if (!free) return;
@@ -1142,10 +1201,11 @@
       const g = gu.g; g.rotation.set(0, 0, 0); g.position.set(gu.b.x, 0, -4.6); gu.b.guest = null; gu.state = 'out'; g.userData.blob.visible = true;
       gu.path = [[gu.r.cx, -3.1]].concat(exitFrom(gu.r.cx)); // cold: esce subito, verso est
       if (happy) {
-        const pay = Math.round((P.pay + (gu.served ? P.tip : 0)) * (gu.vip ? 3 : gu.scout ? 1.5 : 1) * (R.shop.has('boost') ? 1.5 : 1) * MT.payMul()); // "Ospiti generosi" dallo shop: +50%; poi evento di stagione e nuove gestioni
+        const pay = Math.round((P.pay + (gu.served ? P.tip : 0)) * (gu.vip ? 3 : gu.host ? 4 : gu.scout ? 1.5 : 1) * (R.shop.has('boost') ? 1.5 : 1) * MT.payMul()); // "Ospiti generosi" dallo shop: +50%; poi evento di stagione e nuove gestioni
         // passa dalla reception e lascia i soldi sul bancone
         gu.pay = pay; gu.path = [[gu.r.cx, -2.8], [RECEP.x + 0.7 + Math.random() * 0.6, RECEP.z + 1.35]]; // si paga a destra del bancone, vicino alla ciotola; la fila per entrare sta a sinistra
         S.happy++; S.guests++; EX.ev('guest'); if (gu.vip) { EX.ev('vip'); MT.vipServed(gu.persona); }
+        if (gu.host) { R.settings.addGems(1); hud.toast(`${gu.host.e} ${gu.host.name}: «${gu.host.line}» +1 💎`); } // l'ospite speciale del posto lascia una gemma
       } else {
         S.happy = Math.max(0, S.happy - P.cold_penalty);
         hud.toast(TX.coldLeave); A.sfx('cold');
@@ -1307,6 +1367,12 @@
       if (tut.on) updateTutorial(dt); else tips();
       // eventi a sorpresa
       eventT -= dt; if (S.done >= 3 && S.fed > 0 && eventT <= 0) { eventT = 75 + Math.random() * 60; runEvent(); }
+      // ospite speciale (host) del posto: cambia con città e stagione, paga il quadruplo e porta una gemma
+      hostT -= dt;
+      if (PL.host && S.done >= 2 && S.fed > 0 && hostT <= 0) {
+        const hg = spawnGuest('host');
+        if (hg) { hostT = 110 + Math.random() * 70; hg.host = PL.host; hud.toast(`${PL.host.e} Arriva ${PL.host.name}: ospite speciale, paga il quadruplo!`); A.sfx('guest'); fauna.celebrate(); } else hostT = 20;
+      }
       // ospiti
       if (S.fed > 0) { spawnT -= dt; if (spawnT <= 0) { spawnT = (P.guest_spawn_min + Math.random() * (P.guest_spawn_max - P.guest_spawn_min)) * (hasEffect('sign') ? P.sign_mul : 1); spawnGuest(); } }
       const queue = guests.filter(g => g.state === 'queue'); // fila alla reception, nell'ordine di arrivo
@@ -1384,7 +1450,8 @@
       });
       const tg = running ? taskTarget() : null;
       arrow.visible = !!tg && Math.hypot(tg[0] - p.x, tg[1] - p.z) > 1.4;
-      if (tg) { arrow.position.set(tg[0], 2.9 + Math.sin(tt * 4) * 0.25, tg[1]); arrow.rotation.y = tt * 2; }
+      arrow.scale.setScalar(tut.on ? 3.2 : 1.6); // la freccia guida è grande, enorme durante il tutorial
+      if (tg) { arrow.position.set(tg[0], (tut.on ? 3.8 : 3.2) + Math.sin(tt * 4) * 0.3, tg[1]); arrow.rotation.y = tt * 2; }
       // salto di gioia quando si completa qualcosa
       if (hopT > 0) { hopT = Math.max(0, hopT - dt); p.y = Math.sin(Math.PI * (1 - hopT / 0.5)) * 0.55; } else p.y = 0;
       const a = snowGeo.attributes.position.array;
@@ -1442,7 +1509,7 @@
         if (gu.state === 'bed') {
           if (gu.r.fuel <= 0) { txt = TX.cold; cls += ' cold'; }
           else if (gu.want && !gu.served) { txt = TX.want; cls += ' want'; }
-          const badge = gu.vip ? '⭐ VIP' : gu.scout ? '🏕️' : gu.rush > 0 && !gu.served ? `⏱${Math.ceil(gu.rush)}` : '';
+          const badge = gu.host ? `${gu.host.e} ${gu.host.name}` : gu.vip ? '⭐ VIP' : gu.scout ? '🏕️' : gu.rush > 0 && !gu.served ? `⏱${Math.ceil(gu.rush)}` : '';
           if (badge) txt = txt ? `${badge} ${txt}` : badge;
         }
         if (gu.el.textContent !== txt) gu.el.textContent = txt;
@@ -1483,6 +1550,7 @@
       seasonNote,
       // Cambi estetici al volo (negozio delle gemme e profilo), senza riavviare il gioco.
       applyLook, applyDeco, setPet(kind) { fauna.setPet(kind); },
+      addCoins(n) { S.coins += n; },
       // Foto ricordo: ridisegna la scena e la mette in una cornice (le scritte HTML non compaiono).
       photo() { renderer.render(scene, cam); return EX.photo(renderer.domElement, `${level.cityEmoji || ''} ${level.cityName || ''} · ${level.emoji} ${level.name}`); },
       pause(on) { paused = !!on; if (on) { endJoy(); save(); } },
