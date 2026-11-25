@@ -3,9 +3,9 @@
 (function (R) {
   'use strict';
 
-  // Il banco delle bevande sta davanti alle camere (sud della passeggiata): chi serve lo prende dal lato nord, verso le stanze.
+  // Il banco delle bevande sta davanti alle camere, rivolto verso il giocatore (sud); un camminamento gli passa davanti e si prende da lì.
   const STAND = { x: 3, z: 0.2 };
-  const FEED_Z = -7.6, PILE_Z = -3.2, COCOA_PICK = [STAND.x, STAND.z - 1.2];
+  const FEED_Z = -7.6, PILE_Z = -3.2, COCOA_PICK = [STAND.x, STAND.z + 1.3];
   const RECEP = { x: -5.35, z: -6.8 }; // reception: bancone con la receptionist; gli ospiti che partono pagano qui, l'omino riscuote davanti
   const COATS = [0x4f8cff, 0xa066ff, 0xff9a2a, 0x2ec4b6, 0xff5d8f, 0x6bcf3a];
   const CONFETTI = [0xff4d4d, 0xffd23a, 0x3d8bff, 0x4cd964, 0xff7ac6, 0xa066ff];
@@ -22,12 +22,11 @@
     const upFirst = s => s.charAt(0).toUpperCase() + s.slice(1);
 
     // --- motore -------------------------------------------------------------
-    // Prestazioni: niente antialias (pesa molto sul telefono) e ombre PCF semplici (le "soft" costano di più).
-    // La risoluzione resta piena (fino a 2x) e non viene mai abbassata da sola.
-    const renderer = new T.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
-    // Qualità grafica scelta nel menu (Alta, Media, Bassa): risoluzione, ombre e quantità di decorazioni.
-    const Q = R.settings ? R.settings.quality() : { ratio: 2, shadows: 'pcf', map: 1024, density: 1 };
-    const pixelRatio = Math.min(window.devicePixelRatio || 1, Q.ratio);
+    // Qualità grafica scelta nel menu (Alta, Media, Bassa): risoluzione, antialiasing, ombre e quantità di decorazioni.
+    // Alta e Media usano l'antialiasing (bordi lisci) e una risoluzione fino a 2x / 1,5x; se il telefono fatica la risoluzione scende da sola, a piccoli passi.
+    const Q = R.settings ? R.settings.quality() : { ratio: 2, aa: true, shadows: 'pcf', map: 1024, density: 1 };
+    const renderer = new T.WebGLRenderer({ antialias: !!Q.aa, powerPreference: 'high-performance' });
+    let pixelRatio = Math.min(window.devicePixelRatio || 1, Q.ratio);
     renderer.setPixelRatio(pixelRatio);
     let shadowN = 0; renderer.shadowMap.autoUpdate = false;
     renderer.shadowMap.enabled = Q.shadows !== 'off'; renderer.shadowMap.type = T.PCFShadowMap;
@@ -106,6 +105,8 @@
     // Passeggiata davanti alle camere: da lì i clienti escono verso est, fino al bordo della mappa.
     const WALK = [[-13.5, -2.9], [-7, -2.9 + wv(1) * 0.3], [0, -2.9 + wv(2) * 0.3], [7, -2.8 + wv(3) * 0.25], [13, -2.5 + wv(4) * 0.3], [19, -1.2 + wv(5) * 0.4], [25, 0.6 + wv(6) * 0.3], [32, 1.4]];
     const walkP0 = pathPlane(WALK, ROAD_W), exitRoad = sampleRoad(walkP0, 8);
+    // Camminamento del banco: si stacca dalla passeggiata a ovest, passa davanti al banco delle bevande e torna sulla passeggiata a est.
+    pathPlane([[-6.2, -2.9], [-5.4, -0.5], [-3.6, 1.6], [-0.8, 2.6 + wv(11) * 0.15], [3, 2.7], [6.8, 2.6 + wv(12) * 0.15], [9.6, 2.0], [11.8, 0.2], [12.7, -2.6]], ROAD_W);
     // Strade d'ingresso: arrivano dal bordo ovest della mappa, ognuna da una parte diversa (due o tre, attorno al lago se c'è).
     const inRoads = [];
     const addIn = pts => { inRoads.push(sampleRoad(pathPlane(pts, ROAD_W), 9)); };
@@ -531,12 +532,12 @@
 
     // --- banco bevande ------------------------------------------------------
     const cocoa = { g: new T.Group(), cups: 0, t: 0, open: false }; scene.add(cocoa.g);
-    // Costruito attorno all'origine e ruotato di 180°: il lato di servizio (tazze, pentola) guarda a nord, verso le camere.
+    // Costruito attorno all'origine: il lato di servizio (tazze, pentola) guarda a sud, verso il giocatore e il camminamento.
     box(2.2, 1, 1.1, mats.wood, 0, 0.5, 0, cocoa.g); box(2.4, 0.1, 1.25, mats.plank, 0, 1.05, 0, cocoa.g);
     cyl(0.35, 0.3, 0.5, mats.stone, -0.8, 1.35, -0.15, cocoa.g); cyl(0.3, 0.3, 0.08, mats.cocoa, -0.8, 1.6, -0.15, cocoa.g);
     box(0.12, 2.2, 0.12, mats.wood, 1.1, 1.1, -0.5, cocoa.g); box(1.2, 0.5, 0.08, mats.red, 0.6, 2.1, -0.5, cocoa.g);
     const cupMeshes = [0, 1, 2, 3, 4, 5].map(i => { const c = add(new T.Mesh(B.cupGeo, mats.cup), cocoa.g); c.position.set(-0.45 + i * 0.28, 1.21, 0.25); c.visible = false; return c; });
-    cocoa.g.position.set(STAND.x, 0, STAND.z); cocoa.g.rotation.y = Math.PI;
+    cocoa.g.position.set(STAND.x, 0, STAND.z);
     cocoa.g.visible = false;
     function openCocoa() { if (cocoa.open) return; cocoa.open = true; cocoa.g.visible = true; cols.push([STAND.x - 1.25, STAND.x + 1.25, STAND.z - 0.65, STAND.z + 0.65]); }
 
@@ -1423,6 +1424,7 @@
       // Se per 8 secondi il gioco va sotto i 25 fotogrammi al secondo, si suggerisce (una volta sola) di abbassare la qualità grafica.
       if (running && !paused && raw < 0.5) {
         perfT += raw; if (raw > 0.04) perfSlow += raw;
+        if (perfT >= 8 && perfSlow / perfT > 0.6 && pixelRatio > 1.05) { pixelRatio = Math.max(1, pixelRatio - 0.25); renderer.setPixelRatio(pixelRatio); resize(); } // adattamento: meno pixel se il telefono fatica
         if (perfT >= 8) { if (perfSlow / perfT > 0.6 && R.settings.get('quality') !== 'low' && R.settings.tip('perf')) hud.toast('🐢 Il gioco va a scatti? Prova la qualità Media o Bassa: menu ☰ → Impostazioni'); perfT = 0; perfSlow = 0; }
       }
       if (fpsOn) { fpsN++; fpsT += raw; if (fpsT >= 0.5) { fpsEl.textContent = Math.round(fpsN / fpsT) + ' fps'; fpsN = 0; fpsT = 0; } }

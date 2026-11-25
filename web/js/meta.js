@@ -6,7 +6,7 @@
   const st = R.settings;
   let toast = () => {};
 
-  const fresh = () => ({ streak: 0, lastClaim: '', album: {}, albumDone: false, deco: { sign: 'red', rug: 'red', name: '' }, prestige: 0, chest: { pts: 0, opened: 0 }, vip: {}, game: { last: 0, best: 0 } });
+  const fresh = () => ({ streak: 0, lastClaim: '', nameChanges: 0, album: {}, albumDone: false, deco: { sign: 'red', rug: 'red', name: '' }, prestige: 0, chest: { pts: 0, opened: 0 }, vip: {}, game: { last: 0, best: 0 } });
   function M() {
     let m = st.get('meta');
     if (!m || typeof m !== 'object') { m = fresh(); st.set('meta', m); return m; }
@@ -121,7 +121,18 @@
   };
   const decoGet = (kind) => { const id = M().deco[kind], l = DECO[kind]; return l.find(x => x.id === id) || l[0]; };
   function decoSet(kind, id) { const m = M(); m.deco[kind] = id; save(); }
-  function decoName(txt) { const m = M(); m.deco.name = String(txt || '').replace(/[<>&"]/g, '').slice(0, 16).trim(); save(); }
+  // Il nome del rifugio si cambia una volta gratis; dal secondo cambio costa 100 gemme. Risultato: 'ok', 'same' (uguale), 'gems' (gemme insufficienti).
+  const NAME_COST = 100;
+  const nameCost = () => (M().nameChanges >= 1 ? NAME_COST : 0);
+  function decoName(txt) {
+    const m = M(), clean = String(txt || '').replace(/[<>&"]/g, '').slice(0, 16).trim();
+    if (clean === m.deco.name) return 'same';
+    const cost = nameCost();
+    if (cost && st.get('gems') < cost) return 'gems';
+    if (cost) st.addGems(-cost);
+    m.deco.name = clean; m.nameChanges = (m.nameChanges || 0) + 1; save();
+    return 'ok';
+  }
   const lodgeName = () => M().deco.name || '';
 
   // --- nuova gestione (prestigio): +10% sui guadagni per sempre, fino a 10 volte ---
@@ -185,7 +196,8 @@
   }
   function decoNameHtml() {
     return `<div class="small">Scegli il nome del tuo rifugio: compare sull'insegna della reception. ${prestige() ? `⭐ Nuove gestioni: ${prestige()} (guadagni +${prestige() * 10}%).` : ''} I colori dell'insegna e del tappeto si scelgono nello Shop.</div>` +
-      `<div class="set"><input id="lodgeName" class="txt" maxlength="16" placeholder="Nome del rifugio" value="${lodgeName()}"><button class="mini" data-meta="name">Salva</button></div>`;
+      `<div class="small">${nameCost() ? `Il primo cambio era gratis: ogni nuovo cambio costa ${NAME_COST} 💎.` : 'Il primo cambio è gratis; i successivi costano ' + NAME_COST + ' 💎.'}</div>` +
+      `<div class="set"><input id="lodgeName" class="txt" maxlength="16" placeholder="Nome del rifugio" value="${lodgeName()}"><button class="mini" data-meta="name">${nameCost() ? 'Salva · ' + NAME_COST + ' 💎' : 'Salva · gratis'}</button></div>`;
   }
   function decoHtml() { // colori dell'insegna e del tappeto (alcuni si comprano con le gemme): stanno nel negozio delle gemme
     const m = M(), one = (kind, label) => `<b class="small">${label}</b><div class="look">${DECO[kind].map(d => {
@@ -205,7 +217,7 @@
   R.meta = {
     bind: hud => { toast = m => hud.toast(m); },
     data: M, dailyInfo, claimDaily, eventNow, EVENTS, payMul, addPts, chestReady, chestInfo, openChest, see, albumCount, ALBUM, PERSONAS, vipPersona, vipServed,
-    DECO, decoGet, decoSet, decoName, lodgeName, prestige, addPrestige, minigame, gameWait, badge, dailyHtml, chestHtml, albumHtml, decoHtml, decoNameHtml, gameHtml,
+    DECO, decoGet, decoSet, decoName, nameCost, lodgeName, prestige, addPrestige, minigame, gameWait, badge, dailyHtml, chestHtml, albumHtml, decoHtml, decoNameHtml, gameHtml,
     onEv(name) { if (name === 'goal') addPts(2); else if (name === 'win') addPts(5); }
   };
 })(window.Rifugio);

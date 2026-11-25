@@ -273,7 +273,10 @@
         audio.sfx(gems ? 'buy' : 'click');
       });
     } else if (k === 'name') {
-      const el = $('lodgeName'); MT.decoName(el ? el.value : ''); audio.sfx('buy'); reloadSaved();
+      const el = $('lodgeName'), r = MT.decoName(el ? el.value : '');
+      if (r === 'gems') { hud.toast(`Servono ${MT.nameCost()} 💎 per cambiare di nuovo il nome`); return; }
+      if (r === 'same') { hud.toast('Il nome è già questo'); return; }
+      audio.sfx('buy'); reloadSaved();
     }
   }
   const rerender = () => { const y = $('menu').scrollTop; renderMenu(); $('menu').scrollTop = y; };

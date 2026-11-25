@@ -9,6 +9,13 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.20.0 · 2026-11-26 · Banco rivolto al giocatore, grafica più nitida, nome a pagamento
+
+- **Banco delle bevande** rivolto verso il giocatore (sud), con un camminamento che gli passa davanti: si stacca dalla passeggiata a ovest e vi torna a est. Si prendono le bevande dal camminamento. I riquadri degli upgrade (zaini, ascia, motosega, banco, cartello) sono stati riordinati a sud del camminamento.
+- **Grafica più nitida**: antialiasing (bordi lisci) in qualità Alta e Media; risoluzione fino a 2x (Alta) e 1,5x (Media). Se il telefono fatica, la risoluzione scende da sola a piccoli passi (mai sotto 1x).
+- **Nome del rifugio**: il primo cambio è gratis, ogni cambio successivo costa 100 💎.
+- **Per tornare indietro**: `git checkout 8f12646 -- web tests Changelog`.
+
 ## v0.19.0 · 2026-11-26 · Ospiti da ovest, banco davanti alle camere, strade per luogo
 
 - **Ospiti**: arrivano dal bordo ovest della mappa, da 2 o 3 strade diverse (attorno al lago dove c'è), fanno la fila alla reception, vanno in stanza; quando partono ripassano dal bancone, pagano e vanno a est lungo la passeggiata fino al bordo della mappa, dove spariscono.
