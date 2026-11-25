@@ -839,7 +839,7 @@
     const logCap = () => hasEffect('bag2') ? P.bag_huge_logs : hasEffect('bag') ? P.bag_big_logs : P.bag_logs;
     const cupCap = () => hasEffect('bag2') ? P.bag_huge_cups : hasEffect('bag') ? P.bag_big_cups : P.bag_cups;
     const speed = () => (hasEffect('boots') ? P.speed_fast : P.speed_base) * speedMul;
-    const chopInterval = () => P.chop_interval * (hasEffect('saw') ? P.saw_mul : hasEffect('axe') ? P.axe_mul : 1);
+    const chopInterval = () => P.chop_interval * (hasEffect('saw') ? P.saw_mul : hasEffect('axe') ? P.axe_mul : 1) * (R.shop.has('goldtool') ? 0.85 : 1); // "Attrezzi d'oro": -15%
     // Attrezzo in mano a giocatore e boscaioli: ascia, o motosega dopo l'acquisto.
     function refreshTools() { const t = hasEffect('saw') ? 'saw' : 'axe'; B.setTool(player, t); helpers.forEach(h => h && B.setTool(h.g, t)); }
     const burnMul = () => hasEffect('insul') ? P.insul_mul : 1;
@@ -938,7 +938,7 @@
       const g = gu.g; g.rotation.set(0, 0, 0); g.position.set(gu.b.x, 0, -4.6); gu.b.guest = null; gu.state = 'out'; g.userData.blob.visible = true;
       gu.path = [[gu.r.cx, -2.8], [SPAWN[0], SPAWN[1]]];
       if (happy) {
-        const pay = Math.round((P.pay + (gu.served ? P.tip : 0)) * (gu.vip ? 3 : gu.scout ? 1.5 : 1));
+        const pay = Math.round((P.pay + (gu.served ? P.tip : 0)) * (gu.vip ? 3 : gu.scout ? 1.5 : 1) * (R.shop.has('boost') ? 1.5 : 1)); // "Ospiti generosi" dallo shop: +50%
         gu.r.pileN += pay; drawPile(gu.r); S.happy++; S.guests++;
         hud.floatText('+' + pay, gu.r.cx + 1.7, 1.2, PILE_Z);
         burst(gu.r.cx + 1.7, 0.6, PILE_Z, 8, [0xffd23a, 0xfff2a8], 2.2, 4, 0.7, 0.1);
@@ -1033,6 +1033,7 @@
         // All'impatto: scheggie di legno e il pezzo di legna vola dall'albero allo zaino.
         after(delay, () => {
           burst(tr.x, 1.2, tr.z, 5, [0xb07848, 0xe6b27a, 0x7a4a30], 2.4, 3.2, 0.5, 0.1); A.sfx(hasEffect('saw') ? 'saw' : 'chop');
+          if (R.shop.has('goldtool')) burst(tr.x, 1.3, tr.z, 5, [0xffd23a, 0xfff2a8], 2.6, 3.6, 0.6, 0.09, 4); // scintille dorate
           _v.set(tr.x, 1.1, tr.z);
           fly('log', _v, o => stackG.getWorldPosition(o), 0.32, 0.6, () => { inLogs--; refreshStack(); });
         });

@@ -23,6 +23,7 @@
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* ignorato */ }
 
   const audio = R.createAudio();
+  R.shop.enableTest(SHOW_DEBUG || debug); // il fornitore "prova" esiste solo con il menu Debug acceso
 
   // Privacy e consenso: la prima volta si chiede (solo essenziali o anche pubblicità). Si può cambiare dal menu.
   // Il gioco oggi non mostra pubblicità: la scelta è già pronta per quando arriverà (Play Store).
@@ -88,14 +89,27 @@
 
   // Aspetto dell'omino: cappelli, colori e accessori da comprare con le gemme (cambiarli ricarica il gioco: i progressi sono salvati).
   function lookHtml() {
-    const C = st.CATALOG, look = st.get('look'), item = (cat, id, label, cost, on, sw) => {
-      const key = `${cat}:${id}`, own = st.has(key);
-      return `<button class="opt${on ? ' on' : ''}${own ? '' : ' lock'}" data-look="${key}" data-cost="${cost}">${sw != null ? `<span class="sw" style="background:#${sw.toString(16).padStart(6, '0')}"></span>` : ''}${label}${own ? '' : `<i>💎${cost}</i>`}</button>`;
+    const C = st.CATALOG, look = st.get('look'), item = (cat, id, label, cost, on, sw, prem) => {
+      const key = `${cat}:${id}`, own = prem ? R.shop.has('cosmetics') : st.has(key);
+      return `<button class="opt${on ? ' on' : ''}${own ? '' : ' lock'}" data-look="${key}" data-cost="${cost}" data-prem="${prem ? 1 : 0}">${sw != null ? `<span class="sw" style="background:#${sw.toString(16).padStart(6, '0')}"></span>` : ''}${label}${own ? '' : prem ? '<i>🛍️</i>' : `<i>💎${cost}</i>`}</button>`;
     };
     return `<div class="small">💎 ${st.get('gems')} gemme (+1 per obiettivo, +10 per ogni stagione completata). ${lookMsg}</div>` +
-      `<b class="small">Cappello</b><div class="look">${C.hat.map(h => item('hat', h.id, h.name, h.cost, look.hat === h.id)).join('')}</div>` +
-      `<b class="small">Colore</b><div class="look">${C.color.map(c => item('color', c.id, c.name, c.cost, look.color === c.id, c.hex)).join('')}</div>` +
-      `<b class="small">Accessorio</b><div class="look">${C.acc.map(a => item('acc', a.id, a.name, a.cost, look.acc === a.id)).join('')}</div>`;
+      `<b class="small">Cappello</b><div class="look">${C.hat.map(h => item('hat', h.id, h.name, h.cost, look.hat === h.id, null, h.premium)).join('')}</div>` +
+      `<b class="small">Colore</b><div class="look">${C.color.map(c => item('color', c.id, c.name, c.cost, look.color === c.id, c.hex, c.premium)).join('')}</div>` +
+      `<b class="small">Accessorio</b><div class="look">${C.acc.map(a => item('acc', a.id, a.name, a.cost, look.acc === a.id, null, a.premium)).join('')}</div>`;
+  }
+  // Shop: gemme e miglioramenti speciali. Ogni acquisto chiede prima un adulto (calcolo). Finché non c'è Google Play Billing non si addebita nulla.
+  let shopMsg = '';
+  function shopHtml() {
+    const note = R.shop.ready() ? (R.shop.providerName() === 'prova' ? '🧪 Acquisti di PROVA: nessun addebito, servono solo a provare lo shop.' : '') :
+      'Gli acquisti non sono ancora attivi: si attiveranno con la pubblicazione su Google Play. Per ora non è possibile pagare né essere addebitati.';
+    const rows = R.shop.products.map(p => {
+      const done = p.kind === 'perm' && R.shop.has(p.id);
+      return `<div class="prod"><span class="pe">${p.emoji}</span><div class="pt"><b>${p.name}${done && R.shop.isTest(p.id) ? ' 🧪' : ''}</b><span>${p.desc}</span></div><button class="buy${done ? ' done' : ''}" data-buy="${p.id}"${done ? ' disabled' : ''}>${done ? 'Acquistato' : R.shop.eur(p.price)}</button></div>`;
+    }).join('');
+    return `<div class="small">💎 ${st.get('gems')} gemme. ${note}</div>${shopMsg ? `<div class="small"><b>${shopMsg}</b></div>` : ''}${rows}` +
+      `<div class="row"><button class="btn ghost" id="shopRestore">Ripristina acquisti</button></div>` +
+      `<div class="small">Prezzi con IVA inclusa. Gli acquisti sono legati al tuo account Google. Per comprare serve un adulto. Le gemme servono solo per cambiare l'aspetto dell'omino: non danno vantaggi nel gioco.</div>`;
   }
   function settingsHtml() {
     const Qs = st.QUALITY;
@@ -125,6 +139,7 @@
     location.reload();
   };
   const DBG = [
+    ['Shop (prova)', [['Acquisti di prova', () => { st.set('shopTest', !st.get('shopTest')); }, () => !!st.get('shopTest')], ['Cancella acquisti di prova', () => R.shop.clearTest()]]],
     ['Ricomincia', [['🔄 Ricomincia TUTTO da capo', () => { if (dbgMsg === 'Tocca ancora: cancella ogni progresso di ogni città') wipeAll(); else dbgMsg = 'Tocca ancora: cancella ogni progresso di ogni città'; }]]],
     ['Monete e gemme', [['+100', () => dbg.coins(100)], ['+1000', () => dbg.coins(1000)], ['💎 +50', () => dbg.gems(50)]]],
     ['Obiettivi', [['Completa questo', () => dbg.skip(1)], ['+5', () => dbg.skip(5)], ['Completa stagione', () => dbg.finishLevel()]]],
@@ -153,13 +168,30 @@
     $('menuBody').innerHTML =
       `<h2>Le tue città</h2>${R.cities.map(cityCard).join('')}` +
       `<div class="stats"><div><b>${S.coins}</b><span>monete</span></div><div><b>${S.guests}</b><span>ospiti</span></div><div><b>${S.wood}</b><span>legna</span></div><div><b>${st.get('gems')}</b><span>gemme 💎</span></div></div>` +
-      section('look', '👕 Il tuo omino', lookHtml()) + section('set', '⚙️ Impostazioni', settingsHtml()) + section('save', '💾 Salvataggio portatile', saveHtml()) + section('priv', '🔒 Privacy e consenso', privacyHtml()) +
+      section('look', '👕 Il tuo omino', lookHtml()) + section('shop', '🛍️ Shop', shopHtml()) + section('set', '⚙️ Impostazioni', settingsHtml()) + section('save', '💾 Salvataggio portatile', saveHtml()) + section('priv', '🔒 Privacy e consenso', privacyHtml()) +
       (levelDone() ? '' : `<div class="row"><button class="btn ghost" id="menuReset">${confirmReset ? 'Sicuro? Tocca di nuovo' : 'Ricomincia questa stagione'}</button></div>`) +
       (SHOW_DEBUG || debug ? section('dbg', '🛠 Debug', `<div class="dbg">${debugPanel()}</div>`) : '');
   }
   function openMenu() { confirmReset = false; dbgMsg = ''; renderMenu(); $('menu').classList.remove('hidden'); game.pause(true); audio.sfx('click'); }
   function closeMenu() { $('menu').classList.add('hidden'); game.pause(false); audio.sfx('click'); }
   $('menuBtn').onclick = openMenu; $('menuClose').onclick = closeMenu;
+  // Blocco per i genitori: un calcolo da adulti prima di ogni acquisto.
+  function askGate() {
+    return new Promise(resolve => {
+      const a = 6 + Math.floor(Math.random() * 4), b = 6 + Math.floor(Math.random() * 4);
+      $('gateQ').textContent = `${a} × ${b} = ?`; $('gateA').value = ''; $('gateMsg').textContent = ''; $('gate').classList.remove('hidden'); $('gateA').focus();
+      const done = ok => { $('gate').classList.add('hidden'); $('gateOk').onclick = $('gateNo').onclick = null; resolve(ok); };
+      $('gateNo').onclick = () => done(false);
+      $('gateOk').onclick = () => { if (+$('gateA').value === a * b) done(true); else { $('gateMsg').textContent = 'Risposta sbagliata: chiedi a un adulto.'; $('gateA').value = ''; } };
+    });
+  }
+  async function buyFlow(id) {
+    if (!(await askGate())) return;
+    const r = await R.shop.buy(id);
+    shopMsg = r === 'ok' ? 'Acquisto riuscito, grazie! ' + (R.shop.byId(id).kind === 'gems' ? `+${R.shop.byId(id).gems} gemme` : 'Miglioramento attivo.') : r === 'cancel' ? 'Acquisto annullato.' : 'Gli acquisti non sono ancora attivi: nessun addebito.';
+    if (r === 'ok') audio.sfx('buy');
+    rerender();
+  }
   const rerender = () => { const y = $('menu').scrollTop; renderMenu(); $('menu').scrollTop = y; };
   const reloadSaved = () => { game.save(); location.reload(); };
   $('menuBody').addEventListener('click', e => {
@@ -170,8 +202,11 @@
     else if (d.st) { st.set(d.st, !st.get(d.st)); audio.refresh(); rerender(); }
     else if (d.q) { st.set('quality', d.q); reloadSaved(); }
     else if (d.pet) { st.set('pet', d.pet); reloadSaved(); }
+    else if (d.buy) { buyFlow(d.buy); }
+    else if (t.id === 'shopRestore') { R.shop.restore().then(r => { shopMsg = r === 'ok' ? 'Acquisti ripristinati.' : 'Il ripristino non è ancora disponibile.'; rerender(); }); }
     else if (d.look) {
       const [cat, id] = d.look.split(':'), cost = +d.cost, key = d.look;
+      if (d.prem === '1' && !R.shop.has('cosmetics')) { secs.shop = true; shopMsg = 'Questo oggetto è nel "Pacchetto stile".'; rerender(); return; }
       if (!st.buy(key, cost)) { lookMsg = 'Gemme insufficienti: completa altri obiettivi.'; rerender(); return; }
       const look = Object.assign({}, st.get('look')); look[cat] = cat === 'color' ? +id : id; st.set('look', look); audio.sfx('buy'); reloadSaved();
     }

@@ -1,0 +1,59 @@
+// Shop: gemme e miglioramenti speciali. IMPORTANTE: finché non c'è un fornitore di pagamenti vero (Google Play Billing), nessun
+// acquisto può avvenire e nessuno viene addebitato. Il catalogo, i prezzi, il blocco per i genitori e gli effetti sono pronti.
+// Fornitori: "none" (predefinito: non disponibile), "prova" (solo menu Debug: concede tutto senza addebito, segnato come prova)
+// e, in futuro, quello di Google Play: va registrato con R.shop.setProvider({ name, ready(), buy(product), restore() }).
+(function (R) {
+  'use strict';
+  const st = R.settings;
+  const eur = p => '€ ' + p.toFixed(2).replace('.', ',');
+
+  // Gemme (valuta per l'aspetto dell'omino) e miglioramenti speciali permanenti. Niente scatole a sorpresa: si vede sempre cosa si compra.
+  const PRODUCTS = [
+    { id: 'gems_60', kind: 'gems', gems: 60, price: 0.99, name: '60 gemme', emoji: '💎', desc: 'Una manciata di gemme' },
+    { id: 'gems_220', kind: 'gems', gems: 220, price: 2.99, name: '220 gemme', emoji: '💎', desc: 'Un sacchetto di gemme' },
+    { id: 'gems_500', kind: 'gems', gems: 500, price: 5.99, name: '500 gemme', emoji: '💎', desc: 'Una borsa di gemme' },
+    { id: 'gems_1100', kind: 'gems', gems: 1100, price: 11.99, name: '1100 gemme', emoji: '💎', desc: 'Un forziere di gemme' },
+    { id: 'boost', kind: 'perm', price: 4.99, name: 'Ospiti generosi', emoji: '🪙', desc: 'Ogni ospite paga il 50% in più, per sempre, in ogni città' },
+    { id: 'goldtool', kind: 'perm', price: 2.99, name: 'Attrezzi d\'oro', emoji: '✨', desc: 'Ascia e motosega più veloci del 15%, con scintille dorate' },
+    { id: 'cosmetics', kind: 'perm', price: 1.99, name: 'Pacchetto stile', emoji: '😇', desc: 'Aureola, ali e 4 colori esclusivi per l\'omino' }
+  ];
+  const byId = id => PRODUCTS.find(p => p.id === id);
+
+  const providers = {
+    none: { name: 'none', ready: () => false, buy: () => Promise.resolve({ ok: false, reason: 'unavailable' }), restore: () => Promise.resolve({ ok: false, reason: 'unavailable' }) },
+    prova: { name: 'prova', ready: () => true, buy: p => Promise.resolve({ ok: true, test: true, id: p.id }), restore: () => Promise.resolve({ ok: true, test: true }) }
+  };
+  let real = null, allowTest = false;
+  const provider = () => (allowTest && st.get('shopTest')) ? providers.prova : (real || providers.none);
+
+  // Concede il prodotto: gemme aggiunte al conto, miglioramenti segnati come acquistati (con l'indicazione "prova" se non erano veri).
+  function grant(p, test) {
+    if (p.kind === 'gems') st.addGems(p.gems);
+    else { st.data.purchases[p.id] = { t: Date.now(), test: !!test }; st.save(); }
+  }
+
+  R.shop = {
+    products: PRODUCTS, eur, byId,
+    has: id => !!st.data.purchases[id],
+    isTest: id => !!(st.data.purchases[id] && st.data.purchases[id].test),
+    // Il menu Debug abilita il fornitore "prova" (solo per provare lo shop, senza addebiti).
+    enableTest(on) { allowTest = !!on; },
+    testAllowed: () => allowTest,
+    setProvider(p) { real = p; },
+    ready: () => provider().ready(),
+    providerName: () => provider().name,
+    // Avvia l'acquisto (il blocco per i genitori è chiesto prima dal menu). Risultato: 'ok', 'cancel' o 'unavailable'.
+    async buy(id) {
+      const p = byId(id); if (!p) return 'unavailable';
+      if (p.kind === 'perm' && this.has(id)) return 'ok';
+      const prov = provider();
+      if (!prov.ready()) return 'unavailable';
+      try { const r = await prov.buy(p); if (r && r.ok) { grant(p, r.test); return 'ok'; } return r && r.reason === 'cancel' ? 'cancel' : 'unavailable'; } catch (e) { return 'cancel'; }
+    },
+    async restore() {
+      const prov = provider(); if (!prov.ready()) return 'unavailable';
+      try { const r = await prov.restore(); if (r && r.ok) { (r.ids || []).forEach(id => { const p = byId(id); if (p && p.kind === 'perm') grant(p, false); }); return 'ok'; } return 'unavailable'; } catch (e) { return 'unavailable'; }
+    },
+    clearTest() { Object.keys(st.data.purchases).forEach(k => { if (st.data.purchases[k].test) delete st.data.purchases[k]; }); st.save(); }
+  };
+})(window.Rifugio);

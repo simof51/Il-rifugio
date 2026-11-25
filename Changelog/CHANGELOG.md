@@ -9,6 +9,30 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.10.0 · 2026-11-26 · Shop (pronto, ma senza pagamenti attivi)
+
+**Richiesto**: uno shop per comprare valuta di gioco e miglioramenti speciali con euro veri.
+
+**Stato onesto**: i pagamenti veri NON sono attivi. Senza Google Play Billing (account sviluppatore, prodotti creati nel Play Console, libreria di fatturazione e verifica delle ricevute) nessuno può pagare e nessuno viene addebitato. Tutto il resto è pronto.
+
+**Aggiunto**
+| File | Cosa |
+|---|---|
+| `web/js/shop.js` | Catalogo: gemme (60 a € 0,99, 220 a € 2,99, 500 a € 5,99, 1100 a € 11,99) e tre miglioramenti permanenti: "Ospiti generosi" (+50% dai pagamenti degli ospiti, € 4,99), "Attrezzi d'oro" (ascia e motosega −15% di tempo, scintille dorate, € 2,99), "Pacchetto stile" (aureola, ali, 4 colori esclusivi, € 1,99). Struttura a fornitori: `none` (predefinito, non disponibile), `prova` (solo menu Debug: concede senza addebito e lo segna come prova 🧪) e un punto di aggancio `R.shop.setProvider(...)` per Google Play. Acquisti salvati in `rifugio-settings`. |
+| `web/index.html`, `css/style.css`, `js/main.js` | Sezione **🛍️ Shop** nel menu, con prezzi, "Acquistato", "Ripristina acquisti" e avviso chiaro. **Blocco per i genitori** prima di ogni acquisto (calcolo 6–9 × 6–9). Debug: acquisti di prova on/off e cancellazione. |
+| `web/js/game.js`, `build.js`, `settings.js` | Effetti dei miglioramenti; nuovi oggetti d'aspetto riservati al pacchetto (aureola, ali, Oro, Smeraldo, Fucsia, Ametista). Nel gioco le gemme servono solo per l'aspetto: nessun vantaggio a pagamento, tranne i due miglioramenti dichiarati. |
+
+**Da fare prima di incassare davvero**
+- Account sviluppatore Google Play e prodotti con gli stessi id (`gems_60`, `gems_220`, `gems_500`, `gems_1100`, `boost`, `goldtool`, `cosmetics`).
+- Fornitore di Google Play Billing (plugin Capacitor) agganciato con `R.shop.setProvider`, e verifica delle ricevute lato server.
+- Politiche per app per famiglie/bambini, classificazione per età, informativa privacy e consenso, obblighi sui consumatori (prezzi con IVA, diritto di recesso).
+- Spegnere `SHOW_DEBUG` in `main.js` (toglie anche il fornitore "prova").
+
+**Per tornare indietro**
+- `git checkout dfefaf0 -- web`
+
+---
+
 ## v0.9.0 · 2026-11-25 · Tavolini e sedie, cibi del posto, miglioramenti a gradini, gemme in alto
 
 **Richiesto**

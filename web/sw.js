@@ -1,10 +1,10 @@
 // Service worker: rende il gioco giocabile offline dopo la prima apertura.
 // File del gioco: prima la rete (così gli aggiornamenti arrivano subito), poi la cache.
 // Three.js e il font sono dentro il progetto (lib/, fonts/): nessuna richiesta a server esterni.
-const CACHE = 'rifugio-cache-v17';
+const CACHE = 'rifugio-cache-v18';
 const SHELL = [
   './', 'index.html', 'css/style.css', 'manifest.webmanifest',
-  'js/namespace.js', 'js/levels/common.js', 'js/levels/inverno.js', 'js/levels/primavera.js', 'js/levels/estate.js', 'js/levels/autunno.js', 'js/levels/cities.js', 'js/settings.js', 'js/state.js', 'js/env.js', 'js/fauna.js', 'js/audio.js', 'js/build.js', 'js/hud.js', 'js/game.js', 'js/main.js',
+  'js/namespace.js', 'js/levels/common.js', 'js/levels/inverno.js', 'js/levels/primavera.js', 'js/levels/estate.js', 'js/levels/autunno.js', 'js/levels/cities.js', 'js/settings.js', 'js/shop.js', 'js/state.js', 'js/env.js', 'js/fauna.js', 'js/audio.js', 'js/build.js', 'js/hud.js', 'js/game.js', 'js/main.js',
   'lib/three.min.js', 'fonts/fredoka.woff2',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'
 ];

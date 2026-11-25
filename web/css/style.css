@@ -79,6 +79,11 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;backgrou
 @keyframes bob{50%{transform:translateX(-50%) translateY(-5px)}}
 #envChip b{font-size:18px}
 #gemChip{background:linear-gradient(#fff,#e6f0ff)}.gem{font-size:20px;line-height:1}
+.big{font-size:30px;font-weight:700;text-align:center;margin:6px 0}
+.prod{display:flex;align-items:center;gap:10px;background:#fff;border:3px solid #eef2f6;border-radius:16px;padding:8px 10px;margin:6px 0}
+.prod .pe{font-size:26px;flex:none}.prod .pt{flex:1;line-height:1.2}.prod .pt b{display:block;font-size:15px}.prod .pt span{font-size:12px;color:#5b6b7c}
+.prod .buy{font:inherit;font-weight:700;font-size:15px;border:0;border-radius:12px;background:#4cd964;color:#fff;padding:8px 12px;min-height:40px;box-shadow:0 3px 0 #2fa645;cursor:pointer;flex:none}
+.prod .buy.done{background:#cfd8e2;color:#5b6b7c;box-shadow:none}
 .sechead{width:100%;text-align:left;font-size:16px;padding:10px 14px;min-height:44px}
 .secbody{margin:2px 0 8px}
 .look{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
