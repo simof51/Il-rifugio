@@ -255,9 +255,11 @@
       trees[trees.length - 1].col = col; trees[trees.length - 1].half = half;
       cols.push(col);
     }
-    // Ostacolo dell'albero: tronco in piedi = riquadro; tagliato = solo il ceppo, piccolo. Il tronco caduto (anche quando sparisce) non blocca mai.
+    // Ostacolo dell'albero: solo il tronco in piedi. Tagliato (tronco caduto o ceppo) non blocca mai.
     function setTreeCol(t, felled) {
-      const h = felled ? 0.12 * t.sc : t.half, c = t.col; c[0] = t.x - h; c[1] = t.x + h; c[2] = t.z - h; c[3] = t.z + h;
+      const h = t.half, c = t.col;
+      if (felled) { c[0] = c[1] = c[2] = c[3] = 1e6; return; } // albero tagliato: nessun ostacolo
+      c[0] = t.x - h; c[1] = t.x + h; c[2] = t.z - h; c[3] = t.z + h;
     }
     let tries = 0, near = 0;
     while (near < P.trees && tries < 800) {
@@ -315,7 +317,7 @@
         if (t.ang >= Math.PI / 2) { t.ang = Math.PI / 2; t.state = 'down'; t.downT = 0; }
       } else if (t.state === 'down') {
         t.downT += dt;
-        if (t.downT > 1.8) t.fall.visible = false;
+        if (t.downT > 1.8) { t.fall.visible = false; t.stump.visible = false; } // il ceppo sparisce finché l'albero non ricresce
       }
       if (t.ang !== 0 || t.state !== 'up') t.fall.quaternion.setFromAxisAngle(t.axis, t.ang);
       if (t.fall.scale.x < 1) t.fall.scale.setScalar(Math.min(1, t.fall.scale.x + dt * 1.5));
@@ -954,7 +956,7 @@
       if (tut.lx != null) tut.moved += Math.hypot(p.x - tut.lx, p.z - tut.lz); tut.lx = p.x; tut.lz = p.z;
       while (tut.on && tut.i < TSTEPS.length && TSTEPS[tut.i][1]()) tut.i++;
       if (tut.on && tut.i >= TSTEPS.length) { endTutorial(); hud.toast('Ora sai tutto: buon divertimento! 🎉'); return; }
-      if (tut.on) hud.hint(TSTEPS[tut.i][0]);
+      if (tut.on) hud.hint(TSTEPS[tut.i][0], tut.i + 1, TSTEPS.length);
     }
     // Consigli che compaiono una volta sola, al momento giusto.
     function tips() {

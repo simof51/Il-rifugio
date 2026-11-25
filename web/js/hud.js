@@ -56,7 +56,9 @@
       if (E.cupChip.hidden === showCups) E.cupChip.hidden = !showCups;
       setText(E.cupN, `${cups}/${cupCap}`, true);
     }
+    let tutOn = false; // durante il tutorial la scheda in alto mostra i suggerimenti al posto degli obiettivi
     function setTask(head, text, valueTxt, ratio) {
+      if (tutOn) return;
       setText(E.taskN, head); setText(E.taskTxt, text); setText(E.taskV, valueTxt);
       const w = (Math.max(0, Math.min(1, ratio)) * 100).toFixed(1) + '%';
       if (E.taskBar._w !== w) { E.taskBar._w = w; E.taskBar.style.width = w; }
@@ -68,10 +70,16 @@
     // Icone di ora e meteo (🌙 🌧️ …) accanto agli indicatori.
     const envChip = $('envChip'), envN = $('envN');
     function setEnv(txt) { envChip.hidden = !txt; envN.textContent = txt; }
-    // Suggerimenti del tutorial: un fumetto in basso con un tasto per saltare.
-    const hintEl = $('hint'), hintTxt = $('hintTxt');
-    function hint(txt) { if (!txt) { hintEl.hidden = true; return; } if (hintTxt.textContent !== txt) hintTxt.textContent = txt; hintEl.hidden = false; }
-    $('hintSkip').onclick = () => { hintEl.hidden = true; if (hud_skip) hud_skip(); };
+    // Suggerimenti del tutorial: stanno nella scheda dell'obiettivo (stessa posizione), con un tasto per saltare.
+    const taskSkip = $('taskSkip');
+    function hint(txt, i, n) {
+      if (!txt) { if (tutOn) { tutOn = false; taskSkip.hidden = true; } return; }
+      tutOn = true; taskSkip.hidden = false;
+      setText(E.taskN, 'Come si gioca'); setText(E.taskTxt, txt); setText(E.taskV, i + '/' + n);
+      const w = (100 * (i - 1) / n).toFixed(1) + '%';
+      if (E.taskBar._w !== w) { E.taskBar._w = w; E.taskBar.style.width = w; }
+    }
+    taskSkip.onclick = () => { if (hud_skip) hud_skip(); };
     let hud_skip = null;
 
     const stick = $('stick'), knob = $('knob');

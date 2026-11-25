@@ -9,6 +9,12 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.15.0 · 2026-11-26 · Tutorial nella scheda obiettivi, niente ceppi bloccanti
+
+- Il tutorial della prima partita ora compare nella scheda in alto, al posto dell'obiettivo (titolo "Come si gioca", passo 1/7, barra di avanzamento e tasto "Salta"). Finito o saltato il tutorial, tornano gli obiettivi normali.
+- Albero abbattuto: nessun ostacolo (né tronco né ceppo). Il ceppo sparisce insieme al tronco caduto e l'albero ricresce da solo.
+- **Per tornare indietro**: `git checkout c0e6ba2 -- web Changelog`.
+
 ## v0.14.2 · 2026-11-26 · Chip delle gemme di nuovo visibile
 
 - Il chip 💎 non era stato tolto: sui telefoni stretti gli indicatori andavano su due righe e la seconda finiva sotto la scheda dell'obiettivo. Ora la scheda scende sotto gli indicatori, qualunque sia il loro numero di righe.
