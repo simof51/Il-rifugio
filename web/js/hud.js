@@ -9,6 +9,13 @@
     let cam = null, toastT = 0;
     const floats = [];
 
+    // Se gli indicatori vanno su due righe (schermo stretto), l'obiettivo scende sotto di loro: niente chip coperti.
+    const hudEl = $('hud');
+    function fitTask() { try { document.documentElement.style.setProperty('--hudb', Math.ceil(hudEl.getBoundingClientRect().bottom) + 'px'); } catch (e) { /* ignora */ } }
+    if (window.ResizeObserver) new ResizeObserver(fitTask).observe(hudEl);
+    window.addEventListener('resize', fitTask);
+    fitTask();
+
     function label(cls, html) { const d = document.createElement('div'); d.className = cls; d.innerHTML = html; labelsEl.appendChild(d); return d; }
 
     // Posiziona un'etichetta sopra un punto 3D (ancorata in basso al centro).

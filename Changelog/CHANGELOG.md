@@ -9,6 +9,11 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.14.2 · 2026-11-26 · Chip delle gemme di nuovo visibile
+
+- Il chip 💎 non era stato tolto: sui telefoni stretti gli indicatori andavano su due righe e la seconda finiva sotto la scheda dell'obiettivo. Ora la scheda scende sotto gli indicatori, qualunque sia il loro numero di righe.
+- **Per tornare indietro**: `git checkout 2851f6d -- web Changelog`.
+
 ## v0.14.1 · 2026-11-26 · Barra in basso semitrasparente
 
 - Tolto lo sfondo bianco sotto i tasti della barra: ora i tasti sono semitrasparenti con un leggero sfocato e il gioco si vede dietro.
