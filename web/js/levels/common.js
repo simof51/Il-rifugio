@@ -66,7 +66,7 @@
       { id: 'helper', title: `${v.helperTitle} 1`, cost: k(155), pos: [-11, -1], requires: P(3), effect: 'helper', room: 0 },
       { id: 'axe', title: 'Ascia affilata', cost: k(72), pos: [-7.2, 1.6], requires: P(3), effect: 'axe' },
       { id: 'room2', title: `${v.roomTitle} 3`, cost: k(125), pos: [-6, -6.5], requires: P(4), effect: 'room', room: 2 },
-      { id: 'insul', title: v.insulTitle, cost: k(92), pos: [-11.5, -4.8], requires: P(4), effect: 'insul' },
+      { id: 'insul', title: v.insulTitle, cost: k(92), pos: [-15.4, -5.6], requires: P(4), effect: 'insul' },
       { id: 'lamps', title: 'Lanterne', cost: k(62), pos: [15, 3.6], requires: P(5), effect: 'lamps' },
       { id: 'sign', title: v.signTitle, cost: k(112), pos: [9.5, 3.6], requires: P(6), effect: 'sign' },
       { id: 'saw', title: 'Motosega', cost: k(225), pos: [-3.2, 4.6], requires: P(6), effect: 'saw' },

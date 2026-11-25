@@ -9,6 +9,13 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.17.2 · 2026-11-26 · Reception attaccata alle stanze, pareti alte con finestre
+
+- **Reception** quasi attaccata alla stanza più a sinistra: quando si apre una nuova stanza scivola di lato e segue il rifugio mentre cresce. Il riquadro "Pareti più calde" (insul) si è spostato a sinistra per fare posto.
+- **Pareti delle baite** alte 2,4 m (prima 1,2) con cornice in alto, zoccolo e due finestre per stanza: vetro azzurro di giorno, giallo caldo la sera.
+- **Tolti i festoni di bandierine** dal retro delle stanze (le "lucine"), anche nelle stagioni all'aperto.
+- **Per tornare indietro**: `git checkout 8b8edbb -- web Changelog`.
+
 ## v0.17.1 · 2026-11-26 · Più veloce, più colorato, reception vicina
 
 - **Prestazioni** (misurate nel browser, stagione di primavera): triangoli disegnati da 276.000 a 117.000; luci vere da 10 a 5 (una sola luce di fuoco condivisa che segue il camino più vicino, 2 luci per le lanterne); niente più sfocature dietro ai pannelli; ombre ridisegnate un fotogramma su due; frutti, neve e fiori non proiettano ombra; alberi, boschi di bordo, colline e sfere più leggeri; risoluzione massima 1,5x (Alta) e 1,25x (Media) invece di 2x.

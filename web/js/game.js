@@ -5,7 +5,7 @@
 
   const FEED_Z = -7.6, PILE_Z = -3.2, COCOA_PICK = [11, -5.6];
   const SPAWN = [17, 1.2];
-  const RECEP = { x: 17.5, z: -6.8 }; // reception: bancone con la receptionist; gli ospiti che partono pagano qui, l'omino riscuote davanti
+  const RECEP = { x: -5.35, z: -6.8 }; // reception: bancone con la receptionist; gli ospiti che partono pagano qui, l'omino riscuote davanti
   const COATS = [0x4f8cff, 0xa066ff, 0xff9a2a, 0x2ec4b6, 0xff5d8f, 0x6bcf3a];
   const CONFETTI = [0xff4d4d, 0xffd23a, 0x3d8bff, 0x4cd964, 0xff7ac6, 0xa066ff];
   const SHORTS = [0x3b6fd4, 0xe8c66a, 0xf2f2f2, 0x2ec4b6, 0xff8a65];
@@ -399,7 +399,6 @@
     // Ogni stanza è larga RW e le stanze vicine si toccano: quando sono aperte entrambe la parete in comune sparisce
     // e diventano un unico ambiente.
     const RW = 6;
-    const flagGeo = B.cached('flag', () => new T.ConeGeometry(0.15, 0.3, 3).rotateX(Math.PI));
     // Due stili: 'cabin' (baita con muri, camino e letti, per l'inverno) e 'lido' (postazione sul lago con ombrellone,
     // lettini e barbecue, senza muri: bassi parapetti bianchi e una staccionata di bambù). Cambiano solo l'aspetto: ostacoli e regole sono gli stessi.
     const lido = TH.room === 'lido';
@@ -407,7 +406,7 @@
     const rooms = level.rooms.map((def, i) => {
       const cx = def.x, g = new T.Group(); scene.add(g);
       box(RW, 0.2, 5, mats.plank, cx, 0.1, -6.5, g, 0.015);
-      let wallL, wallR, flame, fireY, fireZ;
+      let wallL, wallR, flame, fireY, fireZ, glass = null;
       if (lido) {
         if (hedge) box(RW, 1.05, 0.55, bambooM, cx, 0.72, -9.0, g, 0.22); // siepe fiorita sul retro (primavera)
         else { box(RW, 0.9, 0.16, bambooM, cx, 0.65, -9.1, g, 0.04); for (let k = 0; k < 7; k++) box(0.1, 1.05, 0.2, bambooM, cx - 2.7 + k * 0.9, 0.72, -9.1, g, 0.04); } // staccionata di bambù
@@ -423,22 +422,26 @@
         cyl(0.05, 0.05, 2.9, mats.white, cx - 2.35, 1.45, -8.3, g, 8);
         const can = new T.Mesh(B.cached('umb', () => new T.ConeGeometry(1.75, 0.65, 12)), B.tint((TH.umbrellaCols || [0xff4d4d, 0x3d8bff, 0xffd23a])[i % 3])); can.position.set(cx - 2.35, 3.0, -8.3); can.castShadow = true; g.add(can);
         ball(0.07, mats.white, cx - 2.35, 3.35, -8.3, g, 8, 6);
-        // due pali per il festone di bandierine
-        cyl(0.04, 0.04, 1.7, bambooM, cx - 2.9, 0.85, -8.95, g, 6); cyl(0.04, 0.04, 1.7, bambooM, cx + 2.9, 0.85, -8.95, g, 6);
         flame = new T.Mesh(new T.ConeGeometry(0.22, 0.5, 16), mats.flame); flame.position.set(cx, 1.3, -8.55); g.add(flame);
         fireY = 1.25; fireZ = -8.5;
       } else {
-        box(RW, 1.2, 0.3, mats.wood, cx, 0.6, -9.1, g, 0.03);
-        wallL = box(0.3, 1.2, 5, mats.wood, cx - RW / 2 + 0.15, 0.6, -6.5, g);
-        wallR = box(0.3, 1.2, 5, mats.wood, cx + RW / 2 - 0.15, 0.6, -6.5, g);
+        // pareti alte (2,4 m) con due finestre sul retro: vetro azzurro di giorno, giallo caldo la sera
+        box(RW, 2.4, 0.3, mats.wood, cx, 1.2, -9.1, g, 0.03);
+        box(RW + 0.1, 0.12, 0.42, mats.plank, cx, 2.46, -9.1, g, 0.02); box(RW, 0.14, 0.34, mats.plank, cx, 0.07, -9.1, g, 0.02); // cornice in alto e zoccolo
+        wallL = box(0.3, 2.4, 5, mats.wood, cx - RW / 2 + 0.15, 1.2, -6.5, g);
+        wallR = box(0.3, 2.4, 5, mats.wood, cx + RW / 2 - 0.15, 1.2, -6.5, g);
+        glass = new T.MeshBasicMaterial({ color: 0xbfe6ff });
+        [-1.95, 1.95].forEach(dx => {
+          box(1.05, 0.95, 0.1, mats.white, cx + dx, 1.65, -8.93, g, 0.02);
+          const gl = new T.Mesh(B.cached('winGlass', () => new T.BoxGeometry(0.86, 0.76, 0.06)), glass); gl.position.set(cx + dx, 1.65, -8.88); g.add(gl);
+          box(0.9, 0.05, 0.09, mats.white, cx + dx, 1.65, -8.86, g, 0.005); box(0.05, 0.8, 0.09, mats.white, cx + dx, 1.65, -8.86, g, 0.005); // crocetta
+          box(1.2, 0.08, 0.22, mats.plank, cx + dx, 1.15, -8.86, g, 0.01);                                                                    // davanzale
+        });
         box(1.8, 0.03, 1.1, mats.red, cx, 0.21, -7.6, g);
         box(1.5, 1.7, 0.8, mats.stone, cx, 0.85, -8.6, g); box(0.9, 0.65, 0.1, mats.dark, cx, 0.55, -8.17, g); box(1.7, 0.15, 0.9, mats.stone, cx, 1.75, -8.6, g);
         flame = new T.Mesh(new T.ConeGeometry(0.25, 0.6, 16), mats.flame); flame.position.set(cx, 0.55, -8.25); g.add(flame);
         fireY = 0.7; fireZ = -8.1;
       }
-      // festone di bandierine colorate sul retro
-      const bun = B.mergeParts(Array.from({ length: 9 }, (_, k) => ({ geo: flagGeo, x: cx - 2.5 + k * 0.625, y: lido ? 1.55 : 1.2, z: -8.93, color: CONFETTI[(k + i) % CONFETTI.length] })));
-      g.add(new T.Mesh(bun, mats.accent));
       const light = { intensity: 0, distance: 8, position: new T.Vector3(cx, 1.3, -7.4) }; // la luce vera è una sola, condivisa (fireLight): tante luci rallentano il telefono
       const beds = [-1.4, 1.4].map((o, k) => {
         const bx = cx + o;
@@ -476,7 +479,7 @@
       const ghost = box(RW, 0.05, 5, mats.ghost, cx, 0.03, -6.5, null, 0.02); ghost.castShadow = false;
       const el = hud.label('fuel', '<i></i>');
       g.visible = false;
-      return { i, cx, g, flame, light, beds, pile, pileN: 0, fuel: 0, pend: 0, flare: 0, open: false, ghost, el, bar: el.firstChild, wallL, wallR, colL: null, colR: null, fireY, fireZ, sit: lido && TH.seat === 'table', seatZ: -5.98 };
+      return { i, cx, g, glass, flame, light, beds, pile, pileN: 0, fuel: 0, pend: 0, flare: 0, open: false, ghost, el, bar: el.firstChild, wallL, wallR, colL: null, colR: null, fireY, fireZ, sit: lido && TH.seat === 'table', seatZ: -5.98 };
     });
     const fireLight = new T.PointLight(0xff8a3d, 0, 8); scene.add(fireLight);
     function updateFireLight() { // la luce segue il fuoco acceso più vicino all'omino
@@ -525,7 +528,7 @@
     const recep = { g: new T.Group(), n: S.recep || 0, bowl: new T.Group(), hop: 0, shown: -1, el: hud.label('pill', ''), who: null };
     scene.add(recep.g);
     {
-      const rg = recep.g, rx = RECEP.x, rz = RECEP.z;
+      const rg = recep.g, rx = 0, rz = 0; // il gruppo si costruisce attorno all'origine e poi si sposta (segue le stanze)
       box(3.4, 1.0, 1.0, mats.wood, rx, 0.5, rz, rg, 0.03);
       box(3.7, 0.12, 1.3, mats.plank, rx, 1.06, rz + 0.05, rg, 0.03);
       box(2.2, 0.55, 0.05, mats.red, rx, 0.5, rz + 0.52, rg, 0.01);                                   // pannello rosso sul fronte
@@ -548,8 +551,23 @@
       box(2.2, 0.035, 1.1, B.tint(0xffd9a0), rx, 0.03, rz + 1.7, rg, 0.01);
       recep.bowl.position.set(rx + 0.95, 1.22, rz + 0.1); rg.add(recep.bowl);
       recep.who = B.person(0xc23b5a, 0xf2d6a2, false, OUTFIT, { shorts: 0x3f4a63 }); recep.who.position.set(rx + 0.3, 0, rz - 1.0); rg.add(recep.who);
-      cols.push([rx - 1.9, rx + 1.9, rz - 1.95, rz + 0.65]);
+      recep.col = [0, 0, 0, 0]; cols.push(recep.col);
     }
+    // La reception sta quasi attaccata alla stanza più a sinistra e scivola di lato ogni volta che si apre una nuova stanza.
+    function recepTarget() { let e = 1e9; for (const r of rooms) if (r.open) e = Math.min(e, r.cx - RW / 2); if (e > 1e8) e = -RW / 2; return e - 2.35; }
+    function syncRecep() {
+      const x = RECEP.x, z = RECEP.z, c = recep.col;
+      recep.g.position.set(x, 0, z); c[0] = x - 1.9; c[1] = x + 1.9; c[2] = z - 1.95; c[3] = z + 0.65;
+      if (recep.glow) recep.glow.position.set(x + 0.95, 1.5, z + 0.1);
+    }
+    function moveRecep(dt, snap) {
+      const d = recepTarget() - RECEP.x;
+      if (Math.abs(d) < 0.004) return;
+      RECEP.x = snap || Math.abs(d) < 0.02 ? RECEP.x + d : RECEP.x + Math.sign(d) * Math.min(Math.abs(d), Math.max(0.8, Math.abs(d) * 2) * dt);
+      syncRecep();
+      if (!snap && Math.abs(recepTarget() - RECEP.x) < 0.004) gridSig = -1; // arrivata: gli aiutanti ricalcolano i percorsi
+    }
+    syncRecep();
     // Bagliori: alone morbido e luminoso (sprite additivo) sui fuochi e sulla ciotola delle monete.
     const haloTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.35, 'rgba(255,255,255,.45)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); return new T.CanvasTexture(c); })();
     const makeGlow = (col, x, y, z) => { const s = new T.Sprite(new T.SpriteMaterial({ map: haloTex, color: col, blending: T.AdditiveBlending, transparent: true, depthWrite: false, fog: false, opacity: 0 })); s.position.set(x, y, z); s.visible = false; scene.add(s); return s; };
@@ -560,7 +578,7 @@
       const ev = MT.eventNow();
       if (ev) {
         [-3.4, 3.4].forEach((dx, k) => {
-          const x = RECEP.x + dx, z = RECEP.z + 0.6, g = new T.Group(); g.position.set(x, 0, z); scene.add(g);
+          const g = new T.Group(); g.position.set(dx, 0, 0.6); recep.g.add(g);
           if (ev.decor === 'tree') {
             cyl(0.1, 0.12, 0.4, mats.wood, 0, 0.2, 0, g, 8);
             [[0.8, 1.1, 0.7], [0.62, 1.0, 1.5], [0.44, 0.9, 2.2]].forEach(([r, h, y]) => { const c = new T.Mesh(B.cached('xcone' + r, () => new T.ConeGeometry(r, h, 10)), B.tint(0x2e8b57)); c.position.y = y + 0.3; c.castShadow = true; g.add(c); });
@@ -1277,15 +1295,16 @@
         r.flame.visible = lit; r.flame.scale.set(s, s * (1 + 0.18 * Math.sin(tt * 13 + r.i)), s);
         r.light.intensity = lit ? (0.6 + r.fuel / P.fuel_max + 0.15 * Math.sin(tt * 17 + r.i) + r.flare * 0.8) * (1 - (env ? env.night : 0) * 0.35) : 0; // di notte il fuoco illumina meno (prima di più: abbagliava)
         r.light.distance = 8;
+        if (r.glass) { const k = Math.min(1, (env ? env.night : 0) * (lit ? 1.1 : 0.35)); r.glass.color.setRGB(0.75 + 0.25 * k, 0.9 - 0.1 * k, 1 - 0.65 * k); } // vetro: azzurro di giorno, giallo caldo di sera
         if (r.glow) { r.glow.visible = lit; if (lit) { const gs = 1.6 + s * 1.5 + 0.15 * Math.sin(tt * 11 + r.i); r.glow.scale.set(gs, gs, 1); r.glow.material.opacity = Math.min(0.9, 0.3 + (env ? env.night : 0) * 0.35 + r.flare * 0.3); } }
         r.pile.rotation.y = tt * 0.8; r.pile.position.y = 0.05 + 0.04 * Math.sin(tt * 3 + r.i);
       }
-      updateFireLight();
+      updateFireLight(); moveRecep(dt, recepSnap); recepSnap = false;
       // receptionist: guarda l'omino quando è vicino, saltella quando arrivano o se ne vanno i soldi
       if (recep.glow) { recep.glow.visible = recep.n > 0; if (recep.n > 0) { const gs = 1.0 + 0.2 * Math.sin(tt * 5); recep.glow.scale.set(gs, gs, 1); recep.glow.material.opacity = 0.5 + 0.2 * Math.sin(tt * 5); } }
       if (recep.who) {
         const near = Math.hypot(p.x - RECEP.x, p.z - RECEP.z) < 9;
-        const want = near ? Math.max(-1.1, Math.min(1.1, Math.atan2(p.x - recep.who.position.x, p.z - recep.who.position.z))) : Math.sin(tt * 0.7) * 0.12;
+        const want = near ? Math.max(-1.1, Math.min(1.1, Math.atan2(p.x - (RECEP.x + 0.3), p.z - (RECEP.z - 1.0)))) : Math.sin(tt * 0.7) * 0.12;
         recep.who.rotation.y += (want - recep.who.rotation.y) * Math.min(1, dt * 6);
         recep.hop = Math.max(0, recep.hop - dt); recep.who.position.y = recep.hop > 0 ? Math.sin(Math.PI * (1 - recep.hop / 0.5)) * 0.22 : 0;
       }
@@ -1336,7 +1355,7 @@
       sun.target.updateMatrixWorld();
     }
 
-    let albumT = 0;
+    let albumT = 0, recepSnap = true;
     function overlays(dt) {
       albumT -= dt;
       if (albumT <= 0 && env && running) { // ogni 3 secondi: meteo e notte danno figurine dell'album
