@@ -59,7 +59,7 @@ R.i18n.PH.forEach(e => {
   ok(e.every(x => !/­/.test(x)), 'nessun carattere nascosto: ' + e[0]);
 });
 R.i18n.RX.forEach(r => {
-  const n = (r[0].source.match(/\(/g) || []).length;
+  const n = (r[0].source.match(/(?<!\\)\((?!\?)/g) || []).length;
   ok(r[1].length === 4, 'regola con 4 lingue: ' + r[0]);
   r[1].forEach(t => { for (let i = 1; i <= n; i++) ok(t.indexOf('$' + i) >= 0, 'segnaposto $' + i + ' in ' + t); });
 });
