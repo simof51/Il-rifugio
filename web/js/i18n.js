@@ -136,7 +136,6 @@
     [/^(\d+) stagioni$/, ['$1 seasons', '$1 estaciones', '$1 saisons', '$1 Jahreszeiten']],
     [/^(\d+)\/(\d+) stagioni$/, ['$1/$2 seasons', '$1/$2 estaciones', '$1/$2 saisons', '$1/$2 Jahreszeiten']],
     [/^Oggi ti restano (\d+) video\./, ['You have $1 videos left today.', 'Hoy te quedan $1 vídeos.', "Il te reste $1 vidéos aujourd'hui.", 'Heute hast du noch $1 Videos.']],
-    [/^(\d+) gemme \(\+1 per obiettivo, \+10 per ogni stagione completata\)\./, ['$1 gems (+1 per goal, +10 per completed season).', '$1 gemas (+1 por objetivo, +10 por estación completada).', '$1 gemmes (+1 par objectif, +10 par saison terminée).', '$1 Edelsteine (+1 pro Ziel, +10 pro abgeschlossene Jahreszeit).']],
     [/^Prezzi con IVA inclusa\./, ['Prices include VAT.', 'Precios con IVA incluido.', 'Prix TTC.', 'Preise inkl. MwSt.']],
     [/^Missioni di oggi \((\d+)\/(\d+)\)$/, ["Today's missions ($1/$2)", 'Misiones de hoy ($1/$2)', 'Missions du jour ($1/$2)', 'Heutige Missionen ($1/$2)']],
     [/^Medaglie \((\d+)\/(\d+)\)$/, ['Medals ($1/$2)', 'Medallas ($1/$2)', 'Médailles ($1/$2)', 'Medaillen ($1/$2)']]

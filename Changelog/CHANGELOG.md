@@ -9,6 +9,12 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.22.1 · 2026-11-26 · Obiettivi a monete, stagione a 4 gemme
+
+- Gli **obiettivi** danno solo monete (prima davano anche 1 💎).
+- **Stagione completata**: ricompensa di **4 💎** (prima 10), con avviso a schermo.
+- **Per tornare indietro**: `git checkout 13717fd -- web Changelog`.
+
 ## v0.22.0 · 2026-11-26 · Obiettivi da 1, alberi trasparenti più stretti, mini-gioco con limiti
 
 - **Obiettivi** di nuovo da 1 in ogni stagione e città. Il tutorial "Come si gioca" resta solo la primissima volta.

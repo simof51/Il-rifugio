@@ -110,7 +110,7 @@
       const key = `${cat}:${id}`, own = prem ? R.shop.has('cosmetics') : st.has(key);
       return `<button class="opt${on ? ' on' : ''}${own ? '' : ' lock'}" data-look="${key}" data-cost="${cost}" data-prem="${prem ? 1 : 0}">${sw != null ? `<span class="sw" style="background:#${sw.toString(16).padStart(6, '0')}"></span>` : ''}${label}${own ? '' : prem ? '<i>🛍️</i>' : `<i>💎${cost}</i>`}</button>`;
     };
-    return `<div class="small">💎 ${st.get('gems')} gemme. Le trovi giocando: +1 per obiettivo, +10 per ogni stagione completata, premi giornalieri, scrigni e video. Tocca un oggetto per comprarlo e indossarlo. ${lookMsg}</div>` +
+    return `<div class="small">💎 ${st.get('gems')} gemme. Le trovi giocando: 4 per ogni stagione completata, premi giornalieri, missioni, scrigni, figurine e video. Tocca un oggetto per comprarlo e indossarlo. ${lookMsg}</div>` +
       `<b class="small">Omino · Cappello</b><div class="look">${C.hat.map(h => item('hat', h.id, h.name, h.cost, look.hat === h.id, null, h.premium)).join('')}</div>` +
       `<b class="small">Omino · Colore</b><div class="look">${C.color.map(c => item('color', c.id, c.name, c.cost, look.color === c.id, c.hex, c.premium)).join('')}</div>` +
       `<b class="small">Omino · Accessorio</b><div class="look">${C.acc.map(a => item('acc', a.id, a.name, a.cost, look.acc === a.id, null, a.premium)).join('')}</div>` +

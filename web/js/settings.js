@@ -28,7 +28,7 @@
     low: { label: 'Bassa', ratio: 1, aa: false, shadows: 'off', map: 0, density: 0.35 }
   };
 
-  // Catalogo dell'aspetto (si compra con le gemme: +1 per ogni obiettivo, +10 per ogni stagione completata).
+  // Catalogo dell'aspetto (si compra con le gemme: 4 per ogni stagione completata, più premi, missioni, scrigni e video).
   const CATALOG = {
     hat: [
       { id: 'default', name: 'Di stagione', cost: 0 }, { id: 'catears', name: 'Orecchie di gatto', cost: 30 }, { id: 'chef', name: 'Cappello da chef', cost: 25 },

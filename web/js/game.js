@@ -1329,11 +1329,11 @@
       // obiettivi
       while (S.done < objectives.length && objValue(objectives[S.done]) >= objTarget(objectives[S.done])) {
         const rw = objectives[S.done].reward || 10;
-        S.done++; S.coins += rw; R.settings.addGems(1); hud.toast(`Obiettivo completato! +${rw} monete 🎉`); save(); fauna.celebrate(); EX.ev('goal');
+        S.done++; S.coins += rw; hud.toast(`Obiettivo completato! +${rw} monete 🎉`); save(); fauna.celebrate(); EX.ev('goal');
         burst(p.x, 1.6, p.z, 34, CONFETTI, 4.5, 8, 1.2, 0.17); hopT = 0.5; A.sfx('goal');
       }
       if (S.done >= objectives.length && !S.won) {
-        S.won = true; R.settings.addGems(10); save(); running = false; endJoy(); EX.ev('win');
+        S.won = true; R.settings.addGems(4); hud.toast('Stagione completata! +4 gemme 💎'); save(); running = false; endJoy(); EX.ev('win');
         hud.showWin(TX.winTitle, TX.winText(S), TX.winNext, level.next);
       }
       saveT += dt; if (saveT > 2) { saveT = 0; save(); }
