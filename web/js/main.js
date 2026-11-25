@@ -195,6 +195,14 @@
   function openMenu() { confirmReset = false; dbgMsg = ''; renderMenu(); $('menu').classList.remove('hidden'); game.pause(true); audio.sfx('click'); }
   function closeMenu() { $('menu').classList.add('hidden'); game.pause(false); audio.sfx('click'); }
   $('menuBtn').onclick = openMenu; $('menuClose').onclick = closeMenu;
+  // Tasto "indietro" di Android: chiude il menu se è aperto, altrimenti lo apre (invece di uscire di colpo dal gioco).
+  try {
+    const AppP = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+    if (AppP && AppP.addListener) AppP.addListener('backButton', () => {
+      const intro = !$('intro').classList.contains('hidden'), menuOpen = !$('menu').classList.contains('hidden');
+      if (menuOpen) closeMenu(); else if (intro) { if (AppP.exitApp) AppP.exitApp(); } else if ($('win').classList.contains('hidden')) openMenu();
+    });
+  } catch (e) { /* ignorato */ }
   // Acquisto: parte subito (la conferma con il PIN o l'impronta la chiede Google Play).
   async function buyFlow(id) {
     const r = await R.shop.buy(id);

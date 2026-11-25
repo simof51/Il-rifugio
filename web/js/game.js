@@ -726,7 +726,7 @@
     // Decorazioni acquistabili: lanterne colorate lungo i sentieri e la mascotte del livello.
     // Lanterne: palo di ferro, lanterna con telaio, vetro colorato che brilla, tettuccio; di notte un alone, una macchia di luce a terra
     // e (per le 4 più vicine all'omino) una vera luce che illumina i dintorni.
-    const lamps = [], lampMats = {}, lampLights = [];
+    const lamps = [], lampMats = {}, lampLights = [], lampOrder = [];
     const glowTex = (() => {
       const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
       g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.35, 'rgba(255,255,255,0.4)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64);
@@ -759,9 +759,9 @@
     function updateLamps() {
       if (!lamps.length) return;
       const n = env ? env.night : 0, p = player.position;
-      Object.keys(lampMats).forEach(c => { lampMats[c].halo.opacity = 0.22 + n * 0.6; lampMats[c].pool.opacity = n * 0.4; });
-      lamps.forEach(l => { l.halo.scale.setScalar(1.2 + n * 0.9); l._d = Math.hypot(l.x - p.x, l.z - p.z); });
-      const near = lamps.slice().sort((a, b) => a._d - b._d);
+      for (const c in lampMats) { lampMats[c].halo.opacity = 0.22 + n * 0.6; lampMats[c].pool.opacity = n * 0.4; }
+      for (const l of lamps) { l.halo.scale.setScalar(1.2 + n * 0.9); l._d = Math.hypot(l.x - p.x, l.z - p.z); }
+      const near = lampOrder; lampOrder.length = 0; for (const l of lamps) near.push(l); near.sort((a, b) => a._d - b._d); // riusa lo stesso elenco
       lampLights.forEach((li, k) => { const l = near[k]; li.position.set(l.x, 2.3, l.z); li.color.setHex(l.c); li.intensity = n * 2.2; }); // stessa intensità, senza tremolio
     }
     function buildMascot(pd) {
@@ -1011,6 +1011,7 @@
     addEventListener('pagehide', save);
 
     // --- ciclo di gioco -----------------------------------------------------
+    let perfT = 0, perfSlow = 0;
     let running = false, paused = false, tt = 0, saveT = 0, chopCd = 0, feedCd = 0, cupCd = 0, hopT = 0, dustT = 0;
     function update(dt) {
       const p = player.position;
@@ -1214,6 +1215,11 @@
     let last = performance.now();
     function frame(now) {
       const raw = (now - last) / 1000, dt = Math.min(0.05, raw); last = now;
+      // Se per 8 secondi il gioco va sotto i 25 fotogrammi al secondo, si suggerisce (una volta sola) di abbassare la qualità grafica.
+      if (running && !paused && raw < 0.5) {
+        perfT += raw; if (raw > 0.04) perfSlow += raw;
+        if (perfT >= 8) { if (perfSlow / perfT > 0.6 && R.settings.get('quality') !== 'low' && R.settings.tip('perf')) hud.toast('🐢 Il gioco va a scatti? Prova la qualità Media o Bassa: menu ☰ → Impostazioni'); perfT = 0; perfSlow = 0; }
+      }
       if (fpsOn) { fpsN++; fpsT += raw; if (fpsT >= 0.5) { fpsEl.textContent = Math.round(fpsN / fpsT) + ' fps'; fpsN = 0; fpsT = 0; } }
       if (running && !paused) { update(dt); tickLater(dt); updateFlyers(dt); updateParts(dt); env.update(dt); fauna.update(dt); }
       anim(dt); renderer.render(scene, cam); overlays(dt); refreshHud();

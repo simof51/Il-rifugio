@@ -12,6 +12,7 @@
     const hemiBase = hemi.intensity, hemiSky = hemi.color.clone(), hemiGnd = hemi.groundColor.clone(), sunBase = sun.intensity, sunCol = sun.color.clone();
     const nightHemi = new T.Color(0x7c92d8), nightGnd = new T.Color(0x232b4d), nightSun = new T.Color(0xa9bcff), duskSun = new T.Color(0xffa766);
     const fogN = scene.fog.near, fogF = scene.fog.far;
+    const skyC = new T.Color(); // colore di lavoro riusato a ogni fotogramma (niente oggetti nuovi: meno lavoro per il telefono)
     const DAY_LEN = 420; // secondi per un giorno intero
     let t = 0.02, weather = 'clear', nextW = 45 + rnd() * 50, held = false;
     const amt = { rain: 0, storm: 0, fog: 0, snow: 0 };
@@ -72,7 +73,7 @@
       if (thunderT > 0) { thunderT -= dt; if (thunderT <= 0) { A.sfx('thunder'); if (A.haptic) A.haptic(70); } }
       if (flash > 0) flash = Math.max(0, flash - dt * (flash > 0.55 ? 5 : 3));
       // --- colori e luci ---
-      const sky = baseSky.clone().lerp(grey, Math.min(0.75, amt.rain * 0.4 + amt.fog * 0.45 + amt.snow * 0.3)).lerp(nightSky, night).lerp(duskSky, dusk * 0.3 * (1 - wet)).lerp(flashCol, flash * 0.6);
+      const sky = skyC.copy(baseSky).lerp(grey, Math.min(0.75, amt.rain * 0.4 + amt.fog * 0.45 + amt.snow * 0.3)).lerp(nightSky, night).lerp(duskSky, dusk * 0.3 * (1 - wet)).lerp(flashCol, flash * 0.6);
       scene.background.copy(sky); scene.fog.color.copy(sky);
       const fogK = 1 - Math.min(0.7, amt.fog * 0.55 + amt.rain * 0.18);
       scene.fog.near = fogN * fogK * (1 - 0.3 * night); scene.fog.far = fogF * fogK * (1 - 0.25 * night);

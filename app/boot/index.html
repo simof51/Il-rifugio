@@ -46,8 +46,16 @@
   function fail(why) {
     try { console.warn('Avvio non riuscito:', why); } catch (e) {}
     boot.className = 'err';
-    title.textContent = 'Serve internet';
-    msg.textContent = 'Il Rifugio ha bisogno di internet per avviarsi e aggiornarsi. Controlla la connessione e riprova.';
+    // Un errore HTTP (404, 403…) vuol dire che internet c'è ma GitHub non dà il gioco (repository privato, limite di richieste, file mancante):
+    // meglio dirlo, con il codice, invece di "serve internet".
+    var m = /\b(\d{3})\b/.exec(String(why && why.message || why));
+    if (m && !/timeout/i.test(String(why && why.message || why))) {
+      title.textContent = 'Gioco non raggiungibile';
+      msg.textContent = 'Internet funziona, ma il gioco non si scarica (errore ' + m[1] + (m[1] === '404' ? ': il repository potrebbe essere privato' : m[1] === '403' ? ': troppe richieste, riprova fra qualche minuto' : '') + '). Riprova più tardi.';
+    } else {
+      title.textContent = 'Serve internet';
+      msg.textContent = 'Il Rifugio ha bisogno di internet per avviarsi e aggiornarsi. Controlla la connessione e riprova.';
+    }
   }
   function quit() {
     try { window.Capacitor.Plugins.App.exitApp(); return; } catch (e) {}

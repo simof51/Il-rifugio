@@ -9,6 +9,24 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.12.1 · 2026-11-26 · Rifiniture
+
+**Richiesto**: migliorare tutto (le idee nuove si propongono prima, nessuna implementata).
+
+**Modificato**
+| File | Cosa |
+|---|---|
+| `app/boot/index.html` | Messaggio d'errore più preciso: se internet c'è ma GitHub risponde con un errore (404, 403…) mostra "Gioco non raggiungibile" con il codice e la probabile causa (repository privato, troppe richieste); "Serve internet" solo se la rete manca davvero. Serve un nuovo APK. |
+| `web/js/main.js` | Tasto "indietro" di Android: chiude il menu se è aperto, altrimenti lo apre; sulla schermata iniziale esce dall'app. Prima usciva di colpo. |
+| `web/js/game.js` | Se per 8 secondi il gioco va sotto i 25 fotogrammi al secondo, suggerisce una volta sola di abbassare la qualità grafica. Meno oggetti creati a ogni fotogramma nelle lanterne. |
+| `web/js/env.js` | Niente colori nuovi a ogni fotogramma (meno lavoro per il telefono). |
+| `web/sw.js` | `CACHE` v22. |
+
+**Per tornare indietro**
+- `git checkout 28b5047 -- web app`
+
+---
+
 ## v0.12.0 · 2026-11-26 · Video a premio (AdMob), senza vendita di dati
 
 **Richiesto**: implementare la pubblicità proposta (video a premio). Chiesto anche se si può vendere i dati degli utenti a terzi: **no, non è stato fatto e non si farà** (vedi nota).
