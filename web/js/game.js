@@ -26,6 +26,7 @@
     const Q = R.settings ? R.settings.quality() : { ratio: 2, shadows: 'pcf', map: 1024, density: 1 };
     const pixelRatio = Math.min(window.devicePixelRatio || 1, Q.ratio);
     renderer.setPixelRatio(pixelRatio);
+    renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.35; // colori più ricchi e contrastati, meno "piatti"
     renderer.shadowMap.enabled = Q.shadows !== 'off'; renderer.shadowMap.type = T.PCFShadowMap;
     document.getElementById('game').appendChild(renderer.domElement);
     const scene = new T.Scene();
@@ -950,7 +951,6 @@
       ['✨ Spendile nei riquadri a terra: la barra si riempie!', () => Object.keys(S.bought).length >= 1 || S.done >= 5]
     ];
     function endTutorial() { tut.on = false; hud.hint(null); R.settings.set('tutorial', true); }
-    hud.onHintSkip(endTutorial);
     function updateTutorial(dt) {
       const p = player.position;
       if (tut.lx != null) tut.moved += Math.hypot(p.x - tut.lx, p.z - tut.lz); tut.lx = p.x; tut.lz = p.z;
@@ -1270,7 +1270,7 @@
     requestAnimationFrame(frame);
 
     return {
-      start() { running = true; hud.toast(S.done === 0 ? 'Vai verso il bosco: segui la freccia gialla ➜' : `${level.cityEmoji || ''} ${level.cityName || ''} · ${level.emoji} ${level.name}`); },
+      start() { running = true; if (S.done > 0) hud.toast(`${level.cityEmoji || ''} ${level.cityName || ''} · ${level.emoji} ${level.name}`); },
       resume() { running = true; },
       seasonNote,
       // Foto ricordo: ridisegna la scena e la mette in una cornice (le scritte HTML non compaiono).

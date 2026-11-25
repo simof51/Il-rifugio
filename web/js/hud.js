@@ -71,16 +71,13 @@
     const envChip = $('envChip'), envN = $('envN');
     function setEnv(txt) { envChip.hidden = !txt; envN.textContent = txt; }
     // Suggerimenti del tutorial: stanno nella scheda dell'obiettivo (stessa posizione), con un tasto per saltare.
-    const taskSkip = $('taskSkip');
     function hint(txt, i, n) {
-      if (!txt) { if (tutOn) { tutOn = false; taskSkip.hidden = true; } return; }
-      tutOn = true; taskSkip.hidden = false;
+      if (!txt) { tutOn = false; return; }
+      tutOn = true;
       setText(E.taskN, 'Come si gioca'); setText(E.taskTxt, txt); setText(E.taskV, i + '/' + n);
       const w = (100 * (i - 1) / n).toFixed(1) + '%';
       if (E.taskBar._w !== w) { E.taskBar._w = w; E.taskBar.style.width = w; }
     }
-    taskSkip.onclick = () => { if (hud_skip) hud_skip(); };
-    let hud_skip = null;
 
     const stick = $('stick'), knob = $('knob');
     function showStick(x, y) { stick.style.display = 'block'; stick.style.left = x + 'px'; stick.style.top = y + 'px'; knob.style.transform = 'translate(-50%,-50%)'; }
@@ -89,7 +86,6 @@
 
     return {
       label, put, toast, floatText, updateFloats, setStats, setTask, showStick, moveKnob, hideStick, setEnv, setGems, hint,
-      onHintSkip(fn) { hud_skip = fn; },
       setCamera(c) { cam = c; },
       hideIntro() { $('intro').classList.add('hidden'); },
       showWin(title, text, next, nextId) {

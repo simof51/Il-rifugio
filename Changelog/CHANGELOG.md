@@ -9,6 +9,13 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.16.0 · 2026-11-26 · Grafica moderna, tutorial senza fumetto
+
+- Tutorial: tolto il tasto "Salta" e il fumetto in basso (codice compreso); l'avviso "Vai verso il bosco" non compare più, il suo messaggio è già nel passo 2 del tutorial, nella scheda in alto.
+- Interfaccia nuova: pannelli di vetro sfocato, ombre morbide, bordi sottili, pulsanti con sfumatura e luce, tab attiva arancione, finestre con ombra profonda, vignettatura leggera sul bordo dello schermo. Niente più bordi spessi e ombre "a gradino".
+- Scena 3D: tone mapping cinematografico (ACES, esposizione 1.35) per colori più ricchi e contrasto più pulito.
+- **Per tornare indietro**: `git checkout 55217df -- web Changelog`.
+
 ## v0.15.0 · 2026-11-26 · Tutorial nella scheda obiettivi, niente ceppi bloccanti
 
 - Il tutorial della prima partita ora compare nella scheda in alto, al posto dell'obiettivo (titolo "Come si gioca", passo 1/7, barra di avanzamento e tasto "Salta"). Finito o saltato il tutorial, tornano gli obiettivi normali.

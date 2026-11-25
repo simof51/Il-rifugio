@@ -75,7 +75,6 @@
     ['Nuova versione: tocca per aggiornare', 'New version: tap to update', 'Nueva versión: toca para actualizar', 'Nouvelle version : touche pour mettre à jour', 'Neue Version: zum Aktualisieren tippen'],
     ['Obiettivo completato!', 'Goal completed!', '¡Objetivo cumplido!', 'Objectif atteint !', 'Ziel erreicht!'],
     [' monete 🎉', ' coins 🎉', ' monedas 🎉', ' pièces 🎉', ' Münzen 🎉'],
-    ['Vai verso il bosco: segui la freccia gialla ➜', 'Head to the forest: follow the yellow arrow ➜', 'Ve al bosque: sigue la flecha amarilla ➜', 'Va vers la forêt : suis la flèche jaune ➜', 'Geh zum Wald: folge dem gelben Pfeil ➜'],
     ['Ora sai tutto: buon divertimento! 🎉', 'Now you know it all: have fun! 🎉', '¡Ya lo sabes todo: diviértete! 🎉', 'Tu sais tout : amuse-toi bien ! 🎉', 'Jetzt weißt du alles: viel Spaß! 🎉'],
     [' sbloccato! ✨', ' unlocked! ✨', ' desbloqueado! ✨', ' débloqué ! ✨', ' freigeschaltet! ✨'],
     ['Zaino pieno!', 'Backpack full!', '¡Mochila llena!', 'Sac plein !', 'Rucksack voll!'],
