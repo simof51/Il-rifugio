@@ -10,10 +10,14 @@
     porto: { stand: 8, recep: 'left', rooms: [0, -6, 6], pads: { room1: [-6, -6.5], room2: [6, -6.5], boots: [2.2, -0.6], sign: [15.6, 6.2] } }
   };
   // Aspetto per città: colore delle pareti, cornici, tende sulle finestre, cappotti degli ospiti, cappelli e divisa della receptionist.
+  // "style" cambia la forma della baita (vedi game.js): alpine = tronchi e tetto spiovente, dutch = mattoni e facciata a gradoni, harbor = pareti bianche, fascia blu e bandiera.
   const CITY = {
-    valle: { walls: null, trim: 0xe6b27a, awning: 0xd94f3d, coats: [], hats: [], recepCoat: 0xc23b5a },
-    mulini: { walls: 0xe2b26e, trim: 0xfff1d0, awning: 0xff7ab0, coats: [0xff9ac1, 0xffd23a, 0x7bd88f, 0xf06a6a, 0x5ab0ff], hats: ['cowboy'], recepCoat: 0xe8742e },
-    porto: { walls: 0x7a98b8, trim: 0xf4f1e6, awning: 0x2d6cdf, coats: [0x1f4e8c, 0xf4f1e6, 0xd9433b, 0x2ec4b6, 0x2b3a55], hats: ['chef'], recepCoat: 0x1f4e8c }
+    valle: { style: 'alpine', walls: 0x9a6a45, trim: 0xe6b27a, awning: 0xd94f3d, floor: null, rug: 0xc23b2e, fire: null, umb: null, coats: [], hats: [], recepCoat: 0xc23b5a,
+      perk: 'Monti, cappella e il Maestro di sci' },
+    mulini: { style: 'dutch', walls: 0xb8523a, trim: 0xfff1d0, awning: 0xff7ab0, floor: 0xd9a066, rug: 0x2d6cdf, fire: 0xa9482f, umb: [0xff7ab0, 0xffd23a, 0xff9a2a], coats: [0xff9ac1, 0xffd23a, 0x7bd88f, 0xf06a6a, 0x5ab0ff], hats: ['cowboy'], recepCoat: 0xe8742e,
+      perk: 'Campi di tulipani, canale e mulino · ospiti +15%' },
+    porto: { style: 'harbor', walls: 0xf2f4f7, trim: 0x2d6cdf, awning: 0x2d6cdf, floor: 0x9c7a55, rug: 0xd9433b, fire: 0x3a4250, umb: [0x2d6cdf, 0xffffff, 0xd9433b], coats: [0x1f4e8c, 0xf4f1e6, 0xd9433b, 0x2ec4b6, 0x2b3a55], hats: ['chef'], recepCoat: 0x1f4e8c,
+      perk: 'Mare, molo e faro · ospiti +30%' }
   };
   // Per stagione: strutture tipiche e colori in più per i cappotti.
   const SEASON = {
@@ -39,10 +43,11 @@
     'porto-autunno': { name: 'Guardiano del faro', e: '🔦', coat: 0x2b3a55, hat: 'tophat', line: 'Il mio faro guida tutti a casa.' }
   };
 
+  R.cities.forEach(c => { c.perk = (CITY[c.id] || CITY.valle).perk; }); // anteprima mostrata nella mappa
   R.order.forEach(id => {
     const lv = R.levels[id], city = lv.cityId || 'valle', season = lv.season, L = LAYOUT[city] || LAYOUT.valle, C = CITY[city] || CITY.valle, S = SEASON[season] || SEASON.inverno;
     lv.place = {
-      layout: L, walls: C.walls, trim: C.trim, awning: C.awning, hats: C.hats, recepCoat: C.recepCoat,
+      layout: L, style: C.style, floor: C.floor, rug: C.rug, fire: C.fire, umb: C.umb, walls: C.walls, trim: C.trim, awning: C.awning, hats: C.hats, recepCoat: C.recepCoat,
       coats: C.coats.concat(S.coats), structs: (CITYSTR[city] || []).concat(S.structs),
       host: HOST[city + '-' + season] || HOST['valle-' + season]
     };

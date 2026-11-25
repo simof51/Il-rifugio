@@ -447,13 +447,20 @@
     const lido = TH.room === 'lido';
     const hedge = !!TH.fence, bambooM = B.tint(TH.fence || 0xd9b36c), railM = B.tint(0xf4f1e6), TOWELS = [0xff6b6b, 0x4fa3ff, 0xffd23a, 0x4cd964, 0xff9a2a, 0xc084fc];
     const wallM = PL.walls != null ? B.tint(PL.walls) : mats.wood, trimM = PL.trim != null ? B.tint(PL.trim) : mats.plank, awnM = B.tint(PL.awning != null ? PL.awning : 0xd94f3d);
+    // Stile della baita per città: 'alpine' (Valle: tronchi, tetto spiovente, persiane), 'dutch' (Mulini: mattoni, facciata a gradoni, fioriere),
+    // 'harbor' (Porto: pareti bianche con fascia blu, salvagente, bandiera). Cambiano pavimento, tappeto, camino e decorazioni.
+    const STYLE = PL.style || 'alpine';
+    const floorM = PL.floor != null ? B.tint(PL.floor) : mats.plank, rugM = PL.rug != null ? B.tint(PL.rug) : mats.red, fireM = PL.fire != null ? B.tint(PL.fire) : mats.stone;
+    const fenceM = STYLE === 'dutch' ? B.tint(0xb8523a) : STYLE === 'harbor' ? B.tint(0xf4f1e6) : bambooM, umbCols = PL.umb || TH.umbrellaCols || [0xff4d4d, 0x3d8bff, 0xffd23a];
     const rooms = level.rooms.map((def, i) => {
       const cx = def.x, g = new T.Group(); scene.add(g);
-      box(RW, 0.2, 5, mats.plank, cx, 0.1, -6.5, g, 0.015);
+      box(RW, 0.2, 5, floorM, cx, 0.1, -6.5, g, 0.015);
       let wallL, wallR, flame, fireY, fireZ, glass = null;
       if (lido) {
         if (hedge) box(RW, 1.05, 0.55, bambooM, cx, 0.72, -9.0, g, 0.22); // siepe fiorita sul retro (primavera)
-        else { box(RW, 0.9, 0.16, bambooM, cx, 0.65, -9.1, g, 0.04); for (let k = 0; k < 7; k++) box(0.1, 1.05, 0.2, bambooM, cx - 2.7 + k * 0.9, 0.72, -9.1, g, 0.04); } // staccionata di bambù
+        else { box(RW, 0.9, 0.16, fenceM, cx, 0.65, -9.1, g, 0.04); for (let k = 0; k < 7; k++) box(0.1, 1.05, 0.2, fenceM, cx - 2.7 + k * 0.9, 0.72, -9.1, g, 0.04); } // staccionata (bambù, mattoni o bianca)
+        if (STYLE === 'dutch') [-2, 0, 2].forEach((dx, k) => { box(1.0, 0.25, 0.4, B.tint(0x6b4a2f), cx + dx, 0.2, -8.7, g, 0.03); [-0.3, -0.1, 0.1, 0.3].forEach((fx, q) => ball(0.11, B.tint([0xff4d6d, 0xffd23a, 0xff7ac6, 0xa066ff][(q + k) % 4]), cx + dx + fx, 0.42, -8.7, g, 6, 5)); }); // fioriere di tulipani
+        else if (STYLE === 'harbor') { box(RW, 0.14, 0.22, B.tint(0x2d6cdf), cx, 0.98, -9.1, g, 0.02); [-2.6, 2.6].forEach(dx => cyl(0.14, 0.17, 0.5, mats.dark, cx + dx, 0.45, -8.4, g, 8)); } // fascia blu e bitte
         wallL = box(0.12, 0.55, 5, railM, cx - RW / 2 + 0.06, 0.47, -6.5, g, 0.03);
         wallR = box(0.12, 0.55, 5, railM, cx + RW / 2 - 0.06, 0.47, -6.5, g, 0.03);
         box(1.8, 0.03, 1.1, B.tint(0xffe08a), cx, 0.21, -7.6, g);
@@ -464,7 +471,7 @@
         box(0.5, 0.06, 0.5, mats.plank, cx + 0.95, 0.9, -8.55, g, 0.02);
         // ombrellone: palo e cappello a spicchi nei colori del lido
         cyl(0.05, 0.05, 2.9, mats.white, cx - 2.35, 1.45, -8.3, g, 8);
-        const can = new T.Mesh(B.cached('umb', () => new T.ConeGeometry(1.75, 0.65, 12)), B.tint((TH.umbrellaCols || [0xff4d4d, 0x3d8bff, 0xffd23a])[i % 3])); can.position.set(cx - 2.35, 3.0, -8.3); can.castShadow = true; g.add(can);
+        const can = new T.Mesh(B.cached('umb', () => new T.ConeGeometry(1.75, 0.65, 12)), B.tint(umbCols[i % umbCols.length])); can.position.set(cx - 2.35, 3.0, -8.3); can.castShadow = true; g.add(can);
         ball(0.07, mats.white, cx - 2.35, 3.35, -8.3, g, 8, 6);
         flame = new T.Mesh(new T.ConeGeometry(0.22, 0.5, 16), mats.flame); flame.position.set(cx, 1.3, -8.55); g.add(flame);
         fireY = 1.25; fireZ = -8.5;
@@ -482,8 +489,20 @@
           box(1.2, 0.08, 0.22, trimM, cx + dx, 1.15, -8.86, g, 0.01);                                                                         // davanzale
           const awn = box(1.3, 0.1, 0.5, awnM, cx + dx, 2.28, -8.78, g, 0.02); awn.rotation.x = 0.35;                                          // tenda colorata sopra la finestra
         });
-        box(1.8, 0.03, 1.1, mats.red, cx, 0.21, -7.6, g);
-        box(1.5, 1.7, 0.8, mats.stone, cx, 0.85, -8.6, g); box(0.9, 0.65, 0.1, mats.dark, cx, 0.55, -8.17, g); box(1.7, 0.15, 0.9, mats.stone, cx, 1.75, -8.6, g);
+        // decorazioni dello stile della città
+        if (STYLE === 'alpine') {
+          box(RW + 0.3, 0.14, 1.9, B.tint(0x7a3b2a), cx, 2.95, -9.45, g, 0.02).rotation.x = 0.6;                                              // tetto spiovente sul retro
+          [-1.95, 1.95].forEach(dx => [-0.7, 0.7].forEach(sx => box(0.3, 0.95, 0.06, B.tint(0x2f6b4f), cx + dx + sx, 1.65, -8.88, g, 0.01))); // persiane verdi
+        } else if (STYLE === 'dutch') {
+          [[RW * 0.85, 2.65], [RW * 0.55, 3.15], [RW * 0.28, 3.65]].forEach(([w, y]) => { box(w, 0.5, 0.3, wallM, cx, y, -9.1, g, 0.02); box(w + 0.12, 0.08, 0.36, trimM, cx, y + 0.27, -9.1, g, 0.01); }); // facciata a gradoni
+          [-1.95, 1.95].forEach((dx, k) => { box(1.1, 0.2, 0.3, B.tint(0x6b4a2f), cx + dx, 1.02, -8.78, g, 0.02); [-0.35, -0.12, 0.12, 0.35].forEach((fx, q) => ball(0.1, B.tint([0xff4d6d, 0xffd23a, 0xff7ac6, 0xffffff][(q + k) % 4]), cx + dx + fx, 1.2, -8.78, g, 6, 5)); }); // fioriere
+        } else {
+          box(RW, 0.4, 0.34, B.tint(0x2d6cdf), cx, 0.55, -9.1, g, 0.02);                                                                       // fascia blu
+          const buoy = new T.Mesh(B.cached('buoy', () => new T.TorusGeometry(0.3, 0.1, 8, 16)), B.tint(0xd9433b)); buoy.position.set(cx, 2.1, -8.9); g.add(buoy); // salvagente
+          cyl(0.04, 0.04, 1.6, mats.wood, cx + 2.6, 3.2, -9.1, g, 6); box(0.8, 0.45, 0.04, B.tint(i % 2 ? 0xffffff : 0x2d6cdf), cx + 3.0, 3.75, -9.1, g, 0.01); // bandiera
+        }
+        box(1.8, 0.03, 1.1, rugM, cx, 0.21, -7.6, g);
+        box(1.5, 1.7, 0.8, fireM, cx, 0.85, -8.6, g); box(0.9, 0.65, 0.1, mats.dark, cx, 0.55, -8.17, g); box(1.7, 0.15, 0.9, fireM, cx, 1.75, -8.6, g);
         flame = new T.Mesh(new T.ConeGeometry(0.25, 0.6, 16), mats.flame); flame.position.set(cx, 0.55, -8.25); g.add(flame);
         fireY = 0.7; fireZ = -8.1;
       }
@@ -1470,7 +1489,7 @@
         burst(p.x, 1.6, p.z, 34, CONFETTI, 4.5, 8, 1.2, 0.17); hopT = 0.5; A.sfx('goal');
       }
       if (S.done >= objectives.length && !S.won) {
-        S.won = true; R.settings.addGems(4); hud.toast('Stagione completata! +4 gemme 💎'); save(); running = false; endJoy(); EX.ev('win');
+        S.won = true; R.settings.addGems(4); hud.toast('Stagione completata! +4 gemme 💎'); MT.stamp(level.id); save(); running = false; endJoy(); EX.ev('win');
         hud.showWin(TX.winTitle, TX.winText(S), TX.winNext, level.next);
       }
       saveT += dt; if (saveT > 2) { saveT = 0; save(); }

@@ -9,6 +9,17 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.26.0 · 2026-11-26 · Città nette e diverse, passaporto per proseguire
+
+- **Baite di stile diverso per città** (cambia anche con l'interno):
+  - **Valle**: baita di tronchi scuri con tetto spiovente sul retro e persiane verdi.
+  - **Mulini**: mattoni rossi con facciata a gradoni, fioriere di tulipani sotto le finestre, pavimento di cotto e camino di mattoni; nelle stagioni all'aperto staccionata di mattoni e fioriere.
+  - **Porto**: pareti bianche con fascia blu, salvagente, bandiera sul tetto, ponte di legno e stufa nera; staccionata bianca con bitte.
+  Anche tappeti, ombrelloni e colori cambiano per città.
+- **Passaporto** (Profilo): un timbro per ogni stagione completata; chiudere una città (4 timbri) dà **+20 💎** e punti scrigno, chiuderle tutte e tre **+50 💎**. I timbri delle stagioni già finite si recuperano da soli.
+- **Anteprima nella mappa**: ogni città mostra cosa porta (ambiente, ospite speciale, guadagni +15% / +30%), anche quelle ancora bloccate.
+- **Per tornare indietro**: `git checkout 1fa0274 -- web tests Changelog`.
+
 ## v0.25.0 · 2026-11-26 · Ambienti diversi per ogni città, reception non più sovrapposta
 
 - **Ambiente di ogni città**:

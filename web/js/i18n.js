@@ -271,6 +271,11 @@
     ["🎬 Gira con un video", "🎬 Spin with a video", "🎬 Girar con un vídeo", "🎬 Tourner avec une vidéo", "🎬 Mit Video drehen"],
     ["🎬 Video: usato", "🎬 Video: used", "🎬 Vídeo: usado", "🎬 Vidéo : utilisé", "🎬 Video: genutzt"],
     ["SUPER PREMIO!", "SUPER PRIZE!", "¡SÚPER PREMIO!", "SUPER LOT !", "SUPERPREIS!"],
+    ["🛂 Passaporto", "🛂 Passport", "🛂 Pasaporte", "🛂 Passeport", "🛂 Reisepass"],
+    ["🌍 Mondo completato", "🌍 World complete", "🌍 Mundo completado", "🌍 Monde terminé", "🌍 Welt abgeschlossen"],
+    ["Monti, cappella e il Maestro di sci", "Mountains, chapel and the Ski Master", "Montañas, capilla y el Maestro de esquí", "Montagnes, chapelle et le Maître de ski", "Berge, Kapelle und der Skimeister"],
+    ["Campi di tulipani, canale e mulino · ospiti +15%", "Tulip fields, canal and windmill · guests +15%", "Campos de tulipanes, canal y molino · invitados +15 %", "Champs de tulipes, canal et moulin · invités +15 %", "Tulpenfelder, Kanal und Mühle · Gäste +15 %"],
+    ["Mare, molo e faro · ospiti +30%", "Sea, pier and lighthouse · guests +30%", "Mar, muelle y faro · invitados +30 %", "Mer, jetée et phare · invités +30 %", "Meer, Pier und Leuchtturm · Gäste +30 %"],
     ["Come si gioca", "How to play", "Cómo se juega", "Comment jouer", "So wird gespielt"],
     ["👆 Trascina il dito sullo schermo per muoverti", "👆 Drag your finger on the screen to move", "👆 Arrastra el dedo por la pantalla para moverte", "👆 Fais glisser ton doigt sur l'écran pour te déplacer", "👆 Zieh den Finger über den Bildschirm, um dich zu bewegen"],
     ["🪙 Gli ospiti pagano alla reception: ritira le monete dal bancone, sul tappeto rosso", "🪙 Guests pay at reception: collect the coins from the counter, on the red rug", "🪙 Los invitados pagan en la recepción: recoge las monedas del mostrador, sobre la alfombra roja", "🪙 Les invités paient à la réception : récupère les pièces sur le comptoir, sur le tapis rouge", "🪙 Die Gäste zahlen an der Rezeption: Hol die Münzen vom Tresen, auf dem roten Teppich"],
@@ -321,6 +326,8 @@
     [/^🎁 \+(\d+) 💎 · serie di (\d+) giorn[io]$/, ['🎁 +$1 💎 · $2-day streak', '🎁 +$1 💎 · racha de $2 días', '🎁 +$1 💎 · série de $2 jours', '🎁 +$1 💎 · $2 Tage in Folge']],
     [/^(\d+) gemme$/, ['$1 gems', '$1 gemas', '$1 gemmes', '$1 Edelsteine']],
     [/^(\d+) monete$/, ['$1 coins', '$1 monedas', '$1 pièces', '$1 Münzen']],
+    [/^🌍 Tutte le città: \+(\d+) 💎$/, ['🌍 All cities: +$1 💎', '🌍 Todas las ciudades: +$1 💎', '🌍 Toutes les villes : +$1 💎', '🌍 Alle Städte: +$1 💎']],
+    [/^\+(\d+) 💎 · (\d+)\/(\d+)$/, ['+$1 💎 · $2/$3', '+$1 💎 · $2/$3', '+$1 💎 · $2/$3', '+$1 💎 · $2/$3']],
     [/^💎 Gira · (\d+) 💎$/, ['💎 Spin · $1 💎', '💎 Girar · $1 💎', '💎 Tourner · $1 💎', '💎 Drehen · $1 💎']],
     [/^(\S+) Arriva (.+): ospite speciale, paga il quadruplo!$/, ['$1 $2 arrives: special guest, pays four times!', '$1 Llega $2: ¡invitado especial, paga cuatro veces más!', '$1 $2 arrive : invité spécial, paie quatre fois plus !', '$1 $2 kommt: Ehrengast, zahlt das Vierfache!']]
   ];

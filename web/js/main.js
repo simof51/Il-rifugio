@@ -87,6 +87,7 @@
   const dataOf = l => l === level ? state.data : savedData(l);
   const doneOf = l => Math.min(dataOf(l).done || 0, l.objectives.length);
   const wonOf = l => doneOf(l) >= l.objectives.length;
+  ORDER.forEach(id => { try { if (wonOf(R.levels[id])) MT.stamp(id); } catch (e) { /* ignorato */ } }); // timbri per le stagioni già completate
   const playable = l => l === level || wonOf(l) || ORDER.slice(0, ORDER.indexOf(l.id)).every(id => wonOf(R.levels[id]));
   // Tutte le città sono sempre visibili: ognuna con la barra di avanzamento e le sue quattro stagioni.
   function cityCard(c) {
@@ -97,7 +98,7 @@
       return `<span class="sc${w ? ' done' : ''}${cur ? ' cur' : ''}${ok ? '' : ' lock'}"><b>${ok ? l.emoji : '🔒'}</b>${l.name}<i>${w ? '✅' : ok ? `${doneOf(l)}/${l.objectives.length}` : ''}</i></span>`;
     }).join('');
     return `<div class="city${here ? ' cur' : ''}${open ? '' : ' lock'}"><div class="lhead"><b>${open ? c.emoji : '🔒'} ${c.name}</b><span>${seasonsWon === lv.length ? '✅ Completata' : `${seasonsWon}/${lv.length} stagioni`}</span></div>` +
-      `<div class="cblurb">${c.blurb}</div><div class="bar"><i style="width:${(done / total * 100).toFixed(1)}%"></i></div><div class="seasons">${chips}</div></div>`;
+      `<div class="cblurb">${c.perk || c.blurb}</div><div class="bar"><i style="width:${(done / total * 100).toFixed(1)}%"></i></div><div class="seasons">${chips}</div></div>`;
   }
   const tgA = (key, label) => `<div class="set"><span>${label}</span><button class="tg${audio.state[key] ? ' on' : ''}" data-tg="${key}">${audio.state[key] ? 'Sì' : 'No'}</button></div>`;
   const tgS = (key, label) => `<div class="set"><span>${label}</span><button class="tg${st.get(key) ? ' on' : ''}" data-st="${key}">${st.get(key) ? 'Sì' : 'No'}</button></div>`;
@@ -204,7 +205,7 @@
       h = H('🛍️ Shop') + shopHtml() + H('🎁 Video a premio') + adsHtml() + H('🎡 Ruota della fortuna') + MT.wheelHtml(R.ads.available()) + H('💎 Negozio delle gemme') + lookHtml();
     } else if (tab === 'profile') {
       h = H('👤 Profilo') + `<div class="stats"><div><b>${S.coins}</b><span>monete</span></div><div><b>${S.guests}</b><span>ospiti</span></div><div><b>${S.wood}</b><span>legna</span></div><div><b>${st.get('gems')}</b><span>gemme 💎</span></div></div>` +
-        H('🎁 Premio giornaliero') + MT.dailyHtml() + H('📦 Scrigno') + MT.chestHtml() +
+        H('🛂 Passaporto') + MT.passportHtml() + H('🎁 Premio giornaliero') + MT.dailyHtml() + H('📦 Scrigno') + MT.chestHtml() +
         H('🎯 Missioni e medaglie') + R.extras.missionsHtml() +
         section('album', `📖 Album (${MT.albumCount()}/${MT.ALBUM.length})`, MT.albumHtml()) +
         section('game', '🎮 Mini-gioco', MT.gameHtml()) +

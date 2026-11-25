@@ -6,7 +6,7 @@
   const st = R.settings;
   let toast = () => {};
 
-  const fresh = () => ({ streak: 0, lastClaim: '', nameChanges: 0, wheel: null, album: {}, albumDone: false, deco: { sign: 'red', rug: 'red', name: '' }, prestige: 0, chest: { pts: 0, opened: 0 }, vip: {}, game: { best: 0, day: '', freeUsed: false, adN: 0, lastEnd: 0 } });
+  const fresh = () => ({ streak: 0, lastClaim: '', nameChanges: 0, wheel: null, passport: {}, cityDone: {}, worldDone: 0, album: {}, albumDone: false, deco: { sign: 'red', rug: 'red', name: '' }, prestige: 0, chest: { pts: 0, opened: 0 }, vip: {}, game: { best: 0, day: '', freeUsed: false, adN: 0, lastEnd: 0 } });
   function M() {
     let m = st.get('meta');
     if (!m || typeof m !== 'object') { m = fresh(); st.set('meta', m); return m; }
@@ -242,6 +242,29 @@
       `<div class="row"><button class="btn ghost" data-meta="wheel:gems"${gems >= i.cost ? '' : ' disabled'}>💎 Gira · ${i.cost} 💎</button></div>`;
   }
 
+  // --- passaporto: un timbro per ogni stagione completata; chiudere una città (4 timbri) dà un premio grande, e tutte e tre uno enorme ---
+  const CITY_BONUS = 20, WORLD_BONUS = 50;
+  function stamp(levelId) {
+    const m = M(); if (!m.passport) m.passport = {}; if (!m.cityDone) m.cityDone = {};
+    if (m.passport[levelId]) return false;
+    m.passport[levelId] = Date.now(); save();
+    const lv = R.levels[levelId], city = lv && R.cities.find(c => c.id === lv.cityId);
+    if (city && !m.cityDone[city.id] && city.levels.every(id => m.passport[id])) {
+      m.cityDone[city.id] = 1; save(); st.addGems(CITY_BONUS); addPts(10);
+      toast(`🏆 ${city.emoji} ${city.name} completata! +${CITY_BONUS} 💎`);
+      if (R.cities.every(c => m.cityDone[c.id]) && !m.worldDone) { m.worldDone = 1; save(); st.addGems(WORLD_BONUS); addPts(20); toast(`🌍 Tutte le città completate! +${WORLD_BONUS} 💎`); }
+    }
+    return true;
+  }
+  function passportHtml() {
+    const m = M(), pp = m.passport || {}, cd = m.cityDone || {};
+    return R.cities.map(c => {
+      const n = c.levels.filter(id => pp[id]).length;
+      const chips = c.levels.map(id => { const l = R.levels[id], got = !!pp[id]; return `<span class="sc${got ? ' done' : ' lock'}"><b>${got ? l.emoji : '🔒'}</b>${l.name}</span>`; }).join('');
+      return `<div class="city${cd[c.id] ? ' cur' : ''}"><div class="lhead"><b>${c.emoji} ${c.name}</b><span>${cd[c.id] ? '🏆' : `+${CITY_BONUS} 💎`} · ${n}/${c.levels.length}</span></div><div class="seasons">${chips}</div></div>`;
+    }).join('') + `<div class="small">${m.worldDone ? '🌍 Mondo completato' : `🌍 Tutte le città: +${WORLD_BONUS} 💎`}</div>`;
+  }
+
   // --- pagine del profilo ---
   function dailyHtml(withBtn) {
     const i = dailyInfo();
@@ -285,7 +308,7 @@
   R.meta = {
     bind: hud => { toast = m => hud.toast(m); },
     data: M, dailyInfo, claimDaily, eventNow, EVENTS, payMul, addPts, chestReady, chestInfo, openChest, see, albumCount, ALBUM, PERSONAS, vipPersona, vipServed,
-    DECO, decoGet, decoSet, decoName, nameCost, lodgeName, prestige, addPrestige, minigame, gameInfo, useGame, badge, WHEEL, wheelInfo, wheelSpin, wheelAnimate, wheelHtml, dailyHtml, chestHtml, albumHtml, decoHtml, decoNameHtml, gameHtml,
+    DECO, decoGet, decoSet, decoName, nameCost, lodgeName, prestige, addPrestige, minigame, gameInfo, useGame, badge, stamp, passportHtml, WHEEL, wheelInfo, wheelSpin, wheelAnimate, wheelHtml, dailyHtml, chestHtml, albumHtml, decoHtml, decoNameHtml, gameHtml,
     onEv(name) { if (name === 'goal') addPts(2); else if (name === 'win') addPts(5); }
   };
 })(window.Rifugio);

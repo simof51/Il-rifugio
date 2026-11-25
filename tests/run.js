@@ -110,6 +110,8 @@ ok(new Set(R.order.map(id => R.levels[id].place.host.name)).size === 12, 'ogni p
   const mul0 = MT.payMul(); MT.addPrestige(); ok(MT.payMul() > mul0 - 1e-9 && MT.prestige() === 1, 'la nuova gestione aumenta i guadagni');
   MT.decoName('Casa <b>Mia</b> con un nome lunghissimo'); ok(MT.lodgeName().indexOf('<') < 0 && MT.lodgeName().length <= 16, 'il nome del rifugio è pulito e corto');
   { const gB = R.settings.get('gems'), rn = MT.decoName('Secondo nome'); ok((rn === 'gems' && R.settings.get('gems') === gB) || (rn === 'ok' && R.settings.get('gems') === gB - 100), 'dal secondo cambio il nome costa 100 gemme'); }
+  { const g1 = R.settings.get('gems'); R.cities[0].levels.forEach(id => MT.stamp(id)); ok(R.settings.get('gems') === g1 + 20, 'chiudere una città dà 20 gemme'); ok(MT.stamp(R.cities[0].levels[0]) === false, 'un timbro si prende una volta sola'); ok(MT.passportHtml().indexOf('🏆') > 0, 'il passaporto si costruisce'); }
+  ok(R.cities.every(c => c.perk), 'ogni città ha un\'anteprima');
   { const w0 = R.settings.get('gems'); let n = 0; for (let k = 0; k < 40; k++) { const r = MT.wheelSpin('gems'); if (r) { n++; ok(r.seg && r.i >= 0 && r.i < MT.WHEEL.length, 'la ruota dà uno spicchio valido'); } } ok(n >= 0 && R.settings.get('gems') >= 0 && w0 >= 0, 'la ruota non manda le gemme sotto zero'); }
   { const f1 = MT.wheelSpin('free'), f2 = MT.wheelSpin('free'); ok(f1 && !f2, 'la ruota gratis gira una volta al giorno'); }
   ok(MT.decoNameHtml().indexOf('lodgeName') > 0 && MT.decoHtml().indexOf('data-deco') > 0 && MT.dailyHtml().indexOf('days') > 0 && MT.chestHtml().indexOf('chestbox') > 0 && MT.gameHtml().indexOf('record') > 0, 'le pagine del profilo si costruiscono');
