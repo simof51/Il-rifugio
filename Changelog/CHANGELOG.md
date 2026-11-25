@@ -9,6 +9,11 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.14.1 · 2026-11-26 · Barra in basso semitrasparente
+
+- Tolto lo sfondo bianco sotto i tasti della barra: ora i tasti sono semitrasparenti con un leggero sfocato e il gioco si vede dietro.
+- **Per tornare indietro**: `git checkout ae0a1eb -- web Changelog`.
+
 ## v0.14.0 · 2026-11-26 · Barra in basso, sentieri morbidi, tronchi che non bloccano
 
 **Richiesto**: l'omino si incastra sui tronchi caduti (anche invisibili); sentieri di ghiaia brutti e con curve a spigolo; togliere il menù a panino e mettere una barra in basso con 4 icone.
