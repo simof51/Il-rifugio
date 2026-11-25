@@ -76,8 +76,9 @@
 
     // --- compagno: cane o gatto che segue l'omino ---
     let pet = null;
-    const kind = R.settings.get('pet');
-    if (kind === 'dog' || kind === 'cat') {
+    function makePet(kind) { // si può cambiare al volo (dal negozio delle gemme), senza riavviare
+      if (pet) { scene.remove(pet.g); pet = null; }
+      if (kind === 'dog' || kind === 'cat') {
       const g = new T.Group(), dog = kind === 'dog', m = tint(dog ? 0xc98b4b : 0x80848f), legs = [];
       ball(0.22, m, 0, 0.34, 0, g, 0.8, 0.8, 1.45); ball(0.15, m, 0, 0.55, 0.3, g);
       if (dog) { ball(0.08, tint(0xe8c7a0), 0, 0.5, 0.42, g, 1, 0.8, 1.1); ball(0.035, mats.dark, 0, 0.54, 0.5, g); [-1, 1].forEach(s => ball(0.075, tint(0x7a4a24), s * 0.14, 0.58, 0.27, g, 0.5, 1.4, 0.8).rotation.z = s * 0.35); }
@@ -88,7 +89,9 @@
       const tail = new T.Group(); tail.position.set(0, 0.4, -0.3); g.add(tail); const tl = B.cyl(0.025, 0.02, dog ? 0.28 : 0.4, m, 0, 0.14, 0, tail, 6); tl.rotation.x = 0; tail.rotation.x = -0.9;
       g.scale.setScalar(1.15); g.position.set(player.position.x - 1.5, 0, player.position.z + 1);
       scene.add(g); pet = { g, legs, tail, dog, ph: 0, hop: 0, moving: 0 };
+      }
     }
+    makePet(R.settings.get('pet'));
 
     function dist(a, b) { return Math.hypot(a.x - b.x, a.z - b.z); }
     function face(g, dx, dz) { if (Math.abs(dx) + Math.abs(dz) > 1e-4) { let d = Math.atan2(dx, dz) - g.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); g.rotation.y += d * 0.25; } }
@@ -146,6 +149,7 @@
 
     return {
       update(dt) { crit.forEach(c => updateCrit(c, dt)); if (pet) updatePet(dt); },
+      setPet: makePet,
       // il compagno salta e fa il verso quando succede qualcosa di bello
       celebrate() { if (pet) { pet.hop = 1; A.sfx(pet.dog ? 'bark' : 'meow'); } },
       react() { if (pet && pet.hop <= 0 && Math.random() < 0.4) { pet.hop = 0.8; A.sfx(pet.dog ? 'bark' : 'meow'); } },

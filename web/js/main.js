@@ -110,7 +110,7 @@
       const key = `${cat}:${id}`, own = prem ? R.shop.has('cosmetics') : st.has(key);
       return `<button class="opt${on ? ' on' : ''}${own ? '' : ' lock'}" data-look="${key}" data-cost="${cost}" data-prem="${prem ? 1 : 0}">${sw != null ? `<span class="sw" style="background:#${sw.toString(16).padStart(6, '0')}"></span>` : ''}${label}${own ? '' : prem ? '<i>🛍️</i>' : `<i>💎${cost}</i>`}</button>`;
     };
-    return `<div class="small">💎 ${st.get('gems')} gemme. Le trovi giocando: 4 per ogni stagione completata, premi giornalieri, missioni, scrigni, figurine e video. Tocca un oggetto per comprarlo e indossarlo. ${lookMsg}</div>` +
+    return `<div class="small">💎 ${st.get('gems')}${lookMsg ? ' · ' + lookMsg : ''}</div>` +
       `<b class="small">Omino · Cappello</b><div class="look">${C.hat.map(h => item('hat', h.id, h.name, h.cost, look.hat === h.id, null, h.premium)).join('')}</div>` +
       `<b class="small">Omino · Colore</b><div class="look">${C.color.map(c => item('color', c.id, c.name, c.cost, look.color === c.id, c.hex, c.premium)).join('')}</div>` +
       `<b class="small">Omino · Accessorio</b><div class="look">${C.acc.map(a => item('acc', a.id, a.name, a.cost, look.acc === a.id, null, a.premium)).join('')}</div>` +
@@ -120,15 +120,13 @@
   // Shop: gemme e miglioramenti speciali. Gli acquisti passano da Google Play Billing; fuori dall'app installata dal Play non si addebita nulla.
   let shopMsg = '';
   function shopHtml() {
-    const note = R.shop.ready() ? (R.shop.providerName() === 'prova' ? '🧪 Acquisti di PROVA: nessun addebito, servono solo a provare lo shop.' : '') :
-      'Qui gli acquisti non sono disponibili: funzionano solo nell\'app installata da Google Play. Nessun addebito possibile.';
+    const note = R.shop.ready() ? (R.shop.providerName() === 'prova' ? '🧪 Prova: nessun addebito' : '') : 'Acquisti solo nell\'app da Google Play';
     const rows = R.shop.products.map(p => {
       const done = p.kind === 'perm' && R.shop.has(p.id);
-      return `<div class="prod"><span class="pe">${p.emoji}</span><div class="pt"><b>${p.name}${done && R.shop.isTest(p.id) ? ' 🧪' : ''}</b><span>${p.desc}</span></div><button class="buy${done ? ' done' : ''}" data-buy="${p.id}"${done ? ' disabled' : ''}>${done ? 'Acquistato' : R.shop.priceOf(p)}</button></div>`;
+      return `<div class="prod"><span class="pe">${p.emoji}</span><div class="pt"><b>${p.name}${done && R.shop.isTest(p.id) ? ' 🧪' : ''}</b>${p.desc ? `<span>${p.desc}</span>` : ''}</div><button class="buy${done ? ' done' : ''}" data-buy="${p.id}"${done ? ' disabled' : ''}>${done ? 'Acquistato' : R.shop.priceOf(p)}</button></div>`;
     }).join('');
-    return `<div class="small">💎 ${st.get('gems')} gemme. ${note}</div>${shopMsg ? `<div class="small"><b>${shopMsg}</b></div>` : ''}${rows}` +
-      `<div class="row"><button class="btn ghost" id="shopRestore">Ripristina acquisti</button></div>` +
-      `<div class="small">Prezzi con IVA inclusa. Gli acquisti sono legati al tuo account Google. Le gemme servono solo per cambiare l'aspetto dell'omino: non danno vantaggi nel gioco.</div>`;
+    return `<div class="small">💎 ${st.get('gems')}${note ? ' · ' + note : ''}</div>${shopMsg ? `<div class="small"><b>${shopMsg}</b></div>` : ''}${rows}` +
+      `<div class="row"><button class="btn ghost" id="shopRestore">Ripristina acquisti</button></div>`;
   }
   function settingsHtml() {
     const Qs = st.QUALITY;
@@ -140,23 +138,22 @@
       `<b class="small">Qualità grafica (si applica ricaricando)</b>${opts(Object.keys(Qs).map(k => ({ v: k, l: Qs[k].label })), st.get('quality'), 'data-q')}`;
   }
   function privacyHtml() {
-    return `<div class="small">Il Rifugio salva i progressi solo su questo dispositivo e non raccoglie dati personali. Oggi il gioco non mostra pubblicità né vende acquisti.</div>` +
-      `<div class="set"><span>Consenso alla pubblicità personalizzata</span><button class="tg${consent().ads ? ' on' : ''}" data-ads="1">${consent().ads ? 'Sì' : 'No'}</button></div>`;
+    return `<div class="small">Progressi solo su questo dispositivo. Nessun dato personale raccolto.</div>` +
+      `<div class="set"><span>Pubblicità personalizzata</span><button class="tg${consent().ads ? ' on' : ''}" data-ads="1">${consent().ads ? 'Sì' : 'No'}</button></div>`;
   }
 
   // Video a premio (AdMob): guardi un video fino in fondo e ricevi gemme. Mai pubblicità a sorpresa.
   let adMsg = '';
   function adsHtml() {
-    if (!R.ads.available()) return '<div class="small">I video a premio compaiono nell\'app installata dal Google Play.</div>';
+    if (!R.ads.available()) return '<div class="small">Video solo nell\'app da Google Play</div>';
     const w = R.ads.wait(), left = R.ads.left(), c = R.ads.cfg;
-    return `<div class="small">Guarda un video fino in fondo e ricevi ${c.GEMS} 💎. Oggi ti restano ${left} video.${R.ads.simulated() ? ' 🧪 (simulato: nessun annuncio vero)' : ''}</div>${adMsg ? `<div class="small"><b>${adMsg}</b></div>` : ''}` +
-      `<div class="row"><button class="btn" data-ad="1"${left <= 0 || w > 0 ? ' disabled' : ''}>🎁 Guarda un video: +${c.GEMS} 💎${left > 0 && w > 0 ? ` (tra ${w}s)` : ''}</button></div>` +
-      '<div class="small">Gli annunci sono adatti a tutti e non personalizzati: i tuoi dati non vengono venduti né ceduti.</div>';
+    return `<div class="small">Oggi: ${left} video${R.ads.simulated() ? ' · 🧪 simulato' : ''}</div>${adMsg ? `<div class="small"><b>${adMsg}</b></div>` : ''}` +
+      `<div class="row"><button class="btn" data-ad="1"${left <= 0 || w > 0 ? ' disabled' : ''}>🎁 Video: +${c.GEMS} 💎${left > 0 && w > 0 ? ` (tra ${w}s)` : ''}</button></div>`;
   }
   async function adFlow() {
     adMsg = 'Carico il video…'; rerender();
     const r = await R.ads.watch();
-    adMsg = r === 'ok' ? `Grazie! +${R.ads.cfg.GEMS} gemme 💎` : r === 'closed' ? 'Video chiuso prima della fine: nessun premio.' : r === 'failed' ? 'Nessun video disponibile adesso: riprova fra poco.' : r === 'wait' ? 'Aspetta un attimo prima del prossimo.' : r === 'limit' ? 'Per oggi i video sono finiti: torna domani.' : 'Video non disponibile.';
+    adMsg = r === 'ok' ? `+${R.ads.cfg.GEMS} 💎` : r === 'closed' ? 'Video chiuso: nessun premio' : r === 'failed' ? 'Nessun video ora' : r === 'wait' ? 'Aspetta un attimo' : r === 'limit' ? 'Finiti per oggi' : 'Video non disponibile';
     if (r === 'ok') audio.sfx('buy');
     rerender();
   }
@@ -225,7 +222,7 @@
   function prestigeHtml() {
     const won = ORDER.map(id => R.levels[id]).filter(wonOf);
     if (!won.length) return '';
-    return H('⭐ Nuova gestione') + `<div class="small">Ricomincia una stagione già completata: il rifugio diventa più famoso e guadagni +10% per sempre (adesso +${MT.prestige() * 10}%, massimo +100%). Le gemme e le figurine restano tue.</div>` +
+    return H('⭐ Nuova gestione') + `<div class="small">Rifai una stagione finita: guadagni +10% per sempre (ora +${MT.prestige() * 10}%, max +100%).</div>` +
       won.map(l => `<div class="lrow"><div class="lhead"><b>${l.cityEmoji} ${l.emoji} ${l.cityName} · ${l.name}</b></div><button class="mini" data-prest="${l.id}">${confirmPrest === l.id ? 'Sicuro? Tocca ancora' : '⭐ Ricomincia con il bonus'}</button></div>`).join('');
   }
   const updateBadge = () => { const b = document.querySelector('#tabbar [data-tab=profile]'); if (b) b.classList.toggle('dot', MT.badge()); };
@@ -245,7 +242,7 @@
   // Acquisto: parte subito (la conferma con il PIN o l'impronta la chiede Google Play).
   async function buyFlow(id) {
     const r = await R.shop.buy(id);
-    shopMsg = r === 'ok' ? 'Acquisto riuscito, grazie! ' + (R.shop.byId(id).kind === 'gems' ? `+${R.shop.byId(id).gems} gemme` : 'Miglioramento attivo.') : r === 'cancel' ? 'Acquisto annullato.' : r === 'pending' ? 'Pagamento in attesa di conferma da Google Play: arriverà appena confermato.' : 'Acquisto non disponibile ora: nessun addebito. Riprova più tardi.';
+    shopMsg = r === 'ok' ? (R.shop.byId(id).kind === 'gems' ? `Grazie! +${R.shop.byId(id).gems} 💎` : 'Grazie! Attivo') : r === 'cancel' ? 'Annullato' : r === 'pending' ? 'In attesa di conferma da Google Play' : 'Non disponibile ora, nessun addebito';
     if (r === 'ok') audio.sfx('buy');
     rerender();
   }
@@ -276,7 +273,7 @@
       const el = $('lodgeName'), r = MT.decoName(el ? el.value : '');
       if (r === 'gems') { hud.toast(`Servono ${MT.nameCost()} 💎 per cambiare di nuovo il nome`); return; }
       if (r === 'same') { hud.toast('Il nome è già questo'); return; }
-      audio.sfx('buy'); reloadSaved();
+      game.applyDeco(); audio.sfx('buy'); rerender();
     }
   }
   const rerender = () => { const y = $('menu').scrollTop; renderMenu(); $('menu').scrollTop = y; };
@@ -291,14 +288,15 @@
     else if (d.q) { st.set('quality', d.q); reloadSaved(); }
     else if (d.buy) { buyFlow(d.buy); }
     else if (d.ad) { adFlow(); }
-    else if (t.id === 'shopRestore') { R.shop.restore().then(r => { shopMsg = r === 'ok' ? 'Acquisti ripristinati.' : 'Il ripristino non è ancora disponibile.'; rerender(); }); }
+    else if (t.id === 'shopRestore') { R.shop.restore().then(r => { shopMsg = r === 'ok' ? 'Ripristinati' : 'Ripristino non disponibile'; rerender(); }); }
     else if (d.look) {
       const [cat, id] = d.look.split(':'), cost = +d.cost, key = d.look;
-      if (d.prem === '1' && !R.shop.has('cosmetics')) { tab = 'shop'; shopMsg = 'Questo oggetto è nel "Pacchetto stile".'; rerender(); return; }
-      if (!st.buy(key, cost)) { lookMsg = 'Gemme insufficienti: completa altri obiettivi.'; rerender(); return; }
-      if (cat === 'pet') st.set('pet', id);
-      else { const look = Object.assign({}, st.get('look')); look[cat] = cat === 'color' ? +id : id; st.set('look', look); }
-      audio.sfx('buy'); reloadSaved();
+      if (d.prem === '1' && !R.shop.has('cosmetics')) { tab = 'shop'; shopMsg = 'Nel "Pacchetto stile"'; rerender(); return; }
+      if (!st.buy(key, cost)) { lookMsg = 'Gemme insufficienti'; rerender(); return; }
+      lookMsg = '';
+      if (cat === 'pet') { st.set('pet', id); game.setPet(id); }
+      else { const look = Object.assign({}, st.get('look')); look[cat] = cat === 'color' ? +id : id; st.set('look', look); game.applyLook(); }
+      audio.sfx('buy'); rerender();
     }
     else if (d.ads) { st.set('consent', { ads: !consent().ads, ts: Date.now() }); rerender(); }
     else if (t.id === 'menuReset') { if (confirmReset) reset(); else { confirmReset = true; rerender(); } }
@@ -306,7 +304,7 @@
     else if (d.deco) {
       const [kind, id] = d.deco.split(':'), cost = +d.cost, key = `deco:${kind}:${id}`;
       if (cost && !st.has(key) && !st.buy(key, cost)) { hud.toast('Gemme insufficienti'); return; }
-      MT.decoSet(kind, id); audio.sfx('buy'); reloadSaved();
+      MT.decoSet(kind, id); game.applyDeco(); audio.sfx('buy'); rerender();
     }
     else if (d.prest) {
       if (confirmPrest !== d.prest) { confirmPrest = d.prest; rerender(); return; }

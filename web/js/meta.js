@@ -185,24 +185,23 @@
   function dailyHtml(withBtn) {
     const i = dailyInfo();
     const days = DAILY.map((g, k) => `<div class="day${k < (i.can ? i.idx : i.idx + 1) ? ' got' : ''}${k === i.idx && i.can ? ' now' : ''}"><i>${k === 6 ? '🎁' : '💎'}</i><b>${g}</b><span>${k + 1}</span></div>`).join('');
-    return `<div class="days">${days}</div><div class="small">${i.can ? `Oggi ti aspettano ${i.gems} 💎${i.idx === 6 ? ' e uno scrigno' : ''}. Serie: ${i.streak} ${i.streak === 1 ? 'giorno' : 'giorni'}.` : `Già ritirato oggi. Serie: ${i.streak} ${i.streak === 1 ? 'giorno' : 'giorni'}. Torna domani per ${i.next} 💎.`}</div>` +
+    return `<div class="days">${days}</div><div class="small">${i.can ? `Oggi ${i.gems} 💎${i.idx === 6 ? ' + scrigno' : ''} · serie ${i.streak}` : `Serie ${i.streak} · domani ${i.next} 💎`}</div>` +
       (withBtn === false ? '' : `<div class="row"><button class="btn" data-meta="daily"${i.can ? '' : ' disabled'}>${i.can ? '🎁 Ritira il premio' : 'Torna domani'}</button></div>`);
   }
   function chestHtml() {
     const c = chestInfo();
-    return `<div class="chestbox${c.ready ? ' ready' : ''}"><span class="cico">${c.ready ? '🎁' : '📦'}</span><div><b>${c.ready ? `Hai ${c.left} ${c.left === 1 ? 'scrigno' : 'scrigni'} da aprire!` : 'Scrigno misterioso'}</b><div class="bar"><i style="width:${(c.ready ? 100 : c.pts / c.at * 100).toFixed(0)}%"></i></div><span class="small">${c.ready ? 'Dentro ci sono gemme o oggetti nuovi.' : `${c.pts}/${c.at} punti: li trovi completando obiettivi, missioni e figurine.`}</span></div></div>` +
+    return `<div class="chestbox${c.ready ? ' ready' : ''}"><span class="cico">${c.ready ? '🎁' : '📦'}</span><div><b>${c.ready ? `${c.left} ${c.left === 1 ? 'scrigno' : 'scrigni'} da aprire!` : 'Scrigno'}</b><div class="bar"><i style="width:${(c.ready ? 100 : c.pts / c.at * 100).toFixed(0)}%"></i></div>${c.ready ? '' : `<span class="small">${c.pts}/${c.at}</span>`}</div></div>` +
       `<div class="row"><button class="btn" data-meta="chest"${c.ready ? '' : ' disabled'}>Apri lo scrigno</button></div>`;
   }
   function albumHtml() {
     const m = M();
     const cells = ALBUM.map(a => `<div class="medal${m.album[a.id] ? ' ok' : ''}"><i>${m.album[a.id] ? a.e : '❔'}</i><b>${m.album[a.id] ? a.name : '???'}</b><span>${a.desc}</span></div>`).join('');
     const vips = PERSONAS.map(p => `<span class="sc${m.vip[p.id] ? ' done' : ' lock'}"><b>${m.vip[p.id] ? p.e : '❔'}</b>${m.vip[p.id] ? p.name : '???'}</span>`).join('');
-    return `<div class="small">Figurine trovate: ${albumCount()}/${ALBUM.length}. Ogni figurina dà 1 💎, l'album completo 10 💎.</div><div class="medals">${cells}</div>` +
+    return `<div class="small">Figurine ${albumCount()}/${ALBUM.length}</div><div class="medals">${cells}</div>` +
       `<b class="small">Ospiti famosi (${PERSONAS.filter(p => m.vip[p.id]).length}/${PERSONAS.length})</b><div class="seasons">${vips}</div>`;
   }
   function decoNameHtml() {
-    return `<div class="small">Scegli il nome del tuo rifugio: compare sull'insegna della reception. ${prestige() ? `⭐ Nuove gestioni: ${prestige()} (guadagni +${prestige() * 10}%).` : ''} I colori dell'insegna e del tappeto si scelgono nello Shop.</div>` +
-      `<div class="small">${nameCost() ? `Il primo cambio era gratis: ogni nuovo cambio costa ${NAME_COST} 💎.` : 'Il primo cambio è gratis; i successivi costano ' + NAME_COST + ' 💎.'}</div>` +
+    return `<div class="small">${nameCost() ? `Ogni cambio costa ${NAME_COST} 💎` : `Primo cambio gratis, poi ${NAME_COST} 💎`}${prestige() ? ` · ⭐ ${prestige()}` : ''}</div>` +
       `<div class="set"><input id="lodgeName" class="txt" maxlength="16" placeholder="Nome del rifugio" value="${lodgeName()}"><button class="mini" data-meta="name">${nameCost() ? 'Salva · ' + NAME_COST + ' 💎' : 'Salva · gratis'}</button></div>`;
   }
   function decoHtml() { // colori dell'insegna e del tappeto (alcuni si comprano con le gemme): stanno nel negozio delle gemme
@@ -215,9 +214,9 @@
   }
   function gameHtml() {
     const i = gameInfo(), adOk = !!(R.ads && R.ads.available && R.ads.available()), wt = i.adWait;
-    const adTxt = !adOk ? '🎬 Con un video (solo nell\'app)' : i.adLeft <= 0 ? '🎬 Video finiti per oggi' : wt > 0 ? `🎬 Con un video fra ${Math.floor(wt / 60)}:${('0' + (wt % 60)).slice(-2)}` : `🎬 Guarda un video e gioca (${i.adLeft}/${GAME_AD_PER_DAY})`;
-    return `<div class="small">Tocca le monete che cadono in 20 secondi: ogni ${GAME_PER_GEM} monete vinci 1 💎 (fino a ${GAME_MAX_GEMS}). Record: ${i.best}. Una partita gratis al giorno, poi fino a ${GAME_AD_PER_DAY} partite al giorno guardando un video (una ogni 5 minuti).</div>` +
-      `<div class="row"><button class="btn" data-meta="game"${i.free ? '' : ' disabled'}>${i.free ? '🎯 Gioca gratis' : '🎯 Gratis: usata oggi'}</button></div>` +
+    const adTxt = !adOk ? '🎬 Video (solo nell\'app)' : i.adLeft <= 0 ? '🎬 Finiti per oggi' : wt > 0 ? `🎬 Video fra ${Math.floor(wt / 60)}:${('0' + (wt % 60)).slice(-2)}` : `🎬 Video e gioca (${i.adLeft}/${GAME_AD_PER_DAY})`;
+    return `<div class="small">${GAME_PER_GEM} monete = 1 💎 (max ${GAME_MAX_GEMS}) · record ${i.best}</div>` +
+      `<div class="row"><button class="btn" data-meta="game"${i.free ? '' : ' disabled'}>${i.free ? '🎯 Gioca gratis' : '🎯 Gratis: usata'}</button></div>` +
       `<div class="row"><button class="btn ghost" data-meta="gameAd"${adOk && i.adLeft > 0 && wt <= 0 ? '' : ' disabled'}>${adTxt}</button></div>`;
   }
   const badge = () => dailyInfo().can || chestReady();

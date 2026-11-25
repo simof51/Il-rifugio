@@ -95,7 +95,7 @@ ok(R.extras.missionsHtml().indexOf('Medaglie') >= 0, 'la pagina delle missioni s
   const mul0 = MT.payMul(); MT.addPrestige(); ok(MT.payMul() > mul0 - 1e-9 && MT.prestige() === 1, 'la nuova gestione aumenta i guadagni');
   MT.decoName('Casa <b>Mia</b> con un nome lunghissimo'); ok(MT.lodgeName().indexOf('<') < 0 && MT.lodgeName().length <= 16, 'il nome del rifugio è pulito e corto');
   { const gB = R.settings.get('gems'), rn = MT.decoName('Secondo nome'); ok((rn === 'gems' && R.settings.get('gems') === gB) || (rn === 'ok' && R.settings.get('gems') === gB - 100), 'dal secondo cambio il nome costa 100 gemme'); }
-  ok(MT.decoNameHtml().indexOf('lodgeName') > 0 && MT.decoHtml().indexOf('data-deco') > 0 && MT.dailyHtml().indexOf('days') > 0 && MT.chestHtml().indexOf('chestbox') > 0 && MT.gameHtml().indexOf('Record') > 0, 'le pagine del profilo si costruiscono');
+  ok(MT.decoNameHtml().indexOf('lodgeName') > 0 && MT.decoHtml().indexOf('data-deco') > 0 && MT.dailyHtml().indexOf('days') > 0 && MT.chestHtml().indexOf('chestbox') > 0 && MT.gameHtml().indexOf('record') > 0, 'le pagine del profilo si costruiscono');
 }
 
 // 5. Salvataggio: copia di sicurezza e ripristino di qualche minuto fa.

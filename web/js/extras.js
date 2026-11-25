@@ -72,7 +72,7 @@
     const nd = d.list.filter(m => m.done).length, ng = MEDALS.filter(m => got[m.id]).length;
     const rows = d.list.map(m => { const def = MISSIONS.find(x => x.id === m.id); return `<div class="mrow${m.done ? ' ok' : ''}"><span>${def.text(m.n)}</span><b>${m.done ? 'Fatto ✅' : m.p + '/' + m.n}</b></div>`; }).join('');
     const meds = MEDALS.map(m => `<div class="medal${got[m.id] ? ' ok' : ''}" title="${m.desc(m.n)}"><i>${got[m.id] ? m.e : '🔒'}</i><b>${m.name}</b><span>${m.desc(m.n)}${got[m.id] ? '' : ` (${Math.min(statVal(s, m.stat), m.n)}/${m.n})`}</span></div>`).join('');
-    return `<b class="small">Missioni di oggi (${nd}/3)</b><div class="small">Le missioni cambiano ogni giorno. Ogni missione dà 💎3, tutte e tre danno 💎5 in più.</div>${rows}` +
+    return `<b class="small">Missioni di oggi (${nd}/3)</b><div class="small">💎3 l'una · +💎5 se le fai tutte</div>${rows}` +
       `<b class="small">Medaglie (${ng}/${MEDALS.length})</b><div class="medals">${meds}</div>`;
   }
 

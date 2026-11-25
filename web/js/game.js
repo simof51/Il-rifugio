@@ -563,17 +563,21 @@
       for (let k = 0; k < 7; k++) box(0.14, 0.26, 0.08, B.tint(CONFETTI[k % CONFETTI.length]), rx - 1.2 + k * 0.4, 1.42, rz - 1.52, rg, 0.015); // chiavi
       cyl(0.045, 0.045, 3.0, mats.wood, rx - 1.45, 1.5, rz - 1.7, rg, 8); cyl(0.045, 0.045, 3.0, mats.wood, rx + 1.45, 1.5, rz - 1.7, rg, 8);
       const cv = document.createElement('canvas'); cv.width = 384; cv.height = 96; const cx2 = cv.getContext('2d');
-      const signCol = MT.decoGet('sign').col, lodge = MT.lodgeName();
-      cx2.fillStyle = '#fff6df'; cx2.fillRect(0, 0, 384, 96); cx2.strokeStyle = signCol; cx2.lineWidth = 8; cx2.strokeRect(6, 6, 372, 84);
-      cx2.fillStyle = signCol; cx2.textAlign = 'center'; cx2.textBaseline = 'middle';
-      if (lodge) { cx2.font = '600 24px Fredoka, system-ui, sans-serif'; cx2.fillText('RECEPTION', 192, 26); let fs = 50; cx2.font = `700 ${fs}px Fredoka, system-ui, sans-serif`; while (cx2.measureText(lodge).width > 340 && fs > 22) { fs -= 2; cx2.font = `700 ${fs}px Fredoka, system-ui, sans-serif`; } cx2.fillText(lodge, 192, 62); }
-      else { cx2.font = '700 54px Fredoka, system-ui, sans-serif'; cx2.fillText('RECEPTION', 192, 52); }
+      const drawSign = () => {
+        const signCol = MT.decoGet('sign').col, lodge = MT.lodgeName();
+        cx2.fillStyle = '#fff6df'; cx2.fillRect(0, 0, 384, 96); cx2.strokeStyle = signCol; cx2.lineWidth = 8; cx2.strokeRect(6, 6, 372, 84);
+        cx2.fillStyle = signCol; cx2.textAlign = 'center'; cx2.textBaseline = 'middle';
+        if (lodge) { cx2.font = '600 24px Fredoka, system-ui, sans-serif'; cx2.fillText('RECEPTION', 192, 26); let fs = 50; cx2.font = `700 ${fs}px Fredoka, system-ui, sans-serif`; while (cx2.measureText(lodge).width > 340 && fs > 22) { fs -= 2; cx2.font = `700 ${fs}px Fredoka, system-ui, sans-serif`; } cx2.fillText(lodge, 192, 62); }
+        else { cx2.font = '700 54px Fredoka, system-ui, sans-serif'; cx2.fillText('RECEPTION', 192, 52); }
+      };
+      drawSign();
       const tex = new T.CanvasTexture(cv); tex.anisotropy = 4;
+      recep.redraw = () => { drawSign(); tex.needsUpdate = true; }; // nome e colori cambiano al volo
       const board = new T.Mesh(new T.PlaneGeometry(3.0, 0.75), new T.MeshBasicMaterial({ map: tex })); board.position.set(rx, 2.6, rz - 1.56); rg.add(board);
       cyl(0.16, 0.16, 0.05, mats.gold, rx - 1.1, 1.15, rz + 0.1, rg, 14); ball(0.07, mats.gold, rx - 1.1, 1.22, rz + 0.1, rg, 10, 8); // campanello
       cyl(0.5, 0.42, 0.14, mats.white, rx + 0.95, 1.15, rz + 0.1, rg, 18);                           // ciotola per le monete
       ball(0.3, B.tint(0x2f9e5a), rx - 1.5, 1.35, rz + 0.1, rg, 12, 8); cyl(0.17, 0.13, 0.2, mats.stone, rx - 1.5, 1.2, rz + 0.1, rg, 10); // vasetto con pianta
-      box(2.6, 0.03, 1.5, B.tint(MT.decoGet('rug').col), rx, 0.02, rz + 1.7, rg, 0.01);              // tappeto colorato: qui si riscuote
+      recep.rug = box(2.6, 0.03, 1.5, B.tint(MT.decoGet('rug').col), rx, 0.02, rz + 1.7, rg, 0.01);             // tappeto colorato: qui si riscuote
       box(2.2, 0.035, 1.1, B.tint(0xffd9a0), rx, 0.03, rz + 1.7, rg, 0.01);
       recep.bowl.position.set(rx + 0.95, 1.22, rz + 0.1); rg.add(recep.bowl);
       recep.who = B.person(0xc23b5a, 0xf2d6a2, false, OUTFIT, { shorts: 0x3f4a63 }); recep.who.position.set(rx + 0.3, 0, rz - 1.0); rg.add(recep.who);
@@ -1019,7 +1023,16 @@
     const look = R.settings.get('look'), CAT = R.settings.CATALOG;
     const lookColor = (CAT.color.find(c => c.id === look.color) || CAT.color[0]).hex;
     const player = B.person(lookColor, lookColor === 0xffd23a ? 0xff7ac6 : 0xffd23a, true, OUTFIT, { shorts: 0x2d6cdf, hat: look.hat, acc: look.acc }); player.position.set(0, 0, 0);
+    let personKids = player.children.slice(); // i pezzi dell'omino (per poterlo rifare al volo quando cambia l'aspetto)
     const stackG = new T.Group(); stackG.position.set(0, 0.75, -0.32); player.add(stackG);
+    function applyLook() {
+      const lk = R.settings.get('look'), lc = (CAT.color.find(c => c.id === lk.color) || CAT.color[0]).hex;
+      const np = B.person(lc, lc === 0xffd23a ? 0xff7ac6 : 0xffd23a, true, OUTFIT, { shorts: 0x2d6cdf, hat: lk.hat, acc: lk.acc });
+      personKids.forEach(k => player.remove(k));
+      personKids = np.children.slice(); personKids.forEach(k => player.add(k));
+      Object.assign(player.userData, np.userData);
+    }
+    function applyDeco() { if (recep.redraw) recep.redraw(); if (recep.rug) recep.rug.material = B.tint(MT.decoGet('rug').col); }
     const carry = { logs: 0, cups: 0 };
     let inLogs = 0, inCups = 0; // pezzi ancora in volo verso lo zaino: compaiono sulla schiena solo quando arrivano
     // Lo zaino ha due scomparti separati: legna e bevande.
@@ -1468,6 +1481,8 @@
       },
       resume() { running = true; },
       seasonNote,
+      // Cambi estetici al volo (negozio delle gemme e profilo), senza riavviare il gioco.
+      applyLook, applyDeco, setPet(kind) { fauna.setPet(kind); },
       // Foto ricordo: ridisegna la scena e la mette in una cornice (le scritte HTML non compaiono).
       photo() { renderer.render(scene, cam); return EX.photo(renderer.domElement, `${level.cityEmoji || ''} ${level.cityName || ''} · ${level.emoji} ${level.name}`); },
       pause(on) { paused = !!on; if (on) { endJoy(); save(); } },

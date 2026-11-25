@@ -9,6 +9,12 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.23.0 · 2026-11-26 · Cambi estetici al volo, testi dei menu ridotti all'osso
+
+- **Cambi estetici senza riavvio**: cappello, colore, accessorio, compagno, colori e nome dell'insegna cambiano subito, senza ricaricare il gioco. (Lingua e qualità grafica ricaricano ancora.)
+- **Testi dei menu** ridotti al minimo: Shop, video, negozio delle gemme, premio giornaliero, scrigno, album, mini-gioco, missioni, nome del rifugio, privacy e nuova gestione.
+- **Per tornare indietro**: `git checkout 46d5628 -- web tests Changelog`.
+
 ## v0.22.1 · 2026-11-26 · Obiettivi a monete, stagione a 4 gemme
 
 - Gli **obiettivi** danno solo monete (prima davano anche 1 💎).

@@ -9,13 +9,13 @@
 
   // Gemme (valuta per l'aspetto dell'omino) e miglioramenti speciali permanenti. Niente scatole a sorpresa: si vede sempre cosa si compra.
   const PRODUCTS = [
-    { id: 'gems_60', kind: 'gems', gems: 60, price: 0.99, name: '60 gemme', emoji: '💎', desc: 'Una manciata di gemme' },
-    { id: 'gems_220', kind: 'gems', gems: 220, price: 2.99, name: '220 gemme', emoji: '💎', desc: 'Un sacchetto di gemme' },
-    { id: 'gems_500', kind: 'gems', gems: 500, price: 5.99, name: '500 gemme', emoji: '💎', desc: 'Una borsa di gemme' },
-    { id: 'gems_1100', kind: 'gems', gems: 1100, price: 11.99, name: '1100 gemme', emoji: '💎', desc: 'Un forziere di gemme' },
-    { id: 'boost', kind: 'perm', price: 4.99, name: 'Ospiti generosi', emoji: '🪙', desc: 'Ogni ospite paga il 50% in più, per sempre, in ogni città' },
-    { id: 'goldtool', kind: 'perm', price: 2.99, name: 'Attrezzi d\'oro', emoji: '✨', desc: 'Ascia e motosega più veloci del 15%, con scintille dorate' },
-    { id: 'cosmetics', kind: 'perm', price: 1.99, name: 'Pacchetto stile', emoji: '😇', desc: 'Aureola, ali e 4 colori esclusivi per l\'omino' }
+    { id: 'gems_60', kind: 'gems', gems: 60, price: 0.99, name: '60 gemme', emoji: '💎', desc: '' },
+    { id: 'gems_220', kind: 'gems', gems: 220, price: 2.99, name: '220 gemme', emoji: '💎', desc: '' },
+    { id: 'gems_500', kind: 'gems', gems: 500, price: 5.99, name: '500 gemme', emoji: '💎', desc: '' },
+    { id: 'gems_1100', kind: 'gems', gems: 1100, price: 11.99, name: '1100 gemme', emoji: '💎', desc: '' },
+    { id: 'boost', kind: 'perm', price: 4.99, name: 'Ospiti generosi', emoji: '🪙', desc: 'Ospiti pagano +50%' },
+    { id: 'goldtool', kind: 'perm', price: 2.99, name: 'Attrezzi d\'oro', emoji: '✨', desc: 'Ascia e motosega +15%' },
+    { id: 'cosmetics', kind: 'perm', price: 1.99, name: 'Pacchetto stile', emoji: '😇', desc: 'Aureola, ali, 4 colori' }
   ];
   const byId = id => PRODUCTS.find(p => p.id === id);
 
