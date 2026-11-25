@@ -22,6 +22,7 @@
   // Chiede al sistema di non cancellare i dati del gioco quando manca spazio.
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* ignorato */ }
 
+  R.i18n.start(); // lingua del dispositivo (o scelta dal menu): traduce i testi che compaiono nella pagina
   const audio = R.createAudio();
   R.shop.enableTest(SHOW_DEBUG || debug); // il fornitore "prova" esiste solo con il menu Debug acceso
   R.ads.enableSim(SHOW_DEBUG || debug); // nel browser (solo Debug) il video a premio si simula; nell'app vera è quello di AdMob
@@ -64,6 +65,7 @@
 
   const hud = R.createHud();
   const game = R.createGame({ hud, level, state, audio });
+  if (game.seasonNote) $('levelNote').textContent += ' ' + game.seasonNote;
   if (debug) window.rifugioDebug = game.debug;
   const dbg = game.debug;
 
@@ -119,11 +121,16 @@
     return tgA('sfx', 'Suoni') + slider('sfxVol', 'Volume suoni', 'audio', audio.state.sfxVol) + tgA('music', 'Musica') + slider('musVol', 'Volume musica', 'audio', audio.state.musVol) +
       tgS('ambient', 'Suoni d\'ambiente') + slider('ambVol', 'Volume ambiente', 'st', st.get('ambVol')) + tgS('haptics', 'Vibrazione') +
       tgS('daynight', 'Giorno e notte') + tgS('weather', 'Meteo (pioggia, nebbia, temporali)') +
+      `<b class="small">Lingua</b>${opts([{ v: 'auto', l: '🌐 Auto' }].concat(Object.keys(R.i18n.LANGS).map(k => ({ v: k, l: R.i18n.LANGS[k] }))), st.get('lang'), 'data-lang')}` +
       `<b class="small">Qualità grafica (si applica ricaricando)</b>${opts(Object.keys(Qs).map(k => ({ v: k, l: Qs[k].label })), st.get('quality'), 'data-q')}` +
       `<b class="small">Il tuo compagno</b>${opts([{ v: 'dog', l: '🐶 Cane' }, { v: 'cat', l: '🐱 Gatto' }, { v: 'none', l: 'Nessuno' }], st.get('pet'), 'data-pet')}`;
   }
+  function accessHtml() { return tgS('big', 'Testo grande') + tgS('cb', 'Colori per daltonici') + tgS('one', 'Modalità una mano'); }
+  let snapMsg = '';
   function saveHtml() {
-    return `<div class="small">Per cambiare telefono: crea un codice, copialo e incollalo nel nuovo telefono. Il collegamento con l'account Google non è ancora attivo.</div>` +
+    return `<div class="small">Il gioco tiene una copia di sicurezza ogni pochi minuti: se qualcosa va storto puoi tornare indietro.</div>` +
+      `<div class="row"><button class="btn ghost" id="snapBack"${state.hasSnap() ? '' : ' disabled'}>Torna a qualche minuto fa</button></div>${snapMsg ? `<div class="small"><b>${snapMsg}</b></div>` : ''}` +
+      `<div class="small">Per cambiare telefono: crea un codice, copialo e incollalo nel nuovo telefono. Il collegamento con l'account Google non è ancora attivo.</div>` +
       `<div class="row"><button class="btn ghost" id="codeMake">Crea codice</button><button class="btn ghost" id="codeUse">Usa il codice</button></div>` +
       `<textarea class="code" id="codeBox" placeholder="Il codice appare qui, oppure incollalo qui">${codeText}</textarea><div class="small">${codeMsg}</div>`;
   }
@@ -154,8 +161,8 @@
   const markWon = l => { if (l === level) { dbg.finishLevel(); return; } const s = R.createState(l.saveKey); s.data.done = l.objectives.length; s.data.won = true; s.save(); };
   const wipeAll = () => {
     state.reset(); // blocca il salvataggio automatico alla chiusura (altrimenti riscriverebbe la partita appena cancellata)
-    Object.keys(R.levels).forEach(id => { try { localStorage.removeItem(R.levels[id].saveKey); localStorage.removeItem(R.levels[id].saveKey + '-bak'); } catch (e) { /* ignorato */ } });
-    try { localStorage.removeItem('rifugio-settings'); sessionStorage.clear(); } catch (e) { /* ignorato */ }
+    Object.keys(R.levels).forEach(id => { try { localStorage.removeItem(R.levels[id].saveKey); localStorage.removeItem(R.levels[id].saveKey + '-bak'); localStorage.removeItem(R.levels[id].saveKey + '-snap'); } catch (e) { /* ignorato */ } });
+    try { localStorage.removeItem('rifugio-settings'); localStorage.removeItem('rifugio-settings-bak'); sessionStorage.clear(); } catch (e) { /* ignorato */ }
     location.reload();
   };
   const DBG = [
@@ -188,7 +195,7 @@
     $('menuBody').innerHTML =
       `<h2>Le tue città</h2>${R.cities.map(cityCard).join('')}` +
       `<div class="stats"><div><b>${S.coins}</b><span>monete</span></div><div><b>${S.guests}</b><span>ospiti</span></div><div><b>${S.wood}</b><span>legna</span></div><div><b>${st.get('gems')}</b><span>gemme 💎</span></div></div>` +
-      section('look', '👕 Il tuo omino', lookHtml()) + section('shop', '🛍️ Shop', shopHtml()) + section('ads', '🎁 Video a premio', adsHtml()) + section('set', '⚙️ Impostazioni', settingsHtml()) + section('save', '💾 Salvataggio portatile', saveHtml()) + section('priv', '🔒 Privacy e consenso', privacyHtml()) +
+      section('miss', '🎯 Missioni e medaglie', R.extras.missionsHtml()) + section('look', '👕 Il tuo omino', lookHtml()) + section('shop', '🛍️ Shop', shopHtml()) + section('ads', '🎁 Video a premio', adsHtml()) + section('set', '⚙️ Impostazioni', settingsHtml()) + section('acc', '♿ Accessibilità', accessHtml()) + section('save', '💾 Salvataggio portatile', saveHtml()) + section('priv', '🔒 Privacy e consenso', privacyHtml()) +
       (levelDone() ? '' : `<div class="row"><button class="btn ghost" id="menuReset">${confirmReset ? 'Sicuro? Tocca di nuovo' : 'Ricomincia questa stagione'}</button></div>`) +
       (SHOW_DEBUG || debug ? section('dbg', '🛠 Debug', `<div class="dbg">${debugPanel()}</div>`) : '');
   }
@@ -200,7 +207,7 @@
     const AppP = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
     if (AppP && AppP.addListener) AppP.addListener('backButton', () => {
       const intro = !$('intro').classList.contains('hidden'), menuOpen = !$('menu').classList.contains('hidden');
-      if (menuOpen) closeMenu(); else if (intro) { if (AppP.exitApp) AppP.exitApp(); } else if ($('win').classList.contains('hidden')) openMenu();
+      if (!$('photo').classList.contains('hidden')) $('photoClose').onclick(); else if (menuOpen) closeMenu(); else if (intro) { if (AppP.exitApp) AppP.exitApp(); } else if ($('win').classList.contains('hidden')) openMenu();
     });
   } catch (e) { /* ignorato */ }
   // Acquisto: parte subito (la conferma con il PIN o l'impronta la chiede Google Play).
@@ -217,7 +224,9 @@
     const d = t.dataset;
     if (d.sec) { secs[d.sec] = !secs[d.sec]; rerender(); }
     else if (d.tg) { audio.set(d.tg, !audio.state[d.tg]); audio.unlock(); rerender(); audio.sfx('click'); }
-    else if (d.st) { st.set(d.st, !st.get(d.st)); audio.refresh(); rerender(); }
+    else if (d.st) { st.set(d.st, !st.get(d.st)); audio.refresh(); R.extras.applyAccess(); rerender(); }
+    else if (d.lang) { st.set('lang', d.lang); reloadSaved(); }
+    else if (t.id === 'snapBack') { if (state.restoreSnap()) { snapMsg = 'Ripristino riuscito, riavvio…'; rerender(); setTimeout(() => location.reload(), 700); } else { snapMsg = 'Nessun salvataggio precedente disponibile.'; rerender(); } }
     else if (d.q) { st.set('quality', d.q); reloadSaved(); }
     else if (d.pet) { st.set('pet', d.pet); reloadSaved(); }
     else if (d.buy) { buyFlow(d.buy); }
@@ -240,6 +249,18 @@
     if (e.target.dataset.src === 'st') { st.set(k, +e.target.value); audio.refresh(); } else audio.set(k, +e.target.value);
   });
   $('menuBody').addEventListener('change', e => { if (e.target.dataset.vol) audio.sfx('coin'); if (e.target.id === 'codeBox') codeText = e.target.value; });
+
+  // Foto ricordo: scatta, mostra l'anteprima e permette di condividerla (o scaricarla).
+  let shot = null;
+  $('photoBtn').onclick = () => {
+    try { shot = game.photo(); } catch (e) { shot = null; }
+    if (!shot) { hud.toast('Foto non riuscita'); return; }
+    game.pause(true); audio.sfx('goal');
+    const box = $('photoBox'); box.innerHTML = ''; shot.style.maxWidth = '100%'; box.appendChild(shot); $('photoMsg').textContent = '';
+    $('photo').classList.remove('hidden');
+  };
+  $('photoClose').onclick = () => { $('photo').classList.add('hidden'); game.pause(false); };
+  $('photoShare').onclick = () => R.extras.sharePhoto(shot).then(r => { $('photoMsg').textContent = r === 'shared' ? 'Condivisa!' : r === 'saved' ? 'Foto salvata nei download.' : r === 'cancel' ? '' : 'Non riesco a condividere la foto su questo dispositivo.'; });
 
   $('start').onclick = () => { audio.unlock(); audio.playMusic(level.season); hud.hideIntro(); game.start(); };
   $('keep').onclick = () => { hud.hideWin(); game.resume(); };

@@ -9,6 +9,32 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.13.0 · 2026-11-26 · Missioni, foto, stagioni, lingue, accessibilità, test
+
+**Richiesto**: implementare le idee 1, 3, 4, 5, 6, 7, 8 della lista proposta.
+
+**Aggiunto**
+| File | Cosa |
+|---|---|
+| `web/js/extras.js` (nuovo) | **Missioni giornaliere** (3 al giorno, 💎3 ciascuna, +💎5 se le fai tutte) e **12 medaglie** (menu → 🎯). **Effetti delle stagioni**: inverno fuoco +20% più veloce a consumarsi, primavera alberi che ricrescono −30%, estate mancia bevande +50%, autunno +1 legna per albero (la nota compare nella finestra iniziale). **Accessibilità**. **Foto ricordo**. |
+| `web/js/i18n.js` (nuovo) | **Lingue**: italiano, inglese, spagnolo, francese, tedesco (scelta automatica dal telefono o dal menu → Impostazioni → Lingua). Traduce i testi dell'interfaccia; i testi dei livelli (obiettivi, vocabolario delle città) restano in italiano per ora. |
+| `tests/run.js`, `.github/workflows/test.yml` (nuovi) | **Test automatici** (Node, nessun browser): dati di tutte le 12 tappe, sblocchi, stagioni, traduzioni, missioni, salvataggi, codice portatile, elenco dei file. Partono a ogni push. Locale: `node tests/run.js`. |
+
+**Modificato**
+| File | Cosa |
+|---|---|
+| `web/js/state.js` | Copia di sicurezza "di qualche minuto fa" (ogni 4 min circa) e tasto **Torna a qualche minuto fa** nel menu → Salvataggio. |
+| `web/js/settings.js` | Copia di sicurezza anche delle impostazioni; nuovi campi (lingua, accessibilità, missioni, statistiche, medaglie). |
+| `web/js/game.js` | Manda gli eventi alle missioni, applica l'effetto della stagione, `photo()`. |
+| `web/js/main.js`, `index.html`, `css/style.css` | Menu (missioni, accessibilità, lingua, salvataggio), pulsante 📷, finestra della foto, stili: testo grande, colori per daltonici (strisce e simboli oltre al colore), modalità una mano (pulsanti in basso). |
+| `web/sw.js` | `CACHE` v23. |
+
+**Da sapere**: la foto si condivide con il menu di condivisione del telefono se il WebView lo permette, altrimenti si scarica; per una condivisione sicura nell'app servirà un plugin nativo (nuovo APK).
+
+**Per tornare indietro**: `git checkout cfc8fc9 -- web Changelog` (e cancellare `tests/`, `.github/workflows/test.yml`).
+
+---
+
 ## v0.12.1 · 2026-11-26 · Rifiniture
 
 **Richiesto**: migliorare tutto (le idee nuove si propongono prima, nessuna implementata).

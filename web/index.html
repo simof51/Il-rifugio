@@ -29,6 +29,7 @@
 <div id="hint" hidden><span id="hintTxt"></span><button id="hintSkip">Salta</button></div>
 <div id="task"><small><span id="taskN">Obiettivo 1</span><span id="taskV"></span></small><div id="taskTxt"></div><div class="bar"><i id="taskBar"></i></div></div>
 <button id="menuBtn" class="menuBtn" aria-label="Menu">☰</button>
+<button id="photoBtn" class="menuBtn" aria-label="Foto ricordo">📷</button>
 <div id="stick"><div id="knob"></div></div>
 <div id="toast"></div>
 <button id="update" class="btn" hidden>Nuova versione: tocca per aggiornare</button>
@@ -61,6 +62,13 @@
   <div class="row"><button class="btn" id="menuClose">Continua a giocare</button></div>
 </div></div>
 
+<div id="photo" class="modal hidden"><div class="card">
+  <h1>Foto ricordo</h1>
+  <div id="photoBox"></div>
+  <p class="note" id="photoMsg"></p>
+  <div class="row"><button class="btn" id="photoShare">Condividi</button><button class="btn ghost" id="photoClose">Chiudi</button></div>
+</div></div>
+
 <div id="win" class="modal hidden"><div class="card">
   <h1 id="winTitle">Livello completato!</h1>
   <p id="winTxt"></p>
@@ -77,6 +85,8 @@
 <script src="js/levels/autunno.js"></script>
 <script src="js/levels/cities.js"></script>
 <script src="js/settings.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/extras.js"></script>
 <script src="js/shop.js"></script>
 <script src="js/billing.js"></script>
 <script src="js/ads.js"></script>

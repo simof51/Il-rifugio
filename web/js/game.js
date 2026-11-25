@@ -11,6 +11,8 @@
 
   R.createGame = function ({ hud, level, state, audio }) {
     const T = THREE, P = level.tuning, S = state.data, objectives = level.objectives, TH = level.theme, TX = level.text;
+    const EX = R.extras; EX.bind(hud);
+    const seasonNote = EX.applySeason(P, level); // ogni stagione cambia un po' il modo di giocare
     const A = audio || { sfx() {} }; // suoni (se manca l'audio il gioco funziona lo stesso)
     const OUTFIT = TH.outfit || 'winter'; // guardaroba degli omini: 'winter', 'spring' o 'summer'
     const V = level.voc || {}; // parole della tappa (albero, camino o barbecue, ospite, area, bevanda…): i testi si adattano a stagione e luogo
@@ -672,14 +674,14 @@
       gu.served = true;
       fromObj.getWorldPosition(_v);
       fly('cup', _v, o => o.set(gu.b.x, 1.1, -6.4), 0.45, 1.0, () => {
-        S.cocoa++; gu.cold = 0; hud.floatText(TX.thanks, gu.b.x, 1.6, -6.4); A.sfx('cup');
-        if (rushWin) { S.coins += 40; R.settings.addGems(2); hud.toast('⚡ Servizio lampo! +40 monete e 2 gemme'); A.sfx('goal'); fauna.celebrate(); }
+        S.cocoa++; gu.cold = 0; hud.floatText(TX.thanks, gu.b.x, 1.6, -6.4); A.sfx('cup'); EX.ev('cup');
+        if (rushWin) { EX.ev('rush'); S.coins += 40; R.settings.addGems(2); hud.toast('⚡ Servizio lampo! +40 monete e 2 gemme'); A.sfx('goal'); fauna.celebrate(); }
         burst(gu.b.x, 1.3, -6.4, 6, [0xff7ac6, 0xff4d4d], 1.4, 3, 0.9, 0.12, 1.5);
       });
     }
     // Un pezzo di legna arriva nel camino: il fuoco sale e fa scintille.
     function landLog(r) {
-      r.pend--; r.fuel = Math.min(P.fuel_max, r.fuel + 1); S.fed++; r.flare = 1; A.sfx('log');
+      r.pend--; r.fuel = Math.min(P.fuel_max, r.fuel + 1); S.fed++; r.flare = 1; A.sfx('log'); EX.ev('log');
       burst(r.cx, r.fireY + 0.1, r.fireZ, 5, [0xffa233, 0xffd23a, 0xff6a2a], 1.6, 4, 0.55, 0.09, 6);
     }
 
@@ -939,7 +941,7 @@
       gu.path = [[gu.r.cx, -2.8], [SPAWN[0], SPAWN[1]]];
       if (happy) {
         const pay = Math.round((P.pay + (gu.served ? P.tip : 0)) * (gu.vip ? 3 : gu.scout ? 1.5 : 1) * (R.shop.has('boost') ? 1.5 : 1)); // "Ospiti generosi" dallo shop: +50%
-        gu.r.pileN += pay; drawPile(gu.r); S.happy++; S.guests++;
+        gu.r.pileN += pay; drawPile(gu.r); S.happy++; S.guests++; EX.ev('guest'); if (gu.vip) EX.ev('vip');
         hud.floatText('+' + pay, gu.r.cx + 1.7, 1.2, PILE_Z);
         burst(gu.r.cx + 1.7, 0.6, PILE_Z, 8, [0xffd23a, 0xfff2a8], 2.2, 4, 0.7, 0.1);
       } else {
@@ -1028,7 +1030,7 @@
       const tr = nearTree(p, P.chop_range);
       if (tr && carry.logs < logCap() && chopCd <= 0) {
         const ci = chopInterval(), swingDur = ci * 0.95, delay = swingDur * B.HIT_AT;
-        chopCd = ci; chopTree(tr, p.x, p.z, delay); carry.logs++; S.wood++; inLogs++; changed = true;
+        chopCd = ci; chopTree(tr, p.x, p.z, delay); carry.logs++; S.wood++; inLogs++; changed = true; EX.ev('wood');
         if (!moving) player.rotation.y = Math.atan2(tr.x - p.x, tr.z - p.z); // si gira verso l'albero
         B.swing(player, swingDur);
         // All'impatto: scheggie di legno e il pezzo di legna vola dall'albero allo zaino.
@@ -1119,11 +1121,11 @@
       // obiettivi
       while (S.done < objectives.length && objValue(objectives[S.done]) >= objTarget(objectives[S.done])) {
         const rw = objectives[S.done].reward || 10;
-        S.done++; S.coins += rw; R.settings.addGems(1); hud.toast(`Obiettivo completato! +${rw} monete 🎉`); save(); fauna.celebrate();
+        S.done++; S.coins += rw; R.settings.addGems(1); hud.toast(`Obiettivo completato! +${rw} monete 🎉`); save(); fauna.celebrate(); EX.ev('goal');
         burst(p.x, 1.6, p.z, 34, CONFETTI, 4.5, 8, 1.2, 0.17); hopT = 0.5; A.sfx('goal');
       }
       if (S.done >= objectives.length && !S.won) {
-        S.won = true; R.settings.addGems(10); save(); running = false; endJoy();
+        S.won = true; R.settings.addGems(10); save(); running = false; endJoy(); EX.ev('win');
         hud.showWin(TX.winTitle, TX.winText(S), TX.winNext, level.next);
       }
       saveT += dt; if (saveT > 2) { saveT = 0; save(); }
@@ -1230,6 +1232,9 @@
     return {
       start() { running = true; hud.toast(S.done === 0 ? 'Vai verso il bosco: segui la freccia gialla ➜' : `${level.cityEmoji || ''} ${level.cityName || ''} · ${level.emoji} ${level.name}`); },
       resume() { running = true; },
+      seasonNote,
+      // Foto ricordo: ridisegna la scena e la mette in una cornice (le scritte HTML non compaiono).
+      photo() { renderer.render(scene, cam); return EX.photo(renderer.domElement, `${level.cityEmoji || ''} ${level.cityName || ''} · ${level.emoji} ${level.name}`); },
       pause(on) { paused = !!on; if (on) { endJoy(); save(); } },
       save,
       // Strumenti di prova (menu Debug e `window.rifugioDebug` con ?debug).

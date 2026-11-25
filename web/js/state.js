@@ -24,19 +24,30 @@
 
     // Dopo reset() i salvataggi sono bloccati: altrimenti il salvataggio automatico alla chiusura della pagina
     // riscriverebbe la partita appena cancellata.
-    let locked = false, bakScore = score(bak);
+    // Copia di sicurezza "di qualche minuto fa" (chiave + '-snap'): ogni 4 minuti circa si conserva lo stato salvato prima,
+    // così se qualcosa va storto si può tornare indietro nel tempo (la copia '-bak' invece è sempre la partita più avanzata).
+    const snapKey = key + '-snap';
+    let locked = false, bakScore = score(bak), snapAt = Date.now();
     return {
       data,
+      hasSnap: () => !!read(snapKey),
+      restoreSnap() {
+        const s = localStorage.getItem(snapKey);
+        if (!read(snapKey)) return false;
+        locked = true; // il salvataggio alla chiusura non deve riscriverlo
+        try { localStorage.setItem(key, s); localStorage.setItem(bakKey, s); return true; } catch (e) { return false; }
+      },
       save() {
         if (locked) return;
         try {
           const s = JSON.stringify(data);
+          if (Date.now() - snapAt > 240000) { snapAt = Date.now(); const prev = localStorage.getItem(key); if (prev && read(key)) localStorage.setItem(snapKey, prev); }
           localStorage.setItem(key, s);
           const sc = score(data);
           if (sc >= bakScore) { localStorage.setItem(bakKey, s); bakScore = sc; }
         } catch (e) { /* storage non disponibile */ }
       },
-      reset() { locked = true; try { localStorage.removeItem(key); localStorage.removeItem(bakKey); } catch (e) { /* storage non disponibile */ } },
+      reset() { locked = true; try { localStorage.removeItem(key); localStorage.removeItem(bakKey); localStorage.removeItem(snapKey); } catch (e) { /* storage non disponibile */ } },
       isBought: id => !!data.bought[id],
       paid: id => data.paid[id] || 0,
       hasProgress: () => data.done > 0

@@ -112,3 +112,29 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;backgrou
 @media(prefers-reduced-motion:reduce){.chip.pop{animation:none}}
 #update{position:fixed;left:50%;bottom:calc(76px + var(--safe-b));transform:translateX(-50%);z-index:30;white-space:nowrap;font-size:15px;padding:10px 18px}
 #update:active{transform:translate(-50%,2px)}
+
+/* Foto ricordo, missioni e medaglie */
+#photoBtn{top:calc(72px + var(--safe-t))}
+#photoBox img,#photoBox canvas{display:block;max-width:100%;max-height:52dvh;margin:0 auto;border-radius:10px;box-shadow:0 3px 0 rgba(31,42,55,.2)}
+#photo .card{max-height:calc(100dvh - 32px);overflow:auto}
+.mrow{display:flex;justify-content:space-between;gap:10px;background:#fff;border:3px solid #eef2f6;border-radius:14px;padding:8px 12px;margin:6px 0;font-weight:600}
+.mrow.ok{border-color:#4cd964;background:#f0fff3}
+.medals{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:6px 0}
+.medal{background:#fff;border:3px solid #eef2f6;border-radius:14px;padding:8px;text-align:center;opacity:.65}
+.medal.ok{opacity:1;border-color:#ffd23a;background:#fffbe8}
+.medal i{display:block;font-style:normal;font-size:28px}.medal b{display:block;font-size:14px}.medal span{display:block;font-size:11px;color:#5b6b7c}
+
+/* Accessibilità: testo grande, colori per daltonici (strisce e simboli oltre al colore), modalità una mano */
+.a-big .chip{font-size:22px}.a-big #taskTxt{font-size:21px}.a-big #task small{font-size:16px}.a-big #toast{font-size:20px}.a-big #hint{font-size:20px}
+.a-big .pad{font-size:17px}.a-big .pad b{font-size:18px}.a-big .pill{font-size:17px}.a-big .float{font-size:30px}
+.a-big .card,.a-big .set,.a-big .small,.a-big .opt,.a-big .mrow,.a-big .btn{font-size:120%}.a-big .small{font-size:16px}.a-big .medal b{font-size:17px}.a-big .medal span{font-size:14px}
+.a-cb .bar i,.a-cb .fuel i{background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.55) 0 6px,rgba(255,255,255,0) 6px 12px)}
+.a-cb .pill.cold::before,.a-cb .cold::before{content:'❄️ '}
+.a-cb .pad{border:3px dashed #1f2a37}
+.a-cb .tg.on::before{content:'✔ '}.a-cb .tg:not(.on)::before{content:'✖ '}
+.a-cb .mrow.ok,.a-cb .medal.ok{border-style:double;border-width:5px}
+.a-one #menuBtn{top:auto;bottom:calc(24px + var(--safe-b));right:calc(16px + var(--safe-r))}
+.a-one #photoBtn{top:auto;bottom:calc(88px + var(--safe-b));right:calc(16px + var(--safe-r))}
+.a-one #hud{right:calc(12px + var(--safe-r))}
+.a-one #toast{bottom:calc(100px + var(--safe-b))}
+@media(prefers-contrast:more){.chip,#task,.pad{border:2px solid #1f2a37}}

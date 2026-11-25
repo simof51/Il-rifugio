@@ -6,12 +6,18 @@
   const defaults = () => ({
     quality: 'high', daynight: true, weather: true, haptics: true, ambient: true, ambVol: 0.5, pet: 'dog',
     look: { hat: 'default', color: 0, acc: 'none' }, owned: ['hat:default', 'acc:none', 'color:0', 'color:1'], gems: 0,
-    tutorial: false, tips: {}, consent: null, purchases: {}, shopTest: false
+    tutorial: false, tips: {}, consent: null, purchases: {}, shopTest: false,
+    lang: 'auto', big: false, cb: false, one: false, daily: null, stats: {}, medals: {}
   });
   let data = defaults();
-  try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && typeof s === 'object') { data = Object.assign(data, s); data.look = Object.assign(defaults().look, s.look || {}); data.tips = s.tips || {}; data.purchases = s.purchases || {}; if (!Array.isArray(data.owned)) data.owned = defaults().owned; } } catch (e) { /* ignorato */ }
+  // Se le impostazioni sono rovinate si riparte dalla copia di sicurezza (chiave + '-bak').
+  const readKey = k => { try { const s = JSON.parse(localStorage.getItem(k) || 'null'); return s && typeof s === 'object' ? s : null; } catch (e) { return null; } };
+  try {
+    const s = readKey(KEY) || readKey(KEY + '-bak');
+    if (s) { data = Object.assign(data, s); data.look = Object.assign(defaults().look, s.look || {}); data.tips = s.tips || {}; data.purchases = s.purchases || {}; data.stats = s.stats || {}; data.medals = s.medals || {}; if (!Array.isArray(data.owned)) data.owned = defaults().owned; }
+  } catch (e) { /* ignorato */ }
 
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { /* ignorato */ } }
+  function save() { try { const j = JSON.stringify(data); localStorage.setItem(KEY, j); localStorage.setItem(KEY + '-bak', j); } catch (e) { /* ignorato */ } }
   // Livelli di qualità grafica: risoluzione massima, ombre, e quanta roba decorativa mostrare (alberi di bordo, fiori, neve, animali).
   const QUALITY = {
     high: { label: 'Alta', ratio: 2, shadows: 'pcf', map: 1024, density: 1 },
