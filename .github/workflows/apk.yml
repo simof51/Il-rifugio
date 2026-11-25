@@ -41,6 +41,13 @@ jobs:
           npx cap add android
           npx cap sync android
 
+      - name: Permesso di fatturazione (acquisti in app)
+        working-directory: app/android/app
+        run: |
+          # Il plugin degli acquisti usa Google Play Billing: serve questo permesso nel manifest.
+          grep -q "com.android.vending.BILLING" src/main/AndroidManifest.xml || sed -i 's#</manifest>#    <uses-permission android:name="com.android.vending.BILLING" />\n</manifest>#' src/main/AndroidManifest.xml
+          grep -n "BILLING" src/main/AndroidManifest.xml
+
       - name: Icona e numero di versione
         working-directory: app/android/app
         run: |

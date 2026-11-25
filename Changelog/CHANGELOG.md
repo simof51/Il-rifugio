@@ -9,6 +9,28 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.11.0 · 2026-11-26 · Tutto il necessario per gli acquisti in app (Google Play Billing)
+
+**Richiesto**: aggiungere all'app tutto ciò che serve per fare acquisti in app.
+
+**Aggiunto**
+| File | Cosa |
+|---|---|
+| `app/package.json` | Plugin `@capgo/native-purchases` 8.9.17 (Google Play Billing, per Capacitor 8). |
+| `.github/workflows/apk.yml` | Aggiunge il permesso `com.android.vending.BILLING` al manifest dell'APK. |
+| `.github/workflows/aab.yml` | Nuovo workflow manuale **AAB Play Store**: build con il gioco tutto dentro l'app, firmato con la tua chiave (da 4 segreti del repository), permesso di fatturazione, versione crescente. Si ferma con un messaggio chiaro se mancano i segreti. |
+| `app/prepare-www.js` | Opzione `--bundled`: l'app apre subito la copia inclusa del gioco, senza scaricare codice (richiesto dal Play). |
+| `web/js/billing.js` | Fornitore Google Play: controlla il Play, scarica i prezzi veri del negozio, acquista, ripristina e rimette i miglioramenti già comprati; toglie quelli rimborsati. Le gemme si concedono prima e si consumano dopo (niente perdite se l'app si chiude); i token già usati non danno due volte le stesse gemme. Gestisce i pagamenti "in attesa". Aggancio per la verifica su un server (`R.shop.verifier`). |
+| `web/js/shop.js`, `main.js` | Prezzi mostrati dal negozio (obbligatorio), messaggi per annullato, in attesa e non disponibile. |
+| `app/README.md` | Guida passo passo: account Play, i 7 prodotti con i loro id, chiave di firma, segreti, build dell'AAB, test interni e testers di licenza. |
+
+**Non fatto (serve altro)**: verifica degli acquisti su un server (serve un server tuo e le credenziali Google), e tutto ciò che sta nel Play Console (account, prodotti, scheda, privacy policy, classificazione, regole per famiglie). Gli acquisti non si possono provare dal PC: solo con l'app installata dal Play.
+
+**Per tornare indietro**
+- `git checkout e81a030 -- web app .github`
+
+---
+
 ## v0.10.0 · 2026-11-26 · Shop (pronto, ma senza pagamenti attivi)
 
 **Richiesto**: uno shop per comprare valuta di gioco e miglioramenti speciali con euro veri.

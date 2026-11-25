@@ -32,6 +32,10 @@
     else { st.data.purchases[p.id] = { t: Date.now(), test: !!test }; st.save(); }
   }
 
+  // Token di acquisto già concessi (per non dare due volte le stesse gemme dopo un ripristino).
+  const granted = t => (st.data.granted || []).indexOf(t) >= 0;
+  function markToken(t) { if (!t) return; st.data.granted = (st.data.granted || []).concat(t).slice(-60); st.save(); }
+
   R.shop = {
     products: PRODUCTS, eur, byId,
     has: id => !!st.data.purchases[id],
@@ -48,12 +52,42 @@
       if (p.kind === 'perm' && this.has(id)) return 'ok';
       const prov = provider();
       if (!prov.ready()) return 'unavailable';
-      try { const r = await prov.buy(p); if (r && r.ok) { grant(p, r.test); return 'ok'; } return r && r.reason === 'cancel' ? 'cancel' : 'unavailable'; } catch (e) { return 'cancel'; }
+      try {
+        const r = await prov.buy(p);
+        if (r && r.ok) {
+          grant(p, r.test); markToken(r.token);          // prima si concede...
+          if (r.finish) await r.finish();               // ...poi si "consuma" l'acquisto (gemme), così si può ricomprare
+          return 'ok';
+        }
+        return r && r.reason === 'cancel' ? 'cancel' : r && r.reason === 'pending' ? 'pending' : 'unavailable';
+      } catch (e) { return 'cancel'; }
     },
+    // Ripristina i miglioramenti permanenti già comprati e recupera acquisti rimasti a metà (gemme non ancora concesse).
     async restore() {
       const prov = provider(); if (!prov.ready()) return 'unavailable';
-      try { const r = await prov.restore(); if (r && r.ok) { (r.ids || []).forEach(id => { const p = byId(id); if (p && p.kind === 'perm') grant(p, false); }); return 'ok'; } return 'unavailable'; } catch (e) { return 'unavailable'; }
+      try {
+        const r = await prov.restore(); if (!(r && r.ok)) return 'unavailable';
+        for (const x of (r.purchases || [])) {
+          const p = byId(x.id); if (!p) continue;
+          if (p.kind === 'perm') { if (!this.has(p.id)) grant(p, !!r.test); }
+          else if (x.token && !granted(x.token)) { grant(p, !!r.test); markToken(x.token); if (x.finish) await x.finish(); }   // gemme pagate ma mai concesse
+          else if (x.finish) await x.finish();                                                                              // già concesse: si consuma e basta
+        }
+        (r.ids || []).forEach(id => { const p = byId(id); if (p && p.kind === 'perm' && !this.has(id)) grant(p, !!r.test); });
+        return 'ok';
+      } catch (e) { return 'unavailable'; }
     },
+    // All'avvio con il Play: rimette i miglioramenti, e toglie quelli rimborsati (solo acquisti veri, mai quelli di prova).
+    async syncEntitlements() {
+      if (!real || !real.ready()) return;
+      try {
+        const r = await real.restore(); if (!(r && r.ok)) return;
+        await this.restore();
+        PRODUCTS.filter(p => p.kind === 'perm').forEach(p => { if (this.has(p.id) && !this.isTest(p.id) && (r.ids || []).indexOf(p.id) < 0) { delete st.data.purchases[p.id]; st.save(); } });
+      } catch (e) { /* ignorato */ }
+    },
+    // Prezzo da mostrare: quello del negozio (obbligatorio) se c'è, altrimenti quello del catalogo.
+    priceOf(p) { const i = R.billing && R.billing.info && R.billing.info[p.id]; return i && i.priceString ? i.priceString : eur(p.price); },
     clearTest() { Object.keys(st.data.purchases).forEach(k => { if (st.data.purchases[k].test) delete st.data.purchases[k]; }); st.save(); }
   };
 })(window.Rifugio);

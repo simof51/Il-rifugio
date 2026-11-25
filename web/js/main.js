@@ -24,6 +24,7 @@
 
   const audio = R.createAudio();
   R.shop.enableTest(SHOW_DEBUG || debug); // il fornitore "prova" esiste solo con il menu Debug acceso
+  R.billing.init(); // Google Play Billing (solo dentro l'app Android installata dal Play): prezzi veri e acquisti già fatti
 
   // Privacy e consenso: la prima volta si chiede (solo essenziali o anche pubblicità). Si può cambiare dal menu.
   // Il gioco oggi non mostra pubblicità: la scelta è già pronta per quando arriverà (Play Store).
@@ -102,10 +103,10 @@
   let shopMsg = '';
   function shopHtml() {
     const note = R.shop.ready() ? (R.shop.providerName() === 'prova' ? '🧪 Acquisti di PROVA: nessun addebito, servono solo a provare lo shop.' : '') :
-      'Gli acquisti non sono ancora attivi: si attiveranno con la pubblicazione su Google Play. Per ora non è possibile pagare né essere addebitati.';
+      'Qui gli acquisti non sono disponibili: funzionano solo nell\'app installata da Google Play. Nessun addebito possibile.';
     const rows = R.shop.products.map(p => {
       const done = p.kind === 'perm' && R.shop.has(p.id);
-      return `<div class="prod"><span class="pe">${p.emoji}</span><div class="pt"><b>${p.name}${done && R.shop.isTest(p.id) ? ' 🧪' : ''}</b><span>${p.desc}</span></div><button class="buy${done ? ' done' : ''}" data-buy="${p.id}"${done ? ' disabled' : ''}>${done ? 'Acquistato' : R.shop.eur(p.price)}</button></div>`;
+      return `<div class="prod"><span class="pe">${p.emoji}</span><div class="pt"><b>${p.name}${done && R.shop.isTest(p.id) ? ' 🧪' : ''}</b><span>${p.desc}</span></div><button class="buy${done ? ' done' : ''}" data-buy="${p.id}"${done ? ' disabled' : ''}>${done ? 'Acquistato' : R.shop.priceOf(p)}</button></div>`;
     }).join('');
     return `<div class="small">💎 ${st.get('gems')} gemme. ${note}</div>${shopMsg ? `<div class="small"><b>${shopMsg}</b></div>` : ''}${rows}` +
       `<div class="row"><button class="btn ghost" id="shopRestore">Ripristina acquisti</button></div>` +
@@ -188,7 +189,7 @@
   async function buyFlow(id) {
     if (!(await askGate())) return;
     const r = await R.shop.buy(id);
-    shopMsg = r === 'ok' ? 'Acquisto riuscito, grazie! ' + (R.shop.byId(id).kind === 'gems' ? `+${R.shop.byId(id).gems} gemme` : 'Miglioramento attivo.') : r === 'cancel' ? 'Acquisto annullato.' : 'Gli acquisti non sono ancora attivi: nessun addebito.';
+    shopMsg = r === 'ok' ? 'Acquisto riuscito, grazie! ' + (R.shop.byId(id).kind === 'gems' ? `+${R.shop.byId(id).gems} gemme` : 'Miglioramento attivo.') : r === 'cancel' ? 'Acquisto annullato.' : r === 'pending' ? 'Pagamento in attesa di conferma da Google Play: arriverà appena confermato.' : 'Acquisto non disponibile ora: nessun addebito. Riprova più tardi.';
     if (r === 'ok') audio.sfx('buy');
     rerender();
   }
