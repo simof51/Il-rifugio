@@ -9,6 +9,21 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.14.0 · 2026-11-26 · Barra in basso, sentieri morbidi, tronchi che non bloccano
+
+**Richiesto**: l'omino si incastra sui tronchi caduti (anche invisibili); sentieri di ghiaia brutti e con curve a spigolo; togliere il menù a panino e mettere una barra in basso con 4 icone.
+
+**Modificato**
+| File | Cosa |
+|---|---|
+| `web/js/game.js` | **Tronchi**: un albero tagliato non ha più il riquadro di ostacolo (resta solo il ceppo, piccolo) e il tronco caduto non blocca mai, nemmeno quando sparisce. Tronchi in piedi più stretti, omino con raggio più piccolo, alberi del bosco più distanziati: fra due alberi si passa sempre. **Sentieri**: nastri che seguono curve morbide (spline) con estremità tonde, larghezza che respira, bordi sfumati e sassolini ai lati; il viale si stacca dalla passeggiata con una curva dolce invece dell'angolo retto. |
+| `web/index.html`, `web/css/style.css`, `web/js/main.js` | Via il pulsante ☰. **Barra in basso** con 4 schede: 🗺️ Mappa (città e stagioni), 🛍️ Shop (con i video a premio), 👤 Profilo (statistiche, missioni e medaglie, omino), ⚙️ Impostazioni (suoni, lingua, accessibilità, salvataggio, privacy, debug). Toccare la scheda aperta chiude il menu. La barra si nasconde nelle finestre iniziale, di fine livello e foto. Avvisi e suggerimenti spostati sopra la barra. |
+| `web/js/i18n.js`, `web/sw.js` | Traduzioni delle nuove etichette; `CACHE` v24. |
+
+**Per tornare indietro**: `git checkout 4ff5699 -- web Changelog`.
+
+---
+
 ## v0.13.0 · 2026-11-26 · Missioni, foto, stagioni, lingue, accessibilità, test
 
 **Richiesto**: implementare le idee 1, 3, 4, 5, 6, 7, 8 della lista proposta.

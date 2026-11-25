@@ -57,12 +57,44 @@
     // Sentieri: piani con la texture della ghiaia (inverno) o della sabbia (estate), a quote leggermente diverse
     // (altrimenti le facce piatte coincidono e lampeggiano, z-fighting) e senza ombre proprie.
     mats.path.polygonOffset = true; mats.path.polygonOffsetFactor = -1; mats.path.polygonOffsetUnits = -1;
-    function pathPlane(w, d, x, z, y) {
-      const geo = new T.PlaneGeometry(w, d).rotateX(-Math.PI / 2), uv = geo.attributes.uv;
-      for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * w / 2.4, uv.getY(i) * d / 2.4); // la texture non si deforma
-      const m = new T.Mesh(geo, mats.path); m.position.set(x, y, z); m.receiveShadow = true; scene.add(m);
+    // Ogni sentiero è un nastro che segue una curva morbida (spline), con le estremità arrotondate, la larghezza che respira appena
+    // e due bordi sfumati (strisce più larghe e trasparenti sotto) più qualche sassolino ai lati: niente più rettangoli con angoli netti.
+    const edgeMat = (o, f) => { const m = new T.MeshPhongMaterial({ color: new T.Color(TH.ground).lerp(new T.Color(TH.path || 0x888888), f), transparent: true, opacity: o, depthWrite: false, shininess: 0 }); m.polygonOffset = true; m.polygonOffsetFactor = -1; m.polygonOffsetUnits = -1; return m; };
+    const EDGES = [[0.62, 0.3, 0.012], [0.5, 0.55, 0.016]];
+    const pebbles = [];
+    function pathRibbon(pts, w, y, mat, uvScale, extra, wobble) {
+      const curve = new T.CatmullRomCurve3(pts.map(p => new T.Vector3(p[0], 0, p[1])), false, 'centripetal');
+      const len = curve.getLength(), n = Math.max(8, Math.ceil(len / 0.35)), P0 = curve.getSpacedPoints(n);
+      const pos = [], uv = [], idx = [], cap = 0.7;
+      for (let i = 0; i <= n; i++) {
+        const a = P0[Math.max(0, i - 1)], b = P0[Math.min(n, i + 1)], tx = b.x - a.x, tz = b.z - a.z, tl = Math.hypot(tx, tz) || 1;
+        const nx = -tz / tl, nz = tx / tl, s = i / n * len, e = Math.min(s, len - s);
+        const taper = e < cap ? Math.sqrt(Math.max(0.02, 1 - Math.pow(1 - e / cap, 2))) : 1; // estremità tonde
+        const hw = (w / 2 + extra) * taper * (1 + (wobble ? 0.07 * Math.sin(s * 1.7 + pts[0][0]) : 0));
+        pos.push(P0[i].x + nx * hw, y, P0[i].z + nz * hw, P0[i].x - nx * hw, y, P0[i].z - nz * hw);
+        uv.push(s / uvScale, 0, s / uvScale, hw * 2 / uvScale);
+        if (i < n) { const k = i * 2; idx.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); }
+      }
+      const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new T.Float32BufferAttribute(uv, 2)); geo.setIndex(idx); geo.computeVertexNormals();
+      for (let i = 0; i < geo.attributes.normal.count; i++) geo.attributes.normal.setXYZ(i, 0, 1, 0);
+      const m = new T.Mesh(geo, mat); m.receiveShadow = true; scene.add(m);
+      return { P0, len };
     }
-    pathPlane(15, 1.6, 10, 1.2, 0.02); pathPlane(24, 1.4, 2, -2.9, 0.026); pathPlane(1.4, 4, 3, -0.6, 0.032);
+    function pathPlane(pts, w) {
+      EDGES.forEach(([o, f, y], k) => pathRibbon(pts, w, y, edgeMat(o, f), 2.4, 0.5 - k * 0.22, true));
+      const r = pathRibbon(pts, w, 0.026, mats.path, 2.4, 0, true);
+      const pc = (TH.pathTex && TH.pathTex.cols) || ['#8c8b87'];
+      for (let i = 2; i < r.P0.length - 2; i += 2) {
+        if (rnd() < 0.45) continue;
+        const a = r.P0[i - 1], b = r.P0[i + 1], tl = Math.hypot(b.x - a.x, b.z - a.z) || 1, side = rnd() < 0.5 ? 1 : -1, off = (w / 2 + 0.25 + rnd() * 0.5) * side;
+        pebbles.push({ geo: pebbleGeo, x: r.P0[i].x - (b.z - a.z) / tl * off, y: 0.04, z: r.P0[i].z + (b.x - a.x) / tl * off, s: [0.1 + rnd() * 0.12, 0.07 + rnd() * 0.05, 0.1 + rnd() * 0.12], ry: rnd() * 3, color: new T.Color(pc[(rnd() * pc.length) | 0]).getHex() });
+      }
+    }
+    const pebbleGeo = new T.SphereGeometry(1, 6, 4);
+    // Passeggiata davanti alla baita (appena ondulata) e viale che se ne stacca con una curva dolce verso est.
+    pathPlane([[-10.6, -2.9], [-6, -2.85], [-1, -2.95], [3, -2.9], [8, -2.95], [12, -2.9], [14.6, -2.9]], 1.5);
+    pathPlane([[3, -2.9], [3.15, -1.2], [4.3, 0.35], [6.6, 1.15], [10, 1.05], [14, 1.3], [17.6, 1.2]], 1.5);
+    if (pebbles.length) scene.add(new T.Mesh(B.mergeParts(pebbles), mats.accent));
 
     // Bordi della mappa ben definiti: d'inverno una catena di montagne alte con la cima innevata, d'estate una foresta fitta.
     // Sono pochi pezzi fusi (uno per lato): le montagne e gli alberi di bordo non si tagliano e non proiettano ombre.
@@ -211,7 +243,7 @@
     const trees = [];
     function plantTree(x, z, sc) {
       const { g, fall, stump, mats: tm } = B.tree(x, z, sc);
-      const half = 0.3 * sc;
+      const half = 0.2 * sc; // tronco: più stretto (prima 0.3) così fra due alberi si passa sempre
       trees.push({
         g, fall, stump, mats: tm, x, z, sc, logs: P.logs_per_tree, regrow: 0,
         state: 'up',            // 'up' in piedi, 'falling' cade, 'down' a terra (poi sparisce)
@@ -219,7 +251,13 @@
         axis: new T.Vector3(1, 0, 0), hits: [], downT: 0,
         fade: 1, opacity: 1     // trasparenza quando copre il personaggio
       });
-      cols.push([x - half, x + half, z - half, z + half]);
+      const col = [x - half, x + half, z - half, z + half];
+      trees[trees.length - 1].col = col; trees[trees.length - 1].half = half;
+      cols.push(col);
+    }
+    // Ostacolo dell'albero: tronco in piedi = riquadro; tagliato = solo il ceppo, piccolo. Il tronco caduto (anche quando sparisce) non blocca mai.
+    function setTreeCol(t, felled) {
+      const h = felled ? 0.12 * t.sc : t.half, c = t.col; c[0] = t.x - h; c[1] = t.x + h; c[2] = t.z - h; c[3] = t.z + h;
     }
     let tries = 0, near = 0;
     while (near < P.trees && tries < 800) {
@@ -228,11 +266,11 @@
       if (trees.some(t => Math.hypot(t.x - x, t.z - z) < 2.5) || inLake(x, z, 1.5) || inLM(x, z, 1)) continue;
       plantTree(x, z, 1); near++;
     }
-    for (let i = 0, planted = 0; i < P.forest_trees * 8 && planted < P.forest_trees; i++) {
+    for (let i = 0, planted = 0; i < P.forest_trees * 16 && planted < P.forest_trees; i++) {
       const x = bx0 + rnd() * (bx1 - bx0), z = bz0 + rnd() * (bz1 - bz0), sc = 0.8 + rnd() * 0.7;
       if (x > -16 && x < 18 && z > -11 && z < 15) continue;
       if (inLake(x, z, 2) || inLM(x, z, 1.5)) continue;
-      if (trees.some(t => Math.hypot(t.x - x, t.z - z) < 1.4)) continue; // lascia sempre un passaggio fra gli alberi
+      if (trees.some(t => Math.hypot(t.x - x, t.z - z) < 1.9)) continue; // lascia sempre un passaggio fra gli alberi
       plantTree(x, z, sc); planted++;
     }
     function nearTree(p, maxD) {
@@ -246,7 +284,7 @@
       t.logs--;
       let dx = t.x - fx, dz = t.z - fz; const d = Math.hypot(dx, dz) || 1; dx /= d; dz /= d;
       t.hits.push({ at: delay, dx, dz, n: P.logs_per_tree - t.logs, last: t.logs <= 0 });
-      if (t.logs <= 0) { t.regrow = P.tree_regrow; S.trees = (S.trees || 0) + 1; }
+      if (t.logs <= 0) { t.regrow = P.tree_regrow; S.trees = (S.trees || 0) + 1; setTreeCol(t, true); }
     }
     // Ricrescita (logica di gioco): il nuovo albero spunta piccolo e cresce.
     function regrowTrees(dt) {
@@ -255,7 +293,7 @@
         t.regrow -= dt;
         if (t.regrow <= 0) {
           Object.assign(t, { logs: P.logs_per_tree, state: 'up', ang: 0, vel: 0, hits: [], downT: 0 });
-          t.fall.quaternion.identity(); t.fall.visible = true; t.fall.scale.setScalar(0.2); t.stump.visible = false;
+          t.fall.quaternion.identity(); t.fall.visible = true; t.fall.scale.setScalar(0.2); t.stump.visible = false; setTreeCol(t, false);
         }
       }
     }
@@ -1002,7 +1040,7 @@
       for (const c of cols) {
         const qx = Math.max(c[0], Math.min(p.x, c[1])), qz = Math.max(c[2], Math.min(p.z, c[3]));
         const dx = p.x - qx, dz = p.z - qz, d = Math.hypot(dx, dz);
-        if (d < 0.35) { if (d > 1e-4) { p.x = qx + dx / d * 0.35; p.z = qz + dz / d * 0.35; } else p.z = c[3] + 0.35; }
+        if (d < 0.3) { if (d > 1e-4) { p.x = qx + dx / d * 0.3; p.z = qz + dz / d * 0.3; } else p.z = c[3] + 0.3; }
       }
       p.x = Math.max(P.world_min[0], Math.min(P.world_max[0], p.x)); p.z = Math.max(P.world_min[1], Math.min(P.world_max[1], p.z));
     }

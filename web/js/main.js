@@ -190,19 +190,31 @@
     }).join('')}</div></div>`).join('') + `<div class="lact" id="dbgMsg">${dbgMsg}</div>`;
   }
   const section = (id, title, html) => `<div class="row"><button class="btn ghost sechead" data-sec="${id}">${title} ${secs[id] ? '▲' : '▼'}</button></div>${secs[id] ? `<div class="secbody">${html}</div>` : ''}`;
+  // Barra in basso: 4 schede (mappa, shop, profilo, impostazioni). Ogni scheda apre il menu su quella pagina; toccarla di nuovo lo chiude.
+  let tab = 'map';
+  const H = t => `<h2>${t}</h2>`;
   function renderMenu() {
-    const S = state.data;
-    $('menuBody').innerHTML =
-      `<h2>Le tue città</h2>${R.cities.map(cityCard).join('')}` +
-      `<div class="stats"><div><b>${S.coins}</b><span>monete</span></div><div><b>${S.guests}</b><span>ospiti</span></div><div><b>${S.wood}</b><span>legna</span></div><div><b>${st.get('gems')}</b><span>gemme 💎</span></div></div>` +
-      section('miss', '🎯 Missioni e medaglie', R.extras.missionsHtml()) + section('look', '👕 Il tuo omino', lookHtml()) + section('shop', '🛍️ Shop', shopHtml()) + section('ads', '🎁 Video a premio', adsHtml()) + section('set', '⚙️ Impostazioni', settingsHtml()) + section('acc', '♿ Accessibilità', accessHtml()) + section('save', '💾 Salvataggio portatile', saveHtml()) + section('priv', '🔒 Privacy e consenso', privacyHtml()) +
-      (levelDone() ? '' : `<div class="row"><button class="btn ghost" id="menuReset">${confirmReset ? 'Sicuro? Tocca di nuovo' : 'Ricomincia questa stagione'}</button></div>`) +
-      (SHOW_DEBUG || debug ? section('dbg', '🛠 Debug', `<div class="dbg">${debugPanel()}</div>`) : '');
+    const S = state.data; let h;
+    if (tab === 'map') {
+      h = H('🗺️ Le tue città') + R.cities.map(cityCard).join('') +
+        (levelDone() ? '' : `<div class="row"><button class="btn ghost" id="menuReset">${confirmReset ? 'Sicuro? Tocca di nuovo' : 'Ricomincia questa stagione'}</button></div>`);
+    } else if (tab === 'shop') {
+      h = H('🛍️ Shop') + shopHtml() + H('🎁 Video a premio') + adsHtml();
+    } else if (tab === 'profile') {
+      h = H('👤 Profilo') + `<div class="stats"><div><b>${S.coins}</b><span>monete</span></div><div><b>${S.guests}</b><span>ospiti</span></div><div><b>${S.wood}</b><span>legna</span></div><div><b>${st.get('gems')}</b><span>gemme 💎</span></div></div>` +
+        H('🎯 Missioni e medaglie') + R.extras.missionsHtml() + H('👕 Il tuo omino') + lookHtml();
+    } else {
+      h = H('⚙️ Impostazioni') + settingsHtml() + H('♿ Accessibilità') + accessHtml() + H('💾 Salvataggio portatile') + saveHtml() + H('🔒 Privacy e consenso') + privacyHtml() +
+        (SHOW_DEBUG || debug ? section('dbg', '🛠 Debug', `<div class="dbg">${debugPanel()}</div>`) : '');
+    }
+    $('menuBody').innerHTML = h;
+    document.querySelectorAll('#tabbar button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab && !$('menu').classList.contains('hidden')));
   }
-  function openMenu() { confirmReset = false; dbgMsg = ''; renderMenu(); $('menu').classList.remove('hidden'); game.pause(true); audio.sfx('click'); }
-  function closeMenu() { $('menu').classList.add('hidden'); game.pause(false); audio.sfx('click'); }
-  $('menuBtn').onclick = openMenu; $('menuClose').onclick = closeMenu;
-  // Tasto "indietro" di Android: chiude il menu se è aperto, altrimenti lo apre (invece di uscire di colpo dal gioco).
+  const menuIsOpen = () => !$('menu').classList.contains('hidden');
+  function openMenu(t) { if (t) tab = t; confirmReset = false; dbgMsg = ''; const was = menuIsOpen(); $('menu').classList.remove('hidden'); renderMenu(); $('menu').scrollTop = 0; if (!was) game.pause(true); audio.sfx('click'); }
+  function closeMenu() { $('menu').classList.add('hidden'); renderMenu(); game.pause(false); audio.sfx('click'); }
+  document.querySelectorAll('#tabbar button').forEach(b => { b.onclick = () => { if (menuIsOpen() && tab === b.dataset.tab) closeMenu(); else openMenu(b.dataset.tab); }; });
+  $('menuClose').onclick = closeMenu;  // Tasto "indietro" di Android: chiude il menu se è aperto, altrimenti lo apre (invece di uscire di colpo dal gioco).
   try {
     const AppP = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
     if (AppP && AppP.addListener) AppP.addListener('backButton', () => {
@@ -234,7 +246,7 @@
     else if (t.id === 'shopRestore') { R.shop.restore().then(r => { shopMsg = r === 'ok' ? 'Acquisti ripristinati.' : 'Il ripristino non è ancora disponibile.'; rerender(); }); }
     else if (d.look) {
       const [cat, id] = d.look.split(':'), cost = +d.cost, key = d.look;
-      if (d.prem === '1' && !R.shop.has('cosmetics')) { secs.shop = true; shopMsg = 'Questo oggetto è nel "Pacchetto stile".'; rerender(); return; }
+      if (d.prem === '1' && !R.shop.has('cosmetics')) { tab = 'shop'; shopMsg = 'Questo oggetto è nel "Pacchetto stile".'; rerender(); return; }
       if (!st.buy(key, cost)) { lookMsg = 'Gemme insufficienti: completa altri obiettivi.'; rerender(); return; }
       const look = Object.assign({}, st.get('look')); look[cat] = cat === 'color' ? +id : id; st.set('look', look); audio.sfx('buy'); reloadSaved();
     }
