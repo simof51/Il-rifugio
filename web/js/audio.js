@@ -78,9 +78,12 @@
       const master = ctx.createGain(); master.connect(ctx.destination);
       const wind = mk('bandpass', 420, 0.7), rain = mk('highpass', 1400), waves = mk('lowpass', 520);
       [wind, rain, waves].forEach(g => g.connect(master));
-      const cr = ctx.createOscillator(), cg = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
-      cr.frequency.value = 4300; cg.gain.value = 0; lfo.frequency.value = 13; lg.gain.value = 0.5; lfo.connect(lg); lg.connect(cg.gain); cr.connect(cg); cg.connect(master); cr.start(); lfo.start();
-      amb = { master, wind, rain, waves, crick: cg };
+      // Grilli: un tono acuto che pulsa. Il livello finale (lev) sta DOPO la pulsazione: a zero il tono è davvero muto
+      // (prima la pulsazione si sommava al volume e il tono acuto si sentiva sempre, come un fischio).
+      const cr = ctx.createOscillator(), cg = ctx.createGain(), lev = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
+      cr.frequency.value = 4300; cg.gain.value = 0.5; lfo.frequency.value = 13; lg.gain.value = 0.5; lev.gain.value = 0;
+      lfo.connect(lg); lg.connect(cg.gain); cr.connect(cg); cg.connect(lev); lev.connect(master); cr.start(); lfo.start();
+      amb = { master, wind, rain, waves, crick: lev };
       birdT = setInterval(() => {
         if (!ctx || ctx.state !== 'running' || !settings().ambient || ambOpt.night > 0.5 || ambOpt.rain > 0.3 || (ambOpt.season !== 'primavera' && ambOpt.season !== 'estate' && ambOpt.season !== 'autunno')) return;
         if (Math.random() > 0.55) return;
@@ -96,7 +99,7 @@
       set(amb.wind, (cold ? 0.35 : 0.15) + o.wind * 0.4 + o.storm * 0.25);
       set(amb.rain, o.rain * 0.4);
       set(amb.waves, (o.season === 'estate' || o.season === 'primavera') ? 0.12 : 0.02);
-      set(amb.crick, (cold || o.rain > 0.3) ? 0 : o.night * 0.045);
+      set(amb.crick, (cold || o.rain > 0.3 || o.night < 0.5) ? 0 : (o.night - 0.5) * 0.06); // solo di notte fonda, molto piano
     }
 
     // Musica: arpeggio a ottavi sull'accordo di turno, basso sul primo e terzo quarto, ogni tanto una nota di melodia.

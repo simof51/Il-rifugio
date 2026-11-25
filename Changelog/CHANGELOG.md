@@ -9,6 +9,22 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.8.1 · 2026-11-25 · Tolto il fischio continuo
+
+**Problema**
+- Si sentiva sempre un fischio acuto. Causa: nei suoni d'ambiente, il tono dei grilli (4300 Hz) pulsava con un oscillatore a bassa frequenza collegato direttamente al volume; la pulsazione si sommava al volume a zero e il tono usciva comunque, di giorno e di notte.
+
+**Modificato**
+| File | Cosa |
+|---|---|
+| `web/js/audio.js` | Il livello dei grilli sta dopo la pulsazione: a zero è muto davvero. I grilli si sentono solo di notte fonda, molto piano. |
+| `web/sw.js` | `CACHE` v15. |
+
+**Per tornare indietro**
+- `git checkout d34ed99 -- web/js/audio.js web/sw.js`
+
+---
+
 ## v0.8.0 · 2026-11-25 · Meteo e notte, animali, aspetto dell'omino, eventi, tutorial, qualità grafica, salvataggio portatile, consenso, riquadri a terra
 
 **Richiesto** (le proposte 1, 2, 3, 4, 6, 7, 8, 9, 10; la 5 esclusa) più il riquadro delle piazzole.
