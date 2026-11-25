@@ -699,21 +699,48 @@
     function padShown(pd) {
       if (pd.needRoom != null && !rooms[pd.needRoom].open) return false; // camerieri e boscaioli solo per le stanze già aperte
       if (pd.effect === 'waiter' && !state.isBought('cocoa')) return false; // il cameriere serve solo se c'è il banco
-      const r = pd.requires || {};
-      if (r.objectives != null) return S.done >= r.objectives;
-      if (r.bought) return state.isBought(r.bought);
-      return true;
+      return true; // miglioramenti e ampliamenti sono sempre disponibili: non dipendono più dagli obiettivi
     }
     // Decorazioni acquistabili: lanterne colorate lungo i sentieri e la mascotte del livello.
-    const bulbs = [];
+    // Lanterne: palo di ferro, lanterna con telaio, vetro colorato che brilla, tettuccio; di notte un alone, una macchia di luce a terra
+    // e (per le 4 più vicine all'omino) una vera luce che illumina i dintorni.
+    const lamps = [], lampMats = {}, lampLights = [];
+    const glowTex = (() => {
+      const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+      g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.35, 'rgba(255,255,255,0.4)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+      return new T.CanvasTexture(c);
+    })();
     function buildLamps() {
-      const BC = [0xff4d4d, 0xffd23a, 0x4cd964, 0x3d8bff, 0xff7ac6];
+      if (lamps.length) return;
+      const BC = [0xff6b5a, 0xffd23a, 0x6be07a, 0x5aa8ff, 0xff8fd0];
       const spots = [[5, 2.7], [9, 2.7], [13, 2.7], [17, 2.7], [-9, -1.7], [-5, -1.7], [5.5, -1.7], [9.5, -1.7]];
+      const iron = B.tint(0x2b2f3a), poolGeo = B.cached('lpool', () => new T.PlaneGeometry(5, 5).rotateX(-Math.PI / 2)), glassGeo = B.cached('lglass', () => new T.CylinderGeometry(0.13, 0.11, 0.32, 10));
+      BC.forEach(c => { lampMats[c] = {
+        halo: new T.SpriteMaterial({ map: glowTex, color: c, blending: T.AdditiveBlending, transparent: true, depthWrite: false, opacity: 0.3 }),
+        pool: new T.MeshBasicMaterial({ map: glowTex, color: c, blending: T.AdditiveBlending, transparent: true, depthWrite: false, opacity: 0, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }),
+        glass: new T.MeshBasicMaterial({ color: new T.Color(c).lerp(new T.Color(0xffffff), 0.45) })
+      }; });
       spots.forEach(([x, z], i) => {
-        cyl(0.05, 0.06, 1.5, mats.wood, x, 0.75, z, null, 8);
-        const bm = new T.MeshBasicMaterial({ color: BC[i % BC.length] }), b = new T.Mesh(B.cached('bulb', () => new T.SphereGeometry(0.2, 12, 10)), bm); b.position.set(x, 1.65, z); scene.add(b);
-        bulbs.push({ b, ph: i });
+        const c = BC[i % BC.length], m = lampMats[c], g = new T.Group(); g.position.set(x, 0, z); scene.add(g);
+        cyl(0.13, 0.15, 0.1, iron, 0, 0.05, 0, g, 10); cyl(0.035, 0.05, 1.85, iron, 0, 0.98, 0, g, 8);          // base e palo
+        cyl(0.15, 0.1, 0.07, iron, 0, 1.95, 0, g, 10);                                                          // piattello
+        const glass = new T.Mesh(glassGeo, m.glass); glass.position.y = 2.14; g.add(glass);                    // vetro che brilla
+        [[1, 1], [-1, 1], [1, -1], [-1, -1]].forEach(([sx, sz]) => cyl(0.012, 0.012, 0.34, iron, sx * 0.1, 2.14, sz * 0.1, g, 4)); // telaio
+        const cap = new T.Mesh(B.cached('lcap', () => new T.ConeGeometry(0.2, 0.17, 10)), iron); cap.position.y = 2.38; cap.castShadow = true; g.add(cap);
+        ball(0.035, iron, 0, 2.5, 0, g, 6, 5);
+        const halo = new T.Sprite(m.halo); halo.position.y = 2.14; halo.scale.setScalar(1.4); g.add(halo);        // alone
+        const pool = new T.Mesh(poolGeo, m.pool); pool.position.y = 0.07; pool.renderOrder = 3; g.add(pool);     // macchia di luce a terra
+        lamps.push({ x, z, c, glass, halo, ph: i });
       });
+      for (let k = 0; k < 4; k++) { const l = new T.PointLight(0xffd9a0, 0, 9, 2); scene.add(l); lampLights.push(l); } // luci vere (quelle vicine all'omino)
+    }
+    function updateLamps() {
+      if (!lamps.length) return;
+      const n = env ? env.night : 0, p = player.position;
+      Object.keys(lampMats).forEach(c => { lampMats[c].halo.opacity = 0.22 + n * 0.6; lampMats[c].pool.opacity = n * 0.4; });
+      lamps.forEach(l => { const f = 1 + 0.07 * Math.sin(tt * 3 + l.ph); l.glass.scale.setScalar(f); l.halo.scale.setScalar((1.2 + n * 0.9) * f); l._d = Math.hypot(l.x - p.x, l.z - p.z); });
+      const near = lamps.slice().sort((a, b) => a._d - b._d);
+      lampLights.forEach((li, k) => { const l = near[k]; li.position.set(l.x, 2.3, l.z); li.color.setHex(l.c); li.intensity = n * 2.4 * (1 + 0.05 * Math.sin(tt * 4 + l.ph)); });
     }
     function buildMascot(pd) {
       const hold = (g, amp) => { scene.add(g); bobbers.push({ g, ph: 1, base: 0, amp: amp || 0.04 }); cols.push([pd.x - 0.6, pd.x + 0.6, pd.z - 0.6, pd.z + 0.6]); };
@@ -1074,8 +1101,8 @@
         r.flare = Math.max(0, r.flare - dt * 3);
         const lit = r.fuel > 0, s = lit ? 0.45 + r.fuel / P.fuel_max * 0.75 + r.flare * 0.35 : 0;
         r.flame.visible = lit; r.flame.scale.set(s, s * (1 + 0.18 * Math.sin(tt * 13 + r.i)), s);
-        r.light.intensity = lit ? (0.6 + r.fuel / P.fuel_max + 0.15 * Math.sin(tt * 17 + r.i) + r.flare * 0.8) * (1 + (env ? env.night : 0) * 2.4) : 0;
-        r.light.distance = 8 + (env ? env.night : 0) * 6;
+        r.light.intensity = lit ? (0.6 + r.fuel / P.fuel_max + 0.15 * Math.sin(tt * 17 + r.i) + r.flare * 0.8) * (1 - (env ? env.night : 0) * 0.35) : 0; // di notte il fuoco illumina meno (prima di più: abbagliava)
+        r.light.distance = 8;
         r.pile.rotation.y = tt * 0.8; r.pile.position.y = 0.05 + 0.04 * Math.sin(tt * 3 + r.i);
       }
       for (const t of trees) { animateTree(t, dt); fadeTree(t, p, dt); }
@@ -1109,7 +1136,7 @@
       for (const fnA of lmAnim) fnA(dt);
       for (const rp of ripples) { const k = (tt * 0.3 + rp.ph) % 1; rp.m.scale.setScalar(0.6 + k * 2.6); rp.m.material.opacity = 0.5 * (1 - k) * Math.min(1, k * 6); }
       for (const b of bobbers) { const base = b.base == null ? 0.05 : b.base, amp = b.amp == null ? 0.05 : b.amp; b.g.position.y = base + Math.sin(tt * 1.6 + b.ph) * amp; if (b.amp == null) b.g.rotation.z = Math.sin(tt * 1.2 + b.ph) * 0.05; }
-      for (const l of bulbs) l.b.scale.setScalar(1 + 0.12 * Math.sin(tt * 3 + l.ph));
+      updateLamps();
       // camera isometrica che segue il giocatore; si allontana in verticale (portrait)
       const asp = innerWidth / innerHeight, k = asp < 0.8 ? 1.45 : asp < 1.2 ? 1.15 : 1;
       camGoal.set(p.x, 15 * k, p.z + 12 * k);

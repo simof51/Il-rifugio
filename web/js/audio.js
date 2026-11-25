@@ -76,7 +76,7 @@
       if (amb || !ctx) return;
       const mk = (type, freq, q) => { const s = ctx.createBufferSource(); s.buffer = noiseBuf; s.loop = true; const f = ctx.createBiquadFilter(); f.type = type; f.frequency.value = freq; if (q) f.Q.value = q; const g = ctx.createGain(); g.gain.value = 0; s.connect(f); f.connect(g); s.start(); return g; };
       const master = ctx.createGain(); master.connect(ctx.destination);
-      const wind = mk('bandpass', 420, 0.7), rain = mk('highpass', 1400), waves = mk('lowpass', 520);
+      const wind = mk('bandpass', 420, 0.7), rain = mk('bandpass', 850, 0.3), waves = mk('lowpass', 520); // pioggia: rumore morbido, senza le frequenze acute che pungono
       [wind, rain, waves].forEach(g => g.connect(master));
       // Grilli: un tono acuto che pulsa. Il livello finale (lev) sta DOPO la pulsazione: a zero il tono è davvero muto
       // (prima la pulsazione si sommava al volume e il tono acuto si sentiva sempre, come un fischio).
@@ -97,7 +97,7 @@
       amb.master.gain.setTargetAtTime(v, t, 0.3);
       const cold = o.season === 'inverno';
       set(amb.wind, (cold ? 0.35 : 0.15) + o.wind * 0.4 + o.storm * 0.25);
-      set(amb.rain, o.rain * 0.4);
+      set(amb.rain, Math.min(1, o.rain) * 0.07 + o.storm * 0.03);
       set(amb.waves, (o.season === 'estate' || o.season === 'primavera') ? 0.12 : 0.02);
       set(amb.crick, (cold || o.rain > 0.3 || o.night < 0.5) ? 0 : (o.night - 0.5) * 0.06); // solo di notte fonda, molto piano
     }

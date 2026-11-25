@@ -5,7 +5,7 @@
     wood: 'legna', treeArt: 'un albero', trees: 'alberi', fire: 'camino', fires: 'camini', room: 'stanza', roomTitle: 'Stanza', roomShort: 'stanza',
     guests: 'escursionisti', guestEmoji: '🍂', firstGuest: 'il primo escursionista', drinks: 'sidri caldi', stand: 'il banco del sidro caldo', stand2: 'il banco sidro veloce', standTitle: 'Sidro caldo', stand2Title: 'Sidro veloce',
     helper: 'un boscaiolo', helperTitle: 'Boscaiolo stanza', bootsName: 'gli stivali veloci', bootsTitle: 'Stivali veloci',
-    insulText: 'Isola i camini: il fuoco dura di più', insulTitle: 'Camini isolati', signText: 'Pianta il cartello: arrivano più ospiti', signTitle: 'Cartello',
+    insulText: 'Durata camini più lunga', insulTitle: 'Durata camini più lunga', signText: 'Pianta il cartello: arrivano più ospiti', signTitle: 'Cartello',
     mascotEmoji: '🎃', mascotText: 'Costruisci lo spaventapasseri', mascotName: 'Spaventapasseri'
   };
   R.levels.autunno = {

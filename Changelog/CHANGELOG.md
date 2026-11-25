@@ -9,6 +9,28 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.8.2 · 2026-11-25 · Lanterne che fanno luce, miglioramenti sempre disponibili, pioggia più dolce
+
+**Richiesto**
+- Le lanterne devono fare luce e avere una grafica migliore.
+- Meno luce dal camino di notte.
+- Miglioramenti e ampliamenti sempre disponibili, scollegati dagli obiettivi.
+- Rumore della pioggia assordante: migliorarlo.
+- Il testo dell'acquisto dei camini isolati diventa "Durata camini più lunga".
+
+**Modificato**
+| File | Cosa |
+|---|---|
+| `web/js/game.js` | Lanterne nuove: palo di ferro con base, lanterna con telaio, vetro colorato che brilla, tettuccio. Di notte hanno un alone, una macchia di luce colorata a terra e vere luci (le 4 più vicine all'omino) che illuminano i dintorni. Il fuoco di camini e barbecue illumina meno di notte (−35%; prima +70%). Tutte le piazzole sono visibili dall'inizio: restano solo i legami fisici (boscaioli e camerieri solo per le stanze aperte, camerieri solo con il banco). |
+| `web/js/audio.js` | Pioggia: rumore morbido a banda media, volume circa 1/6 di prima, senza le frequenze acute. |
+| `web/js/levels/*.js` | "Durata camini più lunga" (inverno e autunno) e "Durata barbecue più lunga" (estate e primavera), sia come obiettivo sia come nome della piazzola. |
+| `web/sw.js` | `CACHE` v16. |
+
+**Per tornare indietro**
+- `git checkout 183406d -- web`
+
+---
+
 ## v0.8.1 · 2026-11-25 · Tolto il fischio continuo
 
 **Problema**

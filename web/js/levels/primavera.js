@@ -5,7 +5,7 @@
     wood: 'legna', treeArt: 'un albero', trees: 'alberi', fire: 'barbecue', fires: 'barbecue', room: 'area picnic', roomTitle: 'Area picnic', roomShort: 'area',
     guests: 'ospiti', guestEmoji: '🧺', firstGuest: 'il primo ospite', drinks: 'spremute', stand: 'il chiosco delle spremute', stand2: 'il chiosco spremute veloce', standTitle: 'Chiosco spremute', stand2Title: 'Spremute veloci',
     helper: 'un giardiniere', helperTitle: 'Giardiniere area', bootsName: 'le scarpe da corsa', bootsTitle: 'Scarpe da corsa',
-    insulText: 'Barbecue potenti: il fuoco dura di più', insulTitle: 'Barbecue potenti', signText: 'Pianta il cartello del giardino: arrivano più ospiti', signTitle: 'Cartello giardino',
+    insulText: 'Durata barbecue più lunga', insulTitle: 'Durata barbecue più lunga', signText: 'Pianta il cartello del giardino: arrivano più ospiti', signTitle: 'Cartello giardino',
     mascotEmoji: '🐰', mascotText: 'Porta in giardino il coniglio gigante', mascotName: 'Coniglio gigante'
   };
   R.levels.primavera = {
