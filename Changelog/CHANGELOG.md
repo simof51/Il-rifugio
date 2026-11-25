@@ -9,6 +9,14 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.19.0 · 2026-11-26 · Ospiti da ovest, banco davanti alle camere, strade per luogo
+
+- **Ospiti**: arrivano dal bordo ovest della mappa, da 2 o 3 strade diverse (attorno al lago dove c'è), fanno la fila alla reception, vanno in stanza; quando partono ripassano dal bancone, pagano e vanno a est lungo la passeggiata fino al bordo della mappa, dove spariscono.
+- **Banco delle bevande** davanti alle camere (a sud della passeggiata), con il lato di servizio verso le stanze. I riquadri "banco" e "banco veloce" si sono spostati lì; le lanterne seguono la nuova passeggiata.
+- **Riquadri degli upgrade** sempre visibili: attorno a ognuno non finiscono più cumuli di neve, sassi, cespugli o alberi.
+- **Strade** più uniformi (larghezza costante, curve morbide) e diverse per ogni città e stagione: larghezza, ondulazione, bordi, sassolini (nessuno, radi o fitti) e numero di strade d'ingresso cambiano.
+- **Per tornare indietro**: `git checkout b29b89f -- web tests Changelog`.
+
 ## v0.18.0 · 2026-11-26 · Fila alla reception, compagno a gemme, negozio delle gemme
 
 - **Fila alla reception**: gli ospiti arrivano, si mettono in fila davanti al bancone (a sinistra del tappeto), il primo fa il check-in (la receptionist saltella) e poi va alla sua stanza. Quando se ne vanno ripassano dal bancone, lasciano i soldi nella ciotola (a destra) e escono.

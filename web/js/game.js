@@ -3,8 +3,9 @@
 (function (R) {
   'use strict';
 
-  const FEED_Z = -7.6, PILE_Z = -3.2, COCOA_PICK = [11, -5.6];
-  const SPAWN = [17, 1.2];
+  // Il banco delle bevande sta davanti alle camere (sud della passeggiata): chi serve lo prende dal lato nord, verso le stanze.
+  const STAND = { x: 3, z: 0.2 };
+  const FEED_Z = -7.6, PILE_Z = -3.2, COCOA_PICK = [STAND.x, STAND.z - 1.2];
   const RECEP = { x: -5.35, z: -6.8 }; // reception: bancone con la receptionist; gli ospiti che partono pagano qui, l'omino riscuote davanti
   const COATS = [0x4f8cff, 0xa066ff, 0xff9a2a, 0x2ec4b6, 0xff5d8f, 0x6bcf3a];
   const CONFETTI = [0xff4d4d, 0xffd23a, 0x3d8bff, 0x4cd964, 0xff7ac6, 0xa066ff];
@@ -53,6 +54,9 @@
     // Monumento della città (mulino o faro): occupa un angolo della mappa, senza alberi né decorazioni intorno.
     const LM = level.landmark === 'windmill' ? { x: 23.5, z: -11.5, r: 4.4 } : level.landmark === 'lighthouse' ? { x: -25, z: -12.5, r: 3.8 } : null;
     const inLM = (x, z, pad) => !!LM && Math.hypot(x - LM.x, z - LM.z) < LM.r + (pad || 0);
+    // I punti upgrade (riquadri a terra) non devono finire sotto la neve, un sasso o un albero: attorno a loro niente decorazioni.
+    const PADS = (level.unlocks || []).map(u => u.pos);
+    const nearPad = (x, z, r) => PADS.some(p => Math.hypot(p[0] - x, p[1] - z) < r);
     const snowy = TH.fall === 'snow'; // d'inverno: neve che cade, sassi e cespugli innevati
 
     // --- paesaggio ----------------------------------------------------------
@@ -63,7 +67,11 @@
     // Ogni sentiero è un nastro che segue una curva morbida (spline), con le estremità arrotondate, la larghezza che respira appena
     // e due bordi sfumati (strisce più larghe e trasparenti sotto) più qualche sassolino ai lati: niente più rettangoli con angoli netti.
     const edgeMat = (o, f) => { const m = new T.MeshPhongMaterial({ color: new T.Color(TH.ground).lerp(new T.Color(TH.path || 0x888888), f), transparent: true, opacity: o, depthWrite: false, shininess: 0 }); m.polygonOffset = true; m.polygonOffsetFactor = -1; m.polygonOffsetUnits = -1; return m; };
-    const EDGES = [[0.62, 0.3, 0.012], [0.5, 0.55, 0.016]];
+    // Ogni tappa (città + stagione) ha le sue strade: larghezza, ondulazione, numero di strade d'ingresso, bordi e sassolini cambiano.
+    const rh = EX.hash(String(level.id) + String(level.cityId || level.cityName || ''));
+    const ROAD_W = [1.4, 1.6, 1.8, 2.0][rh % 4], WAVE = 0.4 + ((rh >> 3) % 5) * 0.25, PEB = ['none', 'sparse', 'dense'][(rh >> 9) % 3];
+    const wv = k => Math.sin(k * 1.9 + (rh % 89)) * WAVE;   // ondulazione dolce e regolare
+    const EDGES = (rh >> 5) % 2 ? [[0.62, 0.3, 0.012], [0.5, 0.55, 0.016]] : [[0.55, 0.4, 0.012]];
     const pebbles = [];
     function pathRibbon(pts, w, y, mat, uvScale, extra, wobble) {
       const curve = new T.CatmullRomCurve3(pts.map(p => new T.Vector3(p[0], 0, p[1])), false, 'centripetal');
@@ -83,20 +91,27 @@
       const m = new T.Mesh(geo, mat); m.receiveShadow = true; scene.add(m);
       return { P0, len };
     }
-    function pathPlane(pts, w) {
-      EDGES.forEach(([o, f, y], k) => pathRibbon(pts, w, y, edgeMat(o, f), 2.4, 0.5 - k * 0.22, true));
-      const r = pathRibbon(pts, w, 0.026, mats.path, 2.4, 0, true);
-      const pc = (TH.pathTex && TH.pathTex.cols) || ['#8c8b87'];
-      for (let i = 2; i < r.P0.length - 2; i += 2) {
-        if (rnd() < 0.45) continue;
-        const a = r.P0[i - 1], b = r.P0[i + 1], tl = Math.hypot(b.x - a.x, b.z - a.z) || 1, side = rnd() < 0.5 ? 1 : -1, off = (w / 2 + 0.25 + rnd() * 0.5) * side;
-        pebbles.push({ geo: pebbleGeo, x: r.P0[i].x - (b.z - a.z) / tl * off, y: 0.04, z: r.P0[i].z + (b.x - a.x) / tl * off, s: [0.1 + rnd() * 0.12, 0.07 + rnd() * 0.05, 0.1 + rnd() * 0.12], ry: rnd() * 3, color: new T.Color(pc[(rnd() * pc.length) | 0]).getHex() });
+    function pathPlane(pts, w) { // strada di larghezza costante (uniforme), bordi sfumati e, secondo il luogo, sassolini regolari
+      EDGES.forEach(([o, f, y], k) => pathRibbon(pts, w, y, edgeMat(o, f), 2.4, 0.5 - k * 0.22, false));
+      const r = pathRibbon(pts, w, 0.026, mats.path, 2.4, 0, false);
+      const pc = (TH.pathTex && TH.pathTex.cols) || ['#8c8b87'], step = PEB === 'dense' ? 3 : 7;
+      if (PEB !== 'none') for (let i = 3, k = 0; i < r.P0.length - 3; i += step, k++) {
+        const a = r.P0[i - 1], b = r.P0[i + 1], tl = Math.hypot(b.x - a.x, b.z - a.z) || 1, side = k % 2 ? 1 : -1, off = (w / 2 + 0.45) * side;
+        pebbles.push({ geo: pebbleGeo, x: r.P0[i].x - (b.z - a.z) / tl * off, y: 0.04, z: r.P0[i].z + (b.x - a.x) / tl * off, s: [0.13, 0.08, 0.13], ry: k, color: new T.Color(pc[k % pc.length]).getHex() });
       }
+      return r.P0;
     }
     const pebbleGeo = new T.SphereGeometry(1, 6, 4);
-    // Passeggiata davanti alla baita (appena ondulata) e viale che se ne stacca con una curva dolce verso est.
-    pathPlane([[-10.6, -2.9], [-6, -2.85], [-1, -2.95], [3, -2.9], [8, -2.95], [12, -2.9], [14.6, -2.9]], 1.5);
-    pathPlane([[3, -2.9], [3.15, -1.2], [4.3, 0.35], [6.6, 1.15], [10, 1.05], [14, 1.3], [17.6, 1.2]], 1.5);
+    const sampleRoad = (P0, step) => P0.filter((_, i) => i % step === 0 || i === P0.length - 1).map(p => [p.x, p.z]);
+    // Passeggiata davanti alle camere: da lì i clienti escono verso est, fino al bordo della mappa.
+    const WALK = [[-13.5, -2.9], [-7, -2.9 + wv(1) * 0.3], [0, -2.9 + wv(2) * 0.3], [7, -2.8 + wv(3) * 0.25], [13, -2.5 + wv(4) * 0.3], [19, -1.2 + wv(5) * 0.4], [25, 0.6 + wv(6) * 0.3], [32, 1.4]];
+    const walkP0 = pathPlane(WALK, ROAD_W), exitRoad = sampleRoad(walkP0, 8);
+    // Strade d'ingresso: arrivano dal bordo ovest della mappa, ognuna da una parte diversa (due o tre, attorno al lago se c'è).
+    const inRoads = [];
+    const addIn = pts => { inRoads.push(sampleRoad(pathPlane(pts, ROAD_W), 9)); };
+    addIn([[-32, -6], [-26, -5.6 + wv(7) * 0.5], [-20, -4.4 + wv(8) * 0.5], [-16, -3.3], [-13.5, -2.9]]);
+    addIn([[-32, 15], [-25, 14], [-17, 11 + wv(9) * 0.4], [-14, 5], [-12.8, 0.5], [-13.5, -2.9]]);
+    if (!lake && !LM && (rh >> 7) % 2) addIn([[-32, -11], [-26, -9.6 + wv(10) * 0.4], [-20, -8.2], [-15.5, -6.4], [-13.4, -4.3], [-13.5, -2.9]]);
     if (pebbles.length) scene.add(new T.Mesh(B.mergeParts(pebbles), mats.accent));
 
     // Bordi della mappa ben definiti: d'inverno una catena di montagne alte con la cima innevata, d'estate una foresta fitta.
@@ -138,6 +153,7 @@
       const s = new T.Mesh(moundGeo, mats.ground);
       s.scale.set(1 + rnd() * 1.5, 0.35, 1 + rnd()); s.position.set(-16 + rnd() * 32, 0, -12 + rnd() * 28);
       if (Math.abs(s.position.z + 6) < 4 && Math.abs(s.position.x) < 13) continue;
+      if (nearPad(s.position.x, s.position.z, Math.max(s.scale.x, s.scale.z) + 1.5)) continue; // niente cumuli di neve sopra i riquadri
       if (inLake(s.position.x, s.position.z, 3)) continue;
       add(s);
     }
@@ -159,7 +175,7 @@
       const spot = () => {
         for (let k = 0; k < 25; k++) {
           const x = bx0 + 1 + rnd() * (bx1 - bx0 - 2), z = bz0 + 1 + rnd() * (bz1 - bz0 - 2);
-          if (!(inLake(x, z, 2.4) || inLM(x, z, 1.8) || (x > -17 && x < 19 && z > -10.5 && z < 5.5))) return [x, z];
+          if (!(inLake(x, z, 2.4) || inLM(x, z, 1.8) || nearPad(x, z, 2.2) || (x > -17 && x < 19 && z > -10.5 && z < 5.5))) return [x, z];
         }
         return null;
       };
@@ -268,7 +284,7 @@
     while (near < P.trees && tries < 800) {
       tries++;
       const x = -12 + rnd() * 24, z = 5 + rnd() * 8;
-      if (trees.some(t => Math.hypot(t.x - x, t.z - z) < 2.5) || inLake(x, z, 1.5) || inLM(x, z, 1)) continue;
+      if (trees.some(t => Math.hypot(t.x - x, t.z - z) < 2.5) || inLake(x, z, 1.5) || inLM(x, z, 1) || nearPad(x, z, 2.6)) continue;
       plantTree(x, z, 1); near++;
     }
     for (let i = 0, planted = 0; i < P.forest_trees * 16 && planted < P.forest_trees; i++) {
@@ -515,12 +531,14 @@
 
     // --- banco bevande ------------------------------------------------------
     const cocoa = { g: new T.Group(), cups: 0, t: 0, open: false }; scene.add(cocoa.g);
-    box(2.2, 1, 1.1, mats.wood, 11, 0.5, -6.8, cocoa.g); box(2.4, 0.1, 1.25, mats.plank, 11, 1.05, -6.8, cocoa.g);
-    cyl(0.35, 0.3, 0.5, mats.stone, 10.2, 1.35, -6.95, cocoa.g); cyl(0.3, 0.3, 0.08, mats.cocoa, 10.2, 1.6, -6.95, cocoa.g);
-    box(0.12, 2.2, 0.12, mats.wood, 12.1, 1.1, -7.3, cocoa.g); box(1.2, 0.5, 0.08, mats.red, 11.6, 2.1, -7.3, cocoa.g);
-    const cupMeshes = [0, 1, 2, 3, 4, 5].map(i => { const c = add(new T.Mesh(B.cupGeo, mats.cup), cocoa.g); c.position.set(10.55 + i * 0.28, 1.21, -6.55); c.visible = false; return c; });
+    // Costruito attorno all'origine e ruotato di 180°: il lato di servizio (tazze, pentola) guarda a nord, verso le camere.
+    box(2.2, 1, 1.1, mats.wood, 0, 0.5, 0, cocoa.g); box(2.4, 0.1, 1.25, mats.plank, 0, 1.05, 0, cocoa.g);
+    cyl(0.35, 0.3, 0.5, mats.stone, -0.8, 1.35, -0.15, cocoa.g); cyl(0.3, 0.3, 0.08, mats.cocoa, -0.8, 1.6, -0.15, cocoa.g);
+    box(0.12, 2.2, 0.12, mats.wood, 1.1, 1.1, -0.5, cocoa.g); box(1.2, 0.5, 0.08, mats.red, 0.6, 2.1, -0.5, cocoa.g);
+    const cupMeshes = [0, 1, 2, 3, 4, 5].map(i => { const c = add(new T.Mesh(B.cupGeo, mats.cup), cocoa.g); c.position.set(-0.45 + i * 0.28, 1.21, 0.25); c.visible = false; return c; });
+    cocoa.g.position.set(STAND.x, 0, STAND.z); cocoa.g.rotation.y = Math.PI;
     cocoa.g.visible = false;
-    function openCocoa() { if (cocoa.open) return; cocoa.open = true; cocoa.g.visible = true; cols.push([9.9, 12.1, -7.35, -6.25]); }
+    function openCocoa() { if (cocoa.open) return; cocoa.open = true; cocoa.g.visible = true; cols.push([STAND.x - 1.25, STAND.x + 1.25, STAND.z - 0.65, STAND.z + 0.65]); }
 
     // --- reception ------------------------------------------------------------
     // Bancone di legno con campanello, ciotola per le monete, scaffale con le chiavi, insegna e una receptionist.
@@ -886,7 +904,7 @@
     function buildLamps() {
       if (lamps.length) return;
       const BC = [0xffd27a]; // tutte le lanterne hanno la stessa luce calda
-      const spots = [[5, 2.7], [9, 2.7], [13, 2.7], [17, 2.7], [-9, -1.7], [-5, -1.7], [5.5, -1.7], [9.5, -1.7]];
+      const spots = [[-10, -1.7], [-5.5, -1.7], [6, -1.7], [10, -1.7], [14.5, -1.3], [19, 0.3], [-13, -1.7], [24, 1.8]];
       const iron = B.tint(0x2b2f3a), poolGeo = B.cached('lpool', () => new T.PlaneGeometry(5, 5).rotateX(-Math.PI / 2)), glassGeo = B.cached('lglass', () => new T.CylinderGeometry(0.13, 0.11, 0.32, 10));
       BC.forEach(c => { lampMats[c] = {
         halo: new T.SpriteMaterial({ map: glowTex, color: c, blending: T.AdditiveBlending, transparent: true, depthWrite: false, opacity: 0.3 }),
@@ -1042,8 +1060,8 @@
       const look = kind === 'vip' ? { coat: 0xffd23a, hat: 0xffffff, opt: { hat: 'crown' } } : kind === 'scout' ? { coat: 0x4cd964, hat: 0x8b5a2b, opt: {} } : kind === 'rush' ? { coat: 0xff7ac6, hat: 0xffffff, opt: {} } : null;
       const g = B.person(look ? look.coat : COATS[Math.floor(Math.random() * COATS.length)], look ? look.hat : CONFETTI[Math.floor(Math.random() * CONFETTI.length)], false, OUTFIT,
         Object.assign({ shorts: SHORTS[Math.floor(Math.random() * SHORTS.length)], shoes: Math.random() < 0.5 ? 0xffffff : 0x3d8bff }, look ? look.opt : {}));
-      g.scale.setScalar(kind === 'vip' ? 1 : 0.88); g.position.set(SPAWN[0], 0, SPAWN[1]);
-      const gu = { g, r, b, state: 'queue', path: [], stay: P.guest_stay * (kind === 'vip' ? 1.4 : 1), cold: 0, want: false, served: false, el: hud.label('pill', ''), vip: kind === 'vip', scout: kind === 'scout', rush: kind === 'rush' ? 24 : 0, taken: false };
+      g.scale.setScalar(kind === 'vip' ? 1 : 0.88); const road = inRoads[Math.floor(Math.random() * inRoads.length)]; g.position.set(road[0][0], 0, road[0][1]); g.rotation.y = Math.PI / 2;
+      const gu = { g, r, b, state: 'road', path: road.slice(1).map(p => p.slice()), stay: P.guest_stay * (kind === 'vip' ? 1.4 : 1), cold: 0, want: false, served: false, el: hud.label('pill', ''), vip: kind === 'vip', scout: kind === 'scout', rush: kind === 'rush' ? 24 : 0, taken: false };
       b.guest = gu; guests.push(gu);
       return gu;
     }
@@ -1084,9 +1102,11 @@
       else { for (let i = 0; i < Math.min(3, free); i++) spawnGuest('scout'); hud.toast('🏕️ Arriva una squadra di scout! Pagano di più'); }
       A.sfx('guest'); fauna.celebrate();
     }
+    // Percorso d'uscita: dalla passeggiata verso est fino al bordo della mappa (poi l'ospite sparisce).
+    const exitFrom = x => exitRoad.filter(p => p[0] > x + 2.5).map(p => p.slice());
     function leave(gu, happy) {
       const g = gu.g; g.rotation.set(0, 0, 0); g.position.set(gu.b.x, 0, -4.6); gu.b.guest = null; gu.state = 'out'; g.userData.blob.visible = true;
-      gu.path = [[gu.r.cx, -2.8], [SPAWN[0], SPAWN[1]]];
+      gu.path = [[gu.r.cx, -3.1]].concat(exitFrom(gu.r.cx)); // cold: esce subito, verso est
       if (happy) {
         const pay = Math.round((P.pay + (gu.served ? P.tip : 0)) * (gu.vip ? 3 : gu.scout ? 1.5 : 1) * (R.shop.has('boost') ? 1.5 : 1) * MT.payMul()); // "Ospiti generosi" dallo shop: +50%; poi evento di stagione e nuove gestioni
         // passa dalla reception e lascia i soldi sul bancone
@@ -1210,7 +1230,7 @@
         cocoa.t += dt; if (cocoa.t > cocoaInterval() && cocoa.cups < cocoaMax()) { cocoa.cups++; cocoa.t = 0; }
         if (cocoa.cups > 0 && carry.cups < cupCap() && cupCd <= 0 && Math.hypot(p.x - COCOA_PICK[0], p.z - COCOA_PICK[1]) < 1.5) {
           cupCd = 0.22; cocoa.cups--; carry.cups++; inCups++; changed = true; A.sfx('pickup');
-          _v.set(10.55 + Math.min(5, cocoa.cups) * 0.28, 1.3, -6.55);
+          _v.set(-0.45 + Math.min(5, cocoa.cups) * 0.28, 1.3, 0.25); cocoa.g.localToWorld(_v);
           fly('cup', _v, o => stackG.getWorldPosition(o), 0.4, 0.8, () => { inCups--; refreshStack(); });
         }
         cupMeshes.forEach((c, i) => { c.visible = i < cocoa.cups; });
@@ -1254,7 +1274,8 @@
       const queue = guests.filter(g => g.state === 'queue'); // fila alla reception, nell'ordine di arrivo
       for (let i = guests.length - 1; i >= 0; i--) {
         const gu = guests[i];
-        if (gu.state === 'queue') {
+        if (gu.state === 'road') { if (B.follow(gu.g, gu.path, 3.2, dt)) gu.state = 'queue'; } // cammina lungo la sua strada, dal bordo ovest
+        else if (gu.state === 'queue') {
           const k = queue.indexOf(gu); gu.path = [[RECEP.x - 0.55, RECEP.z + 1.45 + k * 0.85]];
           if (B.follow(gu.g, gu.path, 2.8, dt)) { // al suo posto nella fila: il primo fa il check-in e poi va in stanza
             gu.g.rotation.y = Math.PI;
@@ -1272,7 +1293,7 @@
           if (gu.cold > P.guest_cold_limit) leave(gu, false); else if (gu.stay <= 0) leave(gu, true);
         } else if (gu.wait > 0) { // al bancone della reception: lascia i soldi, poi esce
           gu.wait -= dt; gu.g.rotation.y = Math.PI;
-          if (gu.wait <= 0) { payAtReception(gu.pay); gu.pay = 0; gu.path = [[SPAWN[0], SPAWN[1]]]; }
+          if (gu.wait <= 0) { payAtReception(gu.pay); gu.pay = 0; gu.path = [[gu.g.position.x + 0.6, -3.2]].concat(exitFrom(gu.g.position.x)); }
         } else if (B.follow(gu.g, gu.path, 2.8, dt)) {
           if (gu.pay > 0) gu.wait = 0.8; else { scene.remove(gu.g); gu.el.remove(); guests.splice(i, 1); }
         }
