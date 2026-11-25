@@ -12,7 +12,9 @@
   R.createGame = function ({ hud, level, state, audio }) {
     const T = THREE, P = level.tuning, S = state.data, objectives = level.objectives, TH = level.theme, TX = level.text;
     const A = audio || { sfx() {} }; // suoni (se manca l'audio il gioco funziona lo stesso)
-    const OUTFIT = TH.outfit || 'winter'; // guardaroba degli omini: 'winter' o 'summer'
+    const OUTFIT = TH.outfit || 'winter'; // guardaroba degli omini: 'winter', 'spring' o 'summer'
+    const V = level.voc || {}; // parole della tappa (albero, camino o barbecue, ospite, area, bevanda…): i testi si adattano a stagione e luogo
+    const upFirst = s => s.charAt(0).toUpperCase() + s.slice(1);
 
     // --- motore -------------------------------------------------------------
     // Prestazioni: niente antialias (pesa molto sul telefono) e ombre PCF semplici (le "soft" costano di più).
@@ -394,7 +396,25 @@
       const light = new T.PointLight(0xff8a3d, 0, 8); light.position.set(cx, 1.3, -7.4); scene.add(light);
       const beds = [-1.4, 1.4].map((o, k) => {
         const bx = cx + o;
-        if (lido) {
+        if (lido && TH.seat === 'table') {
+          // tavolino con sedia: tavolo da picnic con panche e tovaglia a quadri (primavera) oppure tavolino rotondo con sedie (estate);
+          // l'ospite si siede, sul tavolo c'è un piatto e la tazza con la bevanda del posto
+          const picnic = TH.table === 'picnic', wood = B.tint(0xb98a56), linen = B.tint(TOWELS[(i * 2 + k) % TOWELS.length]);
+          if (picnic) {
+            box(1.5, 0.08, 0.8, wood, bx, 0.72, -6.85, g, 0.03); box(1.2, 0.02, 0.66, mats.red, bx, 0.77, -6.85, g, 0.01); box(0.5, 0.025, 0.66, mats.white, bx, 0.785, -6.85, g, 0.01);
+            [-0.55, 0.55].forEach(lx => { const lg = box(0.08, 0.72, 0.8, wood, bx + lx, 0.36, -6.85, g, 0.02); lg.scale.z = 0.8; });
+            box(1.5, 0.08, 0.3, wood, bx, 0.42, -6.02, g, 0.03); box(1.5, 0.08, 0.3, wood, bx, 0.42, -7.68, g, 0.03);       // le due panche
+          } else {
+            cyl(0.06, 0.06, 0.62, mats.white, bx, 0.34, -6.85, g, 8); cyl(0.3, 0.3, 0.04, mats.white, bx, 0.03, -6.85, g, 12); cyl(0.58, 0.58, 0.05, linen, bx, 0.66, -6.85, g, 18);
+            [[-5.98, 1], [-7.72, -1]].forEach(([cz, dir]) => { // sedia (quella verso l'ospite e una vuota di fronte)
+              box(0.44, 0.06, 0.44, wood, bx, 0.42, cz, g, 0.02); box(0.44, 0.5, 0.05, wood, bx, 0.68, cz + dir * 0.22, g, 0.02);
+              [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => box(0.05, 0.4, 0.05, wood, bx + sx * 0.18, 0.2, cz + sz * 0.18, g, 0.01));
+            });
+          }
+          const ty = picnic ? 0.8 : 0.69;
+          cyl(0.22, 0.22, 0.02, mats.white, bx - 0.25, ty + 0.01, -6.85, g, 14); ball(0.1, mats.orange, bx - 0.25, ty + 0.08, -6.85, g, 8, 6);          // piatto con un cibo
+          const cupM = new T.Mesh(B.cupGeo, mats.cup); cupM.position.set(bx + 0.3, ty + 0.1, -6.85); cupM.castShadow = true; g.add(cupM);               // tazza
+        } else if (lido) {
           // lettino: telaio bianco, schienale inclinato, telo colorato e asciugamano arrotolato come cuscino
           box(1.05, 0.2, 2.1, mats.white, bx, 0.45, -6.7, g, 0.05);
           const back = box(1.05, 0.12, 0.85, mats.white, bx, 0.72, -7.65, g, 0.04); back.rotation.x = -0.55;
@@ -410,7 +430,7 @@
       const ghost = box(RW, 0.05, 5, mats.ghost, cx, 0.03, -6.5, null, 0.02); ghost.castShadow = false;
       const el = hud.label('fuel', '<i></i>');
       g.visible = false;
-      return { i, cx, g, flame, light, beds, pile, pileN: 0, fuel: 0, pend: 0, flare: 0, open: false, ghost, el, bar: el.firstChild, wallL, wallR, colL: null, colR: null, fireY, fireZ };
+      return { i, cx, g, flame, light, beds, pile, pileN: 0, fuel: 0, pend: 0, flare: 0, open: false, ghost, el, bar: el.firstChild, wallL, wallR, colL: null, colR: null, fireY, fireZ, sit: lido && TH.seat === 'table', seatZ: -5.98 };
     });
     const removeCol = c => { const k = cols.indexOf(c); if (k >= 0) cols.splice(k, 1); };
     function openRoom(r) {
@@ -699,7 +719,9 @@
     function padShown(pd) {
       if (pd.needRoom != null && !rooms[pd.needRoom].open) return false; // camerieri e boscaioli solo per le stanze già aperte
       if (pd.effect === 'waiter' && !state.isBought('cocoa')) return false; // il cameriere serve solo se c'è il banco
-      return true; // miglioramenti e ampliamenti sono sempre disponibili: non dipendono più dagli obiettivi
+      // I miglioramenti compaiono a gradini: ognuno richiede di aver già comprato un certo numero di altri miglioramenti (non dipende dagli obiettivi).
+      const need = pd.requires && pd.requires.purchases;
+      return !need || Object.keys(S.bought).length >= need;
     }
     // Decorazioni acquistabili: lanterne colorate lungo i sentieri e la mascotte del livello.
     // Lanterne: palo di ferro, lanterna con telaio, vetro colorato che brilla, tettuccio; di notte un alone, una macchia di luce a terra
@@ -712,7 +734,7 @@
     })();
     function buildLamps() {
       if (lamps.length) return;
-      const BC = [0xff6b5a, 0xffd23a, 0x6be07a, 0x5aa8ff, 0xff8fd0];
+      const BC = [0xffd27a]; // tutte le lanterne hanno la stessa luce calda
       const spots = [[5, 2.7], [9, 2.7], [13, 2.7], [17, 2.7], [-9, -1.7], [-5, -1.7], [5.5, -1.7], [9.5, -1.7]];
       const iron = B.tint(0x2b2f3a), poolGeo = B.cached('lpool', () => new T.PlaneGeometry(5, 5).rotateX(-Math.PI / 2)), glassGeo = B.cached('lglass', () => new T.CylinderGeometry(0.13, 0.11, 0.32, 10));
       BC.forEach(c => { lampMats[c] = {
@@ -738,9 +760,9 @@
       if (!lamps.length) return;
       const n = env ? env.night : 0, p = player.position;
       Object.keys(lampMats).forEach(c => { lampMats[c].halo.opacity = 0.22 + n * 0.6; lampMats[c].pool.opacity = n * 0.4; });
-      lamps.forEach(l => { const f = 1 + 0.07 * Math.sin(tt * 3 + l.ph); l.glass.scale.setScalar(f); l.halo.scale.setScalar((1.2 + n * 0.9) * f); l._d = Math.hypot(l.x - p.x, l.z - p.z); });
+      lamps.forEach(l => { l.halo.scale.setScalar(1.2 + n * 0.9); l._d = Math.hypot(l.x - p.x, l.z - p.z); });
       const near = lamps.slice().sort((a, b) => a._d - b._d);
-      lampLights.forEach((li, k) => { const l = near[k]; li.position.set(l.x, 2.3, l.z); li.color.setHex(l.c); li.intensity = n * 2.4 * (1 + 0.05 * Math.sin(tt * 4 + l.ph)); });
+      lampLights.forEach((li, k) => { const l = near[k]; li.position.set(l.x, 2.3, l.z); li.color.setHex(l.c); li.intensity = n * 2.2; }); // stessa intensità, senza tremolio
     }
     function buildMascot(pd) {
       const hold = (g, amp) => { scene.add(g); bobbers.push({ g, ph: 1, base: 0, amp: amp || 0.04 }); cols.push([pd.x - 0.6, pd.x + 0.6, pd.z - 0.6, pd.z + 0.6]); };
@@ -850,6 +872,16 @@
 
     // --- ospiti -------------------------------------------------------------
     const guests = []; let spawnT = 2;
+    // L'ospite si sdraia (letto o lettino) oppure, dove ci sono tavolini e sedie, si siede al tavolo con le braccia in avanti.
+    function seatGuest(gu) {
+      const u = gu.g.userData;
+      if (gu.r.sit) {
+        gu.g.rotation.set(0, Math.PI, 0); gu.g.position.set(gu.b.x, 0.03, gu.r.seatZ);
+        u.legs.forEach(l => { l.rotation.x = -1.45; });
+        u.arms.forEach(a => { a.rotation.set(-0.9, 0, 0); }); u.elbows.forEach(e => { e.rotation.set(-0.9, 0, 0); });
+        u.up.rotation.set(0, 0, 0); u.up.position.y = 0.42; u.blob.visible = true;
+      } else { gu.g.rotation.set(-Math.PI / 2, 0, 0); gu.g.position.set(gu.b.x, 0.62, -5.7); u.blob.visible = false; }
+    }
     // kind: undefined (ospite normale), 'vip' (paga il triplo), 'scout' (squadra: pagano il 50% in più), 'rush' (ospite affamato: servito in fretta dà un premio).
     function spawnGuest(kind) {
       let fb = null;
@@ -868,11 +900,11 @@
     const tut = { on: !R.settings.get('tutorial') && level.id === 'inverno' && S.done === 0, i: 0, moved: 0, lx: null, lz: null };
     const TSTEPS = [
       ['👆 Trascina il dito sullo schermo per muoverti', () => tut.moved > 3],
-      ['🪓 Vai verso un abete: segui la freccia gialla', () => S.wood >= 1 || !!nearTree(player.position, P.chop_range)],
-      ['🌲 Fermati vicino all\'albero: la legna si taglia da sola!', () => S.wood >= 4],
-      ['🔥 Porta la legna al camino, dove c\'è la barra del fuoco', () => S.fed >= 1],
-      ['🧑 Presto arriverà un escursionista: tieni il camino acceso', () => S.guests >= 1],
-      ['🪙 Raccogli le monete lasciate davanti alla stanza', () => S.collected >= 1],
+      [`🪓 Vai verso ${V.treeArt || 'un albero'}: segui la freccia gialla`, () => S.wood >= 1 || !!nearTree(player.position, P.chop_range)],
+      [`🌲 Fermati vicino all'${V.tree || 'albero'}: la ${V.wood || 'legna'} si taglia da sola!`, () => S.wood >= 4],
+      [`🔥 Porta la ${V.wood || 'legna'} al ${V.fire || 'camino'}, dove c'è la barra del fuoco`, () => S.fed >= 1],
+      [`${V.guestEmoji || '🧑'} Presto arriverà un ${V.guest || 'ospite'}: tieni il ${V.fire || 'camino'} acceso`, () => S.guests >= 1],
+      [`🪙 Raccogli le monete lasciate davanti alla ${V.room || 'stanza'}`, () => S.collected >= 1],
       ['✨ Spendile nei riquadri a terra: la barra si riempie!', () => Object.keys(S.bought).length >= 1 || S.done >= 5]
     ];
     function endTutorial() { tut.on = false; hud.hint(null); R.settings.set('tutorial', true); }
@@ -886,9 +918,9 @@
     }
     // Consigli che compaiono una volta sola, al momento giusto.
     function tips() {
-      if (carry.logs >= logCap() && S.fed === 0 && R.settings.tip('bag')) hud.toast('🎒 Zaino pieno! Porta la legna al camino');
-      if (guests.some(g => g.want && g.state === 'bed' && !g.served) && R.settings.tip('want')) hud.toast(`${TX.want} Portagli la bevanda dal banco!`);
-      if (cocoa.open && carry.cups === 0 && S.cocoa === 0 && R.settings.tip('stand')) hud.toast('☕ Il banco prepara le bevande: avvicinati per prenderle');
+      if (carry.logs >= logCap() && S.fed === 0 && R.settings.tip('bag')) hud.toast(`🎒 Zaino pieno! Porta la ${V.wood || 'legna'} al ${V.fire || 'camino'}`);
+      if (guests.some(g => g.want && g.state === 'bed' && !g.served) && R.settings.tip('want')) hud.toast(`${TX.want} Portagli l'ordinazione dal banco!`);
+      if (cocoa.open && carry.cups === 0 && S.cocoa === 0 && R.settings.tip('stand')) hud.toast(`${V.foodEmoji || '☕'} ${upFirst(V.stand || 'il banco')} prepara le ordinazioni: avvicinati per prenderle`);
     }
     // Eventi a sorpresa ogni 75-135 secondi, dopo i primi obiettivi: un VIP, una squadra di scout o un ospite affamato.
     let eventT = 70;
@@ -897,8 +929,8 @@
       if (!free) return;
       const kinds = ['vip', 'scout', 'rush'].filter(k => (k !== 'scout' || free >= 2) && (k !== 'rush' || cocoa.open));
       const k = kinds[Math.floor(Math.random() * kinds.length)];
-      if (k === 'vip') { if (spawnGuest('vip')) hud.toast('⭐ Sta arrivando un ospite VIP: paga il triplo!'); }
-      else if (k === 'rush') { if (spawnGuest('rush')) hud.toast(`⏱ Ospite affamato! Portagli subito ${TX.drinkShort || 'la bevanda'}: +40 monete`); }
+      if (k === 'vip') { if (spawnGuest('vip')) hud.toast(`⭐ Sta arrivando un ${V.guest || 'ospite'} VIP: paga il triplo!`); }
+      else if (k === 'rush') { if (spawnGuest('rush')) hud.toast(`⏱ Un ${V.guest || 'ospite'} affamato! Portagli subito l'ordinazione ${V.foodEmoji || ''}: +40 monete`); }
       else { for (let i = 0; i < Math.min(3, free); i++) spawnGuest('scout'); hud.toast('🏕️ Arriva una squadra di scout! Pagano di più'); }
       A.sfx('guest'); fauna.celebrate();
     }
@@ -934,6 +966,7 @@
       return null;
     }
     function refreshHud() {
+      hud.setGems(R.settings.get('gems'));
       hud.setStats(S.coins, stars(), carry.logs, logCap(), carry.cups, cupCap(), cocoa.open);
       if (S.done < objectives.length) {
         const o = objectives[S.done], n = objTarget(o), v = Math.min(n, objValue(o));
@@ -1069,7 +1102,7 @@
         const gu = guests[i];
         if (gu.state === 'in') {
           if (B.follow(gu.g, gu.path, 2.6, dt)) {
-            gu.state = 'bed'; gu.g.rotation.set(-Math.PI / 2, 0, 0); gu.g.position.set(gu.b.x, 0.62, -5.7); gu.g.userData.blob.visible = false; A.sfx('guest'); fauna.react();
+            gu.state = 'bed'; seatGuest(gu); A.sfx('guest'); fauna.react();
             gu.want = cocoa.open && (gu.vip || gu.scout || gu.rush > 0 || Math.random() < P.cocoa_chance);
           }
         } else if (gu.state === 'bed') {
@@ -1169,7 +1202,7 @@
         }
         if (gu.el.textContent !== txt) gu.el.textContent = txt;
         if (gu.el.className !== cls) gu.el.className = cls;
-        hud.put(gu.el, gu.b.x, 1.4, -6.6, !!txt);
+        hud.put(gu.el, gu.b.x, gu.r.sit ? 2.2 : 1.4, gu.r.sit ? -6 : -6.6, !!txt);
       });
       hud.updateFloats(dt);
     }
@@ -1194,7 +1227,7 @@
       save,
       // Strumenti di prova (menu Debug e `window.rifugioDebug` con ?debug).
       debug: {
-        player, S, carry, trees, rooms, helpers, waiters, guests, cocoa, openRoom, openCocoa, spawnHelper, spawnWaiter, spawnGuest,
+        player, S, carry, trees, rooms, helpers, waiters, guests, cocoa, pads, padShown, openRoom, openCocoa, spawnHelper, spawnWaiter, spawnGuest,
         tp(x, z) { player.position.x = x; player.position.z = z; },
         coins(n) { S.coins += n; },
         // porta l'omino in un punto utile

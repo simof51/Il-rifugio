@@ -55,6 +55,9 @@
       if (E.taskBar._w !== w) { E.taskBar._w = w; E.taskBar.style.width = w; }
     }
 
+    // Gemme (si usano per cambiare l'aspetto dell'omino): sempre visibili in alto.
+    const gemN = $('gemN');
+    function setGems(n) { setText(gemN, n, true); }
     // Icone di ora e meteo (🌙 🌧️ …) accanto agli indicatori.
     const envChip = $('envChip'), envN = $('envN');
     function setEnv(txt) { envChip.hidden = !txt; envN.textContent = txt; }
@@ -70,7 +73,7 @@
     function hideStick() { stick.style.display = 'none'; }
 
     return {
-      label, put, toast, floatText, updateFloats, setStats, setTask, showStick, moveKnob, hideStick, setEnv, hint,
+      label, put, toast, floatText, updateFloats, setStats, setTask, showStick, moveKnob, hideStick, setEnv, setGems, hint,
       onHintSkip(fn) { hud_skip = fn; },
       setCamera(c) { cam = c; },
       hideIntro() { $('intro').classList.add('hidden'); },

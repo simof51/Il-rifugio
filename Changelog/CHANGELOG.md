@@ -9,6 +9,30 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.9.0 · 2026-11-25 · Tavolini e sedie, cibi del posto, miglioramenti a gradini, gemme in alto
+
+**Richiesto**
+- Tutte le lanterne con la stessa luce; meno luce attorno all'omino.
+- Gemme sempre visibili in alto.
+- Testi adatti a stagione e luogo; d'estate tavolini e sedie al posto dei lettini; cibi diversi per stagione e luogo.
+- Miglioramenti non tutti subito: a gradini.
+
+**Modificato**
+| File | Cosa |
+|---|---|
+| `web/js/game.js` | Lanterne: tutte con luce calda uguale (alone, macchia a terra e luci vere con la stessa intensità, senza tremolio). Estate e primavera: tavolini rotondi con sedie (estate) e tavoli da picnic con panche e tovaglia (primavera), con piatto e tazza del posto sul tavolo; gli ospiti si siedono invece di sdraiarsi. Miglioramenti a gradini: ognuno compare dopo aver comprato un certo numero di altri (0, 2, 3, 4, 5, 6, 7, 8, 9, 11), non dagli obiettivi. Tutorial, consigli ed eventi usano le parole della tappa (albero o abete, camino o barbecue, escursionista o bagnante, stanza o area). Chip 💎 in alto. |
+| `web/js/env.js` | Luce attorno all'omino ridotta a circa un terzo, con raggio più corto. |
+| `web/js/levels/common.js` | Obiettivi e sblocchi con vocabolario (cibi, luoghi, ospiti), sblocchi a gradini. |
+| `web/js/levels/*.js` | Inverno ed estate ora usano le stesse funzioni; estate: "area pranzo" con tavolini; primavera: "area picnic" con tavoli da picnic. |
+| `web/js/levels/cities.js` | Cibi e bevande locali per città e stagione (Borgo dei Mulini: cioccolata con panna, tè ai petali, frappè, latte caldo; Porto delle Luci: zuppa di pesce, granita, cocco fresco, brodo caldo): cambiano obiettivi, nomi dei banchi, frase dell'ospite e colore delle tazze. |
+| `web/js/main.js` | Corretto "Ricomincia TUTTO": a volte la partita veniva riscritta alla chiusura della pagina. |
+| `web/js/hud.js`, `index.html`, `css/style.css`, `sw.js` | Chip gemme, `CACHE` v17. |
+
+**Per tornare indietro**
+- `git checkout f658248 -- web`
+
+---
+
 ## v0.8.2 · 2026-11-25 · Lanterne che fanno luce, miglioramenti sempre disponibili, pioggia più dolce
 
 **Richiesto**

@@ -78,6 +78,7 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;backgrou
 #hint button{font:inherit;font-size:13px;font-weight:600;border:0;border-radius:10px;background:#eef2f6;color:#5b6b7c;padding:5px 10px;cursor:pointer;flex:none}
 @keyframes bob{50%{transform:translateX(-50%) translateY(-5px)}}
 #envChip b{font-size:18px}
+#gemChip{background:linear-gradient(#fff,#e6f0ff)}.gem{font-size:20px;line-height:1}
 .sechead{width:100%;text-align:left;font-size:16px;padding:10px 14px;min-height:44px}
 .secbody{margin:2px 0 8px}
 .look{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}

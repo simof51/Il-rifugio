@@ -43,7 +43,7 @@
     const rainMat = new T.LineBasicMaterial({ color: 0xb7cdee, transparent: true, opacity: 0, depthWrite: false });
     const rain = new T.LineSegments(rg, rainMat); rain.frustumCulled = false; rain.visible = false; scene.add(rain);
     // Luce che segue l'omino di notte, così si vede sempre.
-    const lamp = new T.PointLight(0xffd9a0, 0, 11); scene.add(lamp);
+    const lamp = new T.PointLight(0xffd9a0, 0, 7, 2); scene.add(lamp);
 
     function update(dt) {
       const p = ctx.player.position, on = st.get('weather'), dn = st.get('daynight');
@@ -81,7 +81,7 @@
       sun.intensity = sunBase * (1 - night) * (1 - 0.5 * wet) + 0.04 + flash * 0.6;
       sun.color.copy(sunCol).lerp(duskSun, dusk * 0.7).lerp(nightSun, night);
       ctx.mats.ground.color.setScalar(1 - 0.13 * wet);
-      lamp.position.set(p.x, 2.2, p.z); lamp.intensity = night * 1.0 + amt.storm * 0.15;
+      lamp.position.set(p.x, 2.2, p.z); lamp.intensity = night * 0.32 + amt.storm * 0.05; // luce piccola attorno all'omino
       ctx.nightK = night;
       // --- pioggia ---
       const ra = Math.min(1, amt.rain);

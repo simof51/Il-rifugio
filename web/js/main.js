@@ -119,6 +119,7 @@
   const nowOn = () => dbg.info();
   const markWon = l => { if (l === level) { dbg.finishLevel(); return; } const s = R.createState(l.saveKey); s.data.done = l.objectives.length; s.data.won = true; s.save(); };
   const wipeAll = () => {
+    state.reset(); // blocca il salvataggio automatico alla chiusura (altrimenti riscriverebbe la partita appena cancellata)
     Object.keys(R.levels).forEach(id => { try { localStorage.removeItem(R.levels[id].saveKey); localStorage.removeItem(R.levels[id].saveKey + '-bak'); } catch (e) { /* ignorato */ } });
     try { localStorage.removeItem('rifugio-settings'); sessionStorage.clear(); } catch (e) { /* ignorato */ }
     location.reload();

@@ -1,7 +1,8 @@
-// Pezzi in comune delle stagioni: elenco degli obiettivi (41) e degli sblocchi (22), con le parole che cambiano da stagione a stagione.
-// Inverno ed estate sono scritti a mano (inverno.js, estate.js); primavera e autunno usano queste funzioni.
-// Vocabolario v: wood, tree/trees (albero), guest/guests, guestEmoji, firstGuest, drinks (bevande al plurale), stand, stand2, fire/fires, room (femminile),
-// helper (articolo + nome), bootsName, insulText, signText, mascotEmoji, mascotText, mascotName.
+// Pezzi in comune delle stagioni: elenco degli obiettivi (41) e degli sblocchi (19), con le parole che cambiano da stagione a stagione
+// (e da città a città: cibi e bevande). Tutte le stagioni li usano: ogni stagione definisce il suo vocabolario "v".
+// Vocabolario v: wood, treeArt/trees (albero), guest/guests, guestEmoji, firstGuest, drinks (bevande al plurale), drink (singolare), stand, stand2,
+// standTitle, stand2Title, fire/fires, room (femminile), roomTitle, roomShort, helper (articolo + nome), helperTitle, bootsName, bootsTitle,
+// insulText, insulTitle, signText, signTitle, mascotEmoji, mascotText, mascotName.
 (function (R) {
   R.makeObjectives = function (v, rewardBase) {
     const S = (stat, n, text, guide, decimals) => Object.assign({ text, stat, n, guide }, decimals ? { decimals } : {});
@@ -16,30 +17,30 @@
       B('boots', `👟 Compra ${v.bootsName}`),
       S('trees', 8, `🌲 Abbatti 8 ${v.trees}`, 'tree'),
       S('collected', 50, '🪙 Raccogli 50 monete', 'pile'),
-      B('cocoa', `☕ Apri ${v.stand}`),
-      S('cocoa', 3, `☕ Servi 3 ${v.drinks} agli ospiti che ne vogliono`, 'cocoa'),
+      B('cocoa', `${v.foodEmoji} Apri ${v.stand}`),
+      S('cocoa', 3, `${v.foodEmoji} Servi 3 ${v.drinks} agli ospiti che ne vogliono`, 'cocoa'),
       B('bag', '🎒 Compra lo zaino grande'),
       S('fed', 40, `🔥 Porta 40 pezzi di ${v.wood} ai ${v.fires}`, 'feed'),
       S('guests', 8, `🧑‍🤝‍🧑 Accogli 8 ${v.guests}`, ''),
       B('helper', `🧔 Assumi ${v.helper} che porti la ${v.wood}`),
       S('collected', 100, '🪙 Raccogli 100 monete', 'pile'),
       B('axe', '🪓 Compra l\'ascia affilata: taglia più in fretta'),
-      S('cocoa', 10, `☕ Servi 10 ${v.drinks}`, 'cocoa'),
+      S('cocoa', 10, `${v.foodEmoji} Servi 10 ${v.drinks}`, 'cocoa'),
       B('room2', `🛏️ Apri la terza ${v.room}`),
       S('guests', 14, `🧑‍🤝‍🧑 Accogli 14 ${v.guests}`, ''),
       S('trees', 20, `🌲 Abbatti 20 ${v.trees}`, 'tree'),
       B('insul', `🧱 ${v.insulText}`),
       S('collected', 220, '🪙 Raccogli 220 monete', 'pile'),
       B('lamps', '🏮 Appendi le lanterne colorate'),
-      S('cocoa', 18, `☕ Servi 18 ${v.drinks}`, 'cocoa'),
+      S('cocoa', 18, `${v.foodEmoji} Servi 18 ${v.drinks}`, 'cocoa'),
       B('saw', '🪚 Compra la motosega: taglia ancora più in fretta'),
       S('fed', 110, `🔥 Porta 110 pezzi di ${v.wood} ai ${v.fires}`, 'feed'),
       B('sign', `🪧 ${v.signText}`),
       S('guests', 24, `🧑‍🤝‍🧑 Accogli 24 ${v.guests}`, ''),
       B('bag2', '🎒 Compra lo zaino gigante'),
       S('collected', 380, '🪙 Raccogli 380 monete', 'pile'),
-      B('cocoa2', `☕ Compra ${v.stand2}`),
-      S('cocoa', 30, `☕ Servi 30 ${v.drinks}`, 'cocoa'),
+      B('cocoa2', `${v.foodEmoji} Compra ${v.stand2}`),
+      S('cocoa', 30, `${v.foodEmoji} Servi 30 ${v.drinks}`, 'cocoa'),
       B('helper2', `🧔 Assumi ${v.helper} della seconda ${v.room}`),
       B('waiter', `🤵 Assumi il cameriere della prima ${v.room}`),
       S('guests', 36, `🧑‍🤝‍🧑 Accogli 36 ${v.guests}`, ''),
@@ -53,29 +54,30 @@
     return o;
   };
 
-  // Sblocchi: stessi id e posizioni in tutte le stagioni (c = moltiplicatore dei costi, lake = c'è un lago).
+  // Sblocchi: stessi id e posizioni in tutte le stagioni. Compaiono a gradini: requires.purchases = quanti miglioramenti hai già comprato
+  // (non dipende dagli obiettivi). c = moltiplicatore dei costi, lake = c'è un lago (cambia la posizione della mascotte).
   R.makeUnlocks = function (v, c, lake) {
-    const k = x => Math.round(x * (c || 1));
+    const k = x => Math.round(x * (c || 1)), P = n => ({ purchases: n });
     return [
-      { id: 'room1', title: `${v.roomTitle} 2`, cost: k(42), pos: [6, -6.5], requires: { objectives: 4 }, effect: 'room', room: 1 },
-      { id: 'bag', title: 'Zaino grande', cost: k(52), pos: [-3.6, 1.4], requires: { objectives: 4 }, effect: 'bag' },
-      { id: 'boots', title: v.bootsTitle, cost: k(48), pos: [6.5, -0.6], requires: { objectives: 4 }, effect: 'boots' },
-      { id: 'cocoa', title: v.standTitle, cost: k(62), pos: [11, -4.4], requires: { bought: 'room1' }, effect: 'cocoa' },
-      { id: 'helper', title: `${v.helperTitle} 1`, cost: k(155), pos: [-11, -1], requires: { bought: 'cocoa' }, effect: 'helper', room: 0 },
-      { id: 'room2', title: `${v.roomTitle} 3`, cost: k(125), pos: [-6, -6.5], requires: { bought: 'helper' }, effect: 'room', room: 2 },
-      { id: 'axe', title: 'Ascia affilata', cost: k(72), pos: [-7.2, 1.6], requires: { objectives: 12 }, effect: 'axe' },
-      { id: 'saw', title: 'Motosega', cost: k(225), pos: [-3.2, 4.6], requires: { objectives: 22 }, effect: 'saw' },
-      { id: 'insul', title: v.insulTitle, cost: k(92), pos: [-11.5, -4.8], requires: { objectives: 14 }, effect: 'insul' },
-      { id: 'lamps', title: 'Lanterne', cost: k(62), pos: [15, 3.6], requires: { objectives: 14 }, effect: 'lamps' },
-      { id: 'sign', title: v.signTitle, cost: k(112), pos: [9.5, 3.6], requires: { objectives: 20 }, effect: 'sign' },
-      { id: 'bag2', title: 'Zaino gigante', cost: k(92), pos: [-0.5, 3.4], requires: { objectives: 22 }, effect: 'bag2' },
-      { id: 'cocoa2', title: v.stand2Title, cost: k(102), pos: [14.6, -4.4], requires: { objectives: 24 }, effect: 'cocoa2' },
-      { id: 'helper2', title: `${v.helperTitle} 2`, cost: k(205), pos: [-11, 2.8], requires: { objectives: 26 }, effect: 'helper', room: 1, needRoom: 1 },
-      { id: 'waiter', title: `Cameriere ${v.roomShort} 1`, cost: k(92), pos: [-2.2, -0.4], requires: { objectives: 27 }, effect: 'waiter', room: 0, needRoom: 0 },
-      { id: 'waiter2', title: `Cameriere ${v.roomShort} 2`, cost: k(112), pos: [9.6, -1.8], requires: { objectives: 31 }, effect: 'waiter', room: 1, needRoom: 1 },
-      { id: 'helper3', title: `${v.helperTitle} 3`, cost: k(235), pos: [-13.5, 2.4], requires: { objectives: 31 }, effect: 'helper', room: 2, needRoom: 2 },
-      { id: 'mascot', title: v.mascotName, cost: k(105), pos: lake ? [-12.6, 7.2] : [-14.5, -2.5], requires: { objectives: 28 }, effect: 'mascot' },
-      { id: 'waiter3', title: `Cameriere ${v.roomShort} 3`, cost: k(132), pos: [-9.2, -2.2], requires: { objectives: 34 }, effect: 'waiter', room: 2, needRoom: 2 }
+      { id: 'room1', title: `${v.roomTitle} 2`, cost: k(42), pos: [6, -6.5], requires: P(0), effect: 'room', room: 1 },
+      { id: 'bag', title: 'Zaino grande', cost: k(52), pos: [-3.6, 1.4], requires: P(0), effect: 'bag' },
+      { id: 'boots', title: v.bootsTitle, cost: k(48), pos: [6.5, -0.6], requires: P(0), effect: 'boots' },
+      { id: 'cocoa', title: v.standTitle, cost: k(62), pos: [11, -4.4], requires: P(2), effect: 'cocoa' },
+      { id: 'helper', title: `${v.helperTitle} 1`, cost: k(155), pos: [-11, -1], requires: P(3), effect: 'helper', room: 0 },
+      { id: 'axe', title: 'Ascia affilata', cost: k(72), pos: [-7.2, 1.6], requires: P(3), effect: 'axe' },
+      { id: 'room2', title: `${v.roomTitle} 3`, cost: k(125), pos: [-6, -6.5], requires: P(4), effect: 'room', room: 2 },
+      { id: 'insul', title: v.insulTitle, cost: k(92), pos: [-11.5, -4.8], requires: P(4), effect: 'insul' },
+      { id: 'lamps', title: 'Lanterne', cost: k(62), pos: [15, 3.6], requires: P(5), effect: 'lamps' },
+      { id: 'sign', title: v.signTitle, cost: k(112), pos: [9.5, 3.6], requires: P(6), effect: 'sign' },
+      { id: 'saw', title: 'Motosega', cost: k(225), pos: [-3.2, 4.6], requires: P(6), effect: 'saw' },
+      { id: 'bag2', title: 'Zaino gigante', cost: k(92), pos: [-0.5, 3.4], requires: P(6), effect: 'bag2' },
+      { id: 'cocoa2', title: v.stand2Title, cost: k(102), pos: [14.6, -4.4], requires: P(7), effect: 'cocoa2' },
+      { id: 'helper2', title: `${v.helperTitle} 2`, cost: k(205), pos: [-11, 2.8], requires: P(7), effect: 'helper', room: 1, needRoom: 1 },
+      { id: 'waiter', title: `Cameriere ${v.roomShort} 1`, cost: k(92), pos: [-2.2, -0.4], requires: P(7), effect: 'waiter', room: 0, needRoom: 0 },
+      { id: 'mascot', title: v.mascotName, cost: k(105), pos: lake ? [-12.6, 7.2] : [-14.5, -2.5], requires: P(8), effect: 'mascot' },
+      { id: 'waiter2', title: `Cameriere ${v.roomShort} 2`, cost: k(112), pos: [9.6, -1.8], requires: P(9), effect: 'waiter', room: 1, needRoom: 1 },
+      { id: 'helper3', title: `${v.helperTitle} 3`, cost: k(235), pos: [-13.5, 2.4], requires: P(9), effect: 'helper', room: 2, needRoom: 2 },
+      { id: 'waiter3', title: `Cameriere ${v.roomShort} 3`, cost: k(132), pos: [-9.2, -2.2], requires: P(11), effect: 'waiter', room: 2, needRoom: 2 }
     ];
   };
 
@@ -89,5 +91,12 @@
       guest_stay: 15.5, guest_cold_limit: 7.5, cold_penalty: 2, pay: 11, tip: 6.5, cocoa_interval: 2.4, cocoa_max: 4,
       cocoa2_interval: 1.35, cocoa2_max: 6, cocoa_chance: 0.62, helper_load: 5, star_per_guest: 0.25, stars_max: 5
     }, over || {});
+  };
+
+  // Testi del livello ricavati dal vocabolario: l'ospite chiede la bevanda ("Cioccolata? ☕"), ringrazia, e il riepilogo finale.
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  R.foodText = function (v) {
+    const one = cap(v.drinkOne || v.drink);
+    return { want: `${one}? ${v.foodEmoji}`, thanks: v.thanks || 'Che buono! 😋', drinkShort: `${v.drinkOne ? 'la ' : 'la '}${v.drinkOne || v.drink}` };
   };
 })(window.Rifugio);

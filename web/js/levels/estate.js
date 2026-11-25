@@ -1,143 +1,42 @@
-// Livello 2 (Estate al lago): un lido sul lago. Ogni postazione ha un ombrellone, due lettini e un barbecue (al posto di letti e camino);
-// limonata al posto della cioccolata, paperelle, prati fioriti e una foresta fitta intorno. Ospiti un po' più veloci e impazienti.
-// Per bilanciare si modifica solo questo file. Gli id degli sblocchi sono gli stessi dell'inverno (vedi inverno.js per requires, effect, stat e guide).
-(function () {
-  const objectives = [
-    { text: '🪓 Taglia 4 pezzi di legna per il barbecue', stat: 'wood', n: 4, guide: 'tree' },
-    { text: '🔥 Porta la legna al barbecue della prima postazione', stat: 'fed', n: 3, guide: 'feed' },
-    { text: '🏖️ Accogli il primo bagnante', stat: 'guests', n: 1, guide: '' },
-    { text: '🪙 Raccogli le monete lasciate dai bagnanti', stat: 'collected', n: 18, guide: 'pile' },
-    { text: '⛱️ Apri la seconda postazione', bought: 'room1', guide: 'pad:room1' },
-    { text: '🧑‍🤝‍🧑 Accogli 4 bagnanti', stat: 'guests', n: 4, guide: '' },
-    { text: '👟 Compra le scarpe da corsa', bought: 'boots', guide: 'pad:boots' },
-    { text: '🌳 Abbatti 8 alberi', stat: 'trees', n: 8, guide: 'tree' },
-    { text: '🪙 Raccogli 60 monete', stat: 'collected', n: 60, guide: 'pile' },
-    { text: '🍋 Apri il chiosco della limonata', bought: 'cocoa', guide: 'pad:cocoa' },
-    { text: '🍋 Servi 3 limonate a chi la chiede', stat: 'cocoa', n: 3, guide: 'cocoa' },
-    { text: '🎒 Compra lo zaino grande', bought: 'bag', guide: 'pad:bag' },
-    { text: '🔥 Porta 45 pezzi di legna ai barbecue', stat: 'fed', n: 45, guide: 'feed' },
-    { text: '🧑‍🤝‍🧑 Accogli 9 bagnanti', stat: 'guests', n: 9, guide: '' },
-    { text: '🧔 Assumi un aiutante che porti la legna', bought: 'helper', guide: 'pad:helper' },
-    { text: '🪙 Raccogli 120 monete', stat: 'collected', n: 120, guide: 'pile' },
-    { text: '🪓 Compra l\'ascia affilata', bought: 'axe', guide: 'pad:axe' },
-    { text: '🍋 Servi 10 limonate', stat: 'cocoa', n: 10, guide: 'cocoa' },
-    { text: '⛱️ Apri la terza postazione', bought: 'room2', guide: 'pad:room2' },
-    { text: '🧑‍🤝‍🧑 Accogli 16 bagnanti', stat: 'guests', n: 16, guide: '' },
-    { text: '🌳 Abbatti 22 alberi', stat: 'trees', n: 22, guide: 'tree' },
-    { text: '🧱 Durata barbecue più lunga', bought: 'insul', guide: 'pad:insul' },
-    { text: '🪙 Raccogli 260 monete', stat: 'collected', n: 260, guide: 'pile' },
-    { text: '🎈 Appendi le lanterne colorate', bought: 'lamps', guide: 'pad:lamps' },
-    { text: '🍋 Servi 18 limonate', stat: 'cocoa', n: 18, guide: 'cocoa' },
-    { text: '🪚 Compra la motosega: taglia ancora più in fretta', bought: 'saw', guide: 'pad:saw' },
-    { text: '🔥 Porta 120 pezzi di legna ai barbecue', stat: 'fed', n: 120, guide: 'feed' },
-    { text: '🪧 Pianta il cartello del lago: arrivano più bagnanti', bought: 'sign', guide: 'pad:sign' },
-    { text: '🧑‍🤝‍🧑 Accogli 27 bagnanti', stat: 'guests', n: 27, guide: '' },
-    { text: '🎒 Compra lo zaino gigante', bought: 'bag2', guide: 'pad:bag2' },
-    { text: '🪙 Raccogli 430 monete', stat: 'collected', n: 430, guide: 'pile' },
-    { text: '🍋 Compra il chiosco limonata veloce', bought: 'cocoa2', guide: 'pad:cocoa2' },
-    { text: '🍋 Servi 30 limonate', stat: 'cocoa', n: 30, guide: 'cocoa' },
-    { text: '🧔 Assumi l\'aiutante della seconda postazione', bought: 'helper2', guide: 'pad:helper2' },
-    { text: '🤵 Assumi il cameriere della prima postazione', bought: 'waiter', guide: 'pad:waiter' },
-    { text: '🧑‍🤝‍🧑 Accogli 40 bagnanti', stat: 'guests', n: 40, guide: '' },
-    { text: '🤵 Assumi il cameriere della seconda postazione', bought: 'waiter2', guide: 'pad:waiter2' },
-    { text: '🧔 Assumi l\'aiutante della terza postazione', bought: 'helper3', guide: 'pad:helper3' },
-    { text: '🦆 Porta al lago la paperella gigante', bought: 'mascot', guide: 'pad:mascot' },
-    { text: '🤵 Assumi il cameriere della terza postazione', bought: 'waiter3', guide: 'pad:waiter3' },
-    { text: '⭐ Raggiungi 5 stelle di reputazione', stat: 'stars', n: 5, guide: '', decimals: 1 }
-  ];
-  objectives.forEach((o, i) => { o.reward = 15 + 5 * Math.floor(i / 13); }); // 15, 20, 25, 30 monete
-
-  Rifugio.levels.estate = {
-    id: 'estate',
-    name: 'Estate',
-    emoji: '☀️',
-    saveKey: 'rifugio-estate-v1',
-    next: null,
+// Stagione "Estate": un lido sul lago. Ogni area pranzo ha tavolini rotondi con sedie, un ombrellone e un barbecue (niente letti né camino);
+// limonata, paperelle, prati fioriti e una foresta fitta intorno. Ospiti un po' più veloci e impazienti.
+// Obiettivi e sblocchi sono generati da common.js (a gradini, non legati agli obiettivi).
+(function (R) {
+  const v = {
+    wood: 'legna', tree: 'albero', treeArt: 'un albero', trees: 'alberi', fire: 'barbecue', fires: 'barbecue', room: 'area pranzo', roomTitle: 'Area pranzo', roomShort: 'area',
+    guest: 'bagnante', guests: 'bagnanti', guestEmoji: '🏖️', firstGuest: 'il primo bagnante',
+    drink: 'limonata', drinkOne: 'limonata', drinks: 'limonate', foodEmoji: '🍋', stand: 'il chiosco della limonata', stand2: 'il chiosco limonata veloce', standTitle: 'Chiosco limonata', stand2Title: 'Limonata veloce',
+    helper: 'un aiutante', helperTitle: 'Aiutante area', bootsName: 'le scarpe da corsa', bootsTitle: 'Scarpe da corsa',
+    insulText: 'Durata barbecue più lunga', insulTitle: 'Durata barbecue più lunga', signText: 'Pianta il cartello del lago: arrivano più bagnanti', signTitle: 'Cartello del lago',
+    mascotEmoji: '🦆', mascotText: 'Porta al lago la paperella gigante', mascotName: 'Paperella gigante', thanks: 'Che buona! 😋'
+  };
+  R.levels.estate = {
+    id: 'estate', season: 'estate', name: 'Estate', emoji: '☀️', saveKey: 'rifugio-estate-v1', next: null, voc: v, rewardBase: 15,
     theme: {
       sky: 0xc4ecff, fog: [50, 120], ground: 0x5fc24a, path: 0xe9cf8e, hill: 0x3fae62, peak: 0x8fdc7a,
       pathTex: { base: '#e6cd8e', cols: ['#f1dca4', '#d4b877', '#c9ab68', '#f6e6bb'], n: 700, min: 0.8, max: 2.2 }, // sentiero di sabbia
-      edge: 'forest', room: 'lido', outfit: 'summer', decor: ['bushes', 'grass', 'rocks'], dust: 0xe6cd8e,
+      edge: 'forest', room: 'lido', seat: 'table', table: 'round', outfit: 'summer', decor: ['bushes', 'grass', 'rocks'], dust: 0xe6cd8e,
       tree: 'leafy', fall: 'petals', deco: 'duck', flowers: true, butterflies: true, cup: 0xffe27a, cupLiquid: 0xffd23a, water: 0x4fc3f7,
       hemi: [0xffffff, 0x6fa05a, 0.6], sun: [0xfff4cf, 0.55]
     },
-    text: {
-      intro: 'Un lido sul lago in piena estate! Tieni accesi i barbecue, accogli i bagnanti sui lettini all\'ombra e fai del tuo lido il più bello della vallata.',
+    text: Object.assign({
+      intro: 'Un lido sul lago in piena estate! Tieni accesi i barbecue, accogli i bagnanti ai tavolini all\'ombra e fai del tuo lido il più bello della vallata.',
       help: [
         'Trascina il dito sullo schermo per muoverti (o WASD e frecce).',
         'Fermati vicino a un albero per tagliare la legna.',
         'Porta la legna ai barbecue: i bagnanti pagano solo se c\'è da mangiare.',
-        'Fermati sulle piazzole bianche per spendere le monete e sbloccare nuove cose.'
+        'Fermati sui riquadri a terra per spendere le monete e comprare miglioramenti.'
       ],
-      cold: 'Che fame! 🍖', want: 'Limonata? 🍋', coldLeave: 'Un bagnante se n\'è andato: aveva fame!', thanks: 'Che buona! 😋',
-      winTitle: 'Estate completata! 🎉',
-      winText: S => `Hai accolto ${S.guests} bagnanti e servito ${S.cocoa} limonate fresche.`,
-      winNext: 'Hai finito tutti i livelli. Presto arriveranno nuove stagioni!'
-    },
-    tuning: {
-      trees: 14,
-      forest_trees: 120,
-      chop_range: 1.6,
-      chop_interval: 0.45,
-      axe_mul: 0.7,
-      saw_mul: 0.4,
-      logs_per_tree: 4,
-      tree_regrow: 12,
-      bag_logs: 15,
-      bag_cups: 5,
-      bag_big_logs: 30,
-      bag_big_cups: 10,
-      bag_huge_logs: 60,
-      bag_huge_cups: 20,
-      world_min: [-30, -20],
-      world_max: [30, 26],
-      speed_base: 4.8,
-      speed_fast: 6.4,
-      feed_range: 1.6,
-      feed_interval: 0.14,
-      fuel_max: 10,
-      burn_busy: 3.0,
-      burn_idle: 8,
-      insul_mul: 1.4,
-      guest_spawn_min: 4.5,
-      guest_spawn_max: 7,
-      sign_mul: 0.65,
-      guest_stay: 15,
-      guest_cold_limit: 7,
-      cold_penalty: 2,
-      pay: 12,
-      tip: 7,
-      cocoa_interval: 2.3,
-      cocoa_max: 4,
-      cocoa2_interval: 1.3,
-      cocoa2_max: 6,
-      cocoa_chance: 0.65,
-      helper_load: 5,
-      star_per_guest: 0.25,
-      stars_max: 5
-    },
+      cold: 'Che fame! 🍖', coldLeave: 'Un bagnante se n\'è andato: aveva fame!',
+      winTitle: 'Estate completata! 🎉', winText: S => `Hai accolto ${S.guests} bagnanti e servito ${S.cocoa} limonate fresche.`, winNext: ''
+    }, R.foodText(v)),
+    tuning: R.baseTuning({
+      forest_trees: 120, tree_regrow: 12, burn_busy: 3.0, burn_idle: 8, guest_spawn_min: 4.5, guest_spawn_max: 7, guest_stay: 15, guest_cold_limit: 7, pay: 12, tip: 7,
+      speed_base: 4.8, speed_fast: 6.4, cocoa_interval: 2.3, cocoa_chance: 0.65
+    }),
     rooms: [{ x: 0 }, { x: 6 }, { x: -6 }],
     lake: { x: -22.5, z: 4, r: 7 },
-    unlocks: [
-      { id: 'room1',   title: 'Postazione 2',       cost: 45,  pos: [6, -6.5],     requires: { objectives: 4 },     effect: 'room', room: 1 },
-      { id: 'bag',     title: 'Zaino grande',       cost: 55,  pos: [-3.6, 1.4],   requires: { objectives: 4 },     effect: 'bag' },
-      { id: 'boots',   title: 'Scarpe da corsa',    cost: 50,  pos: [6.5, -0.6],   requires: { objectives: 4 },     effect: 'boots' },
-      { id: 'cocoa',   title: 'Chiosco limonata',   cost: 65,  pos: [11, -4.4],    requires: { bought: 'room1' },   effect: 'cocoa' },
-      { id: 'helper',  title: 'Aiutante postaz. 1', cost: 160, pos: [-11, -1],     requires: { bought: 'cocoa' },   effect: 'helper', room: 0 },
-      { id: 'room2',   title: 'Postazione 3',       cost: 130, pos: [-6, -6.5],    requires: { bought: 'helper' },  effect: 'room', room: 2 },
-      { id: 'axe',     title: 'Ascia affilata',     cost: 75,  pos: [-7.2, 1.6],   requires: { objectives: 12 },    effect: 'axe' },
-      { id: 'saw',     title: 'Motosega',           cost: 230, pos: [-3.2, 4.6],   requires: { objectives: 22 },    effect: 'saw' },
-      { id: 'insul',   title: 'Durata barbecue più lunga',   cost: 95,  pos: [-11.5, -4.8], requires: { objectives: 14 },    effect: 'insul' },
-      { id: 'lamps',   title: 'Lanterne',           cost: 65,  pos: [15, 3.6],     requires: { objectives: 14 },    effect: 'lamps' },
-      { id: 'sign',    title: 'Cartello del lago',  cost: 115, pos: [9.5, 3.6],    requires: { objectives: 20 },    effect: 'sign' },
-      { id: 'bag2',    title: 'Zaino gigante',      cost: 95,  pos: [-0.5, 3.4],   requires: { objectives: 22 },    effect: 'bag2' },
-      { id: 'cocoa2',  title: 'Limonata veloce',    cost: 105, pos: [14.6, -4.4],  requires: { objectives: 24 },    effect: 'cocoa2' },
-      { id: 'helper2', title: 'Aiutante postaz. 2', cost: 210, pos: [-11, 2.8],    requires: { objectives: 26 },    effect: 'helper', room: 1, needRoom: 1 },
-      { id: 'waiter',  title: 'Cameriere postaz. 1', cost: 95, pos: [-2.2, -0.4],  requires: { objectives: 27 },    effect: 'waiter', room: 0, needRoom: 0 },
-      { id: 'waiter2', title: 'Cameriere postaz. 2', cost: 115, pos: [9.6, -1.8],  requires: { objectives: 31 },    effect: 'waiter', room: 1, needRoom: 1 },
-      { id: 'helper3', title: 'Aiutante postaz. 3', cost: 240, pos: [-13.5, 2.4],  requires: { objectives: 31 },    effect: 'helper', room: 2, needRoom: 2 },
-      { id: 'mascot',  title: 'Paperella gigante',  cost: 110, pos: [-12.6, 7.2],  requires: { objectives: 28 },    effect: 'mascot' },
-      { id: 'waiter3', title: 'Cameriere postaz. 3', cost: 135, pos: [-9.2, -2.2],  requires: { objectives: 34 },    effect: 'waiter', room: 2, needRoom: 2 }
-    ],
-    objectives
+    unlocks: R.makeUnlocks(v, 1.05, true),
+    objectives: R.makeObjectives(v, 15)
   };
-})();
+})(window.Rifugio);
