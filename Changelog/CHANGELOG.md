@@ -9,6 +9,26 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.12.0 · 2026-11-26 · Video a premio (AdMob), senza vendita di dati
+
+**Richiesto**: implementare la pubblicità proposta (video a premio). Chiesto anche se si può vendere i dati degli utenti a terzi: **no, non è stato fatto e non si farà** (vedi nota).
+
+**Aggiunto**
+| File | Cosa |
+|---|---|
+| `app/package.json` | Plugin `@capacitor-community/admob` 8.4.2. |
+| `.github/workflows/apk.yml`, `aab.yml` | Id dell'app AdMob nel manifest (variabile `ADMOB_APP_ID`; predefinito: id di prova di Google). L'AAB avvisa se usa l'id di prova. |
+| `web/js/ads.js` | Solo video a premio, scelti dal giocatore: +5 gemme per video guardato fino in fondo, 6 al giorno, 2 minuti di pausa. Annunci richiesti "rivolti ai minori" e non personalizzati, contenuto per tutti, consenso con il modulo di Google (UMP). Id di PROVA di Google finché non si mettono quelli veri. |
+| `web/js/main.js` | Sezione "🎁 Video a premio" nel menu (nel browser, solo con il Debug, si simula). |
+| `app/README.md` | Come passare agli id veri di AdMob e cosa dichiarare nel Play Console. |
+
+**Nota sui dati**: il gioco non raccoglie né vende dati personali. Non aggiungo servizi che li cedono a terzi: con bambini tra i giocatori sarebbe vietato dalle regole del Play e dalle leggi sulla privacy (GDPR, protezione dei minori). Le app che lo fanno di solito lo fanno tramite i servizi pubblicitari: qui sono configurati per non farlo.
+
+**Per tornare indietro**
+- `git checkout f598515 -- web app .github`
+
+---
+
 ## v0.11.1 · 2026-11-26 · Tolto il calcolo prima degli acquisti
 
 **Richiesto**: rimuovere il controllo con il calcolo per gli acquisti.

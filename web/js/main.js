@@ -24,6 +24,8 @@
 
   const audio = R.createAudio();
   R.shop.enableTest(SHOW_DEBUG || debug); // il fornitore "prova" esiste solo con il menu Debug acceso
+  R.ads.enableSim(SHOW_DEBUG || debug); // nel browser (solo Debug) il video a premio si simula; nell'app vera è quello di AdMob
+  R.ads.init(); // AdMob: consenso di Google e SDK per i minori (solo dentro l'app Android)
   R.billing.init(); // Google Play Billing (solo dentro l'app Android installata dal Play): prezzi veri e acquisti già fatti
 
   // Privacy e consenso: la prima volta si chiede (solo essenziali o anche pubblicità). Si può cambiare dal menu.
@@ -130,6 +132,23 @@
       `<div class="set"><span>Consenso alla pubblicità personalizzata</span><button class="tg${consent().ads ? ' on' : ''}" data-ads="1">${consent().ads ? 'Sì' : 'No'}</button></div>`;
   }
 
+  // Video a premio (AdMob): guardi un video fino in fondo e ricevi gemme. Mai pubblicità a sorpresa.
+  let adMsg = '';
+  function adsHtml() {
+    if (!R.ads.available()) return '<div class="small">I video a premio compaiono nell\'app installata dal Google Play.</div>';
+    const w = R.ads.wait(), left = R.ads.left(), c = R.ads.cfg;
+    return `<div class="small">Guarda un video fino in fondo e ricevi ${c.GEMS} 💎. Oggi ti restano ${left} video.${R.ads.simulated() ? ' 🧪 (simulato: nessun annuncio vero)' : ''}</div>${adMsg ? `<div class="small"><b>${adMsg}</b></div>` : ''}` +
+      `<div class="row"><button class="btn" data-ad="1"${left <= 0 || w > 0 ? ' disabled' : ''}>🎁 Guarda un video: +${c.GEMS} 💎${left > 0 && w > 0 ? ` (tra ${w}s)` : ''}</button></div>` +
+      '<div class="small">Gli annunci sono adatti a tutti e non personalizzati: i tuoi dati non vengono venduti né ceduti.</div>';
+  }
+  async function adFlow() {
+    adMsg = 'Carico il video…'; rerender();
+    const r = await R.ads.watch();
+    adMsg = r === 'ok' ? `Grazie! +${R.ads.cfg.GEMS} gemme 💎` : r === 'closed' ? 'Video chiuso prima della fine: nessun premio.' : r === 'failed' ? 'Nessun video disponibile adesso: riprova fra poco.' : r === 'wait' ? 'Aspetta un attimo prima del prossimo.' : r === 'limit' ? 'Per oggi i video sono finiti: torna domani.' : 'Video non disponibile.';
+    if (r === 'ok') audio.sfx('buy');
+    rerender();
+  }
+
   // Strumenti di prova: [testo, azione, (acceso?)]. Le azioni agiscono sulla partita in corso.
   const nowOn = () => dbg.info();
   const markWon = l => { if (l === level) { dbg.finishLevel(); return; } const s = R.createState(l.saveKey); s.data.done = l.objectives.length; s.data.won = true; s.save(); };
@@ -169,7 +188,7 @@
     $('menuBody').innerHTML =
       `<h2>Le tue città</h2>${R.cities.map(cityCard).join('')}` +
       `<div class="stats"><div><b>${S.coins}</b><span>monete</span></div><div><b>${S.guests}</b><span>ospiti</span></div><div><b>${S.wood}</b><span>legna</span></div><div><b>${st.get('gems')}</b><span>gemme 💎</span></div></div>` +
-      section('look', '👕 Il tuo omino', lookHtml()) + section('shop', '🛍️ Shop', shopHtml()) + section('set', '⚙️ Impostazioni', settingsHtml()) + section('save', '💾 Salvataggio portatile', saveHtml()) + section('priv', '🔒 Privacy e consenso', privacyHtml()) +
+      section('look', '👕 Il tuo omino', lookHtml()) + section('shop', '🛍️ Shop', shopHtml()) + section('ads', '🎁 Video a premio', adsHtml()) + section('set', '⚙️ Impostazioni', settingsHtml()) + section('save', '💾 Salvataggio portatile', saveHtml()) + section('priv', '🔒 Privacy e consenso', privacyHtml()) +
       (levelDone() ? '' : `<div class="row"><button class="btn ghost" id="menuReset">${confirmReset ? 'Sicuro? Tocca di nuovo' : 'Ricomincia questa stagione'}</button></div>`) +
       (SHOW_DEBUG || debug ? section('dbg', '🛠 Debug', `<div class="dbg">${debugPanel()}</div>`) : '');
   }
@@ -194,6 +213,7 @@
     else if (d.q) { st.set('quality', d.q); reloadSaved(); }
     else if (d.pet) { st.set('pet', d.pet); reloadSaved(); }
     else if (d.buy) { buyFlow(d.buy); }
+    else if (d.ad) { adFlow(); }
     else if (t.id === 'shopRestore') { R.shop.restore().then(r => { shopMsg = r === 'ok' ? 'Acquisti ripristinati.' : 'Il ripristino non è ancora disponibile.'; rerender(); }); }
     else if (d.look) {
       const [cat, id] = d.look.split(':'), cost = +d.cost, key = d.look;

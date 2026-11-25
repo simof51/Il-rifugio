@@ -47,6 +47,11 @@ jobs:
           # Il plugin degli acquisti usa Google Play Billing: serve questo permesso nel manifest.
           grep -q "com.android.vending.BILLING" src/main/AndroidManifest.xml || sed -i 's#</manifest>#    <uses-permission android:name="com.android.vending.BILLING" />\n</manifest>#' src/main/AndroidManifest.xml
           grep -n "BILLING" src/main/AndroidManifest.xml
+          # AdMob (video a premio): serve l'id dell'APP nel manifest, altrimenti l'app si chiude all'avvio. Predefinito: id di prova di Google.
+          # Per i guadagni veri: GitHub → Settings → Secrets and variables → Actions → Variables → ADMOB_APP_ID.
+          ADMOB_APP_ID="${{ vars.ADMOB_APP_ID || 'ca-app-pub-3940256099942544~3347511713' }}"
+          grep -q "gms.ads.APPLICATION_ID" src/main/AndroidManifest.xml || sed -i "s#</application>#        <meta-data android:name=\"com.google.android.gms.ads.APPLICATION_ID\" android:value=\"$ADMOB_APP_ID\" />\n    </application>#" src/main/AndroidManifest.xml
+          grep -n "APPLICATION_ID" src/main/AndroidManifest.xml
 
       - name: Icona e numero di versione
         working-directory: app/android/app

@@ -46,5 +46,16 @@ Per provarli davvero, una volta sola:
 Prima di mettere l'app in produzione: verifica degli acquisti su un server (`R.shop.verifier`), spegnere `SHOW_DEBUG` in `web/js/main.js`,
 controllare le regole del Play per le app per famiglie e i testi dello shop.
 
+## Pubblicità (AdMob, solo video a premio)
+Nell'app c'è il plugin `@capacitor-community/admob`, il codice in `web/js/ads.js` e la sezione "🎁 Video a premio" del menu. Il giocatore sceglie di guardare un
+video fino in fondo e riceve 5 gemme (6 video al giorno, 2 minuti fra uno e l'altro). Niente banner né annunci a sorpresa.
+Gli annunci sono richiesti come rivolti ai minori e non personalizzati; il consenso passa dal modulo di Google (UMP). I dati non vengono venduti né ceduti.
+
+Ora usa gli id di **prova** di Google (annunci finti, nessun guadagno). Per i guadagni veri:
+1. Crea l'app in AdMob (admob.google.com) e un'unità pubblicitaria **"Con premio"** per Android. Prendi l'id dell'app (`ca-app-pub-…~…`) e quello dell'unità (`ca-app-pub-…/…`).
+2. In GitHub → Settings → Secrets and variables → Actions → **Variables**: `ADMOB_APP_ID` = id dell'app.
+3. In `web/js/ads.js`: `REWARDED_ID` = id dell'unità e `TESTING = false`.
+4. Nel Play Console, "Sicurezza dei dati": dichiara l'uso della pubblicità (identificativo pubblicitario) e, se l'app è anche per bambini, scegli il pubblico di destinazione giusto e usa solo reti ammesse dalle regole per le famiglie.
+
 ## Compilare sul PC (facoltativo)
 Servono Node 22, JDK 21 e Android SDK. Da questa cartella: `npm install`, `npm run www`, `npx cap add android`, `npx cap sync android`, poi `android\gradlew assembleDebug`.

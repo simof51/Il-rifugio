@@ -56,6 +56,10 @@ jobs:
         working-directory: app/android/app
         run: |
           grep -q "com.android.vending.BILLING" src/main/AndroidManifest.xml || sed -i 's#</manifest>#    <uses-permission android:name="com.android.vending.BILLING" />\n</manifest>#' src/main/AndroidManifest.xml
+          # AdMob (video a premio): id dell'APP nel manifest. Se la variabile ADMOB_APP_ID non c'è, si usa quello di prova (annunci finti).
+          ADMOB_APP_ID="${{ vars.ADMOB_APP_ID || 'ca-app-pub-3940256099942544~3347511713' }}"
+          case "$ADMOB_APP_ID" in ca-app-pub-3940256099942544*) echo "::warning::AdMob: uso l'id di PROVA di Google. Imposta la variabile ADMOB_APP_ID e, in web/js/ads.js, REWARDED_ID e TESTING=false prima della pubblicazione." ;; esac
+          grep -q "gms.ads.APPLICATION_ID" src/main/AndroidManifest.xml || sed -i "s#</application>#        <meta-data android:name=\"com.google.android.gms.ads.APPLICATION_ID\" android:value=\"$ADMOB_APP_ID\" />\n    </application>#" src/main/AndroidManifest.xml
           rm -f src/main/res/mipmap-anydpi-v26/ic_launcher*.xml
           for d in src/main/res/mipmap-*dpi; do
             cp ../../../web/icons/icon-192.png "$d/ic_launcher.png"
