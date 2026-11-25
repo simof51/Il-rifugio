@@ -9,6 +9,14 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.18.0 · 2026-11-26 · Fila alla reception, compagno a gemme, negozio delle gemme
+
+- **Fila alla reception**: gli ospiti arrivano, si mettono in fila davanti al bancone (a sinistra del tappeto), il primo fa il check-in (la receptionist saltella) e poi va alla sua stanza. Quando se ne vanno ripassano dal bancone, lasciano i soldi nella ciotola (a destra) e escono.
+- **Tolto il guadagno da assenti** (finestra "Bentornato!" compresa).
+- **Il compagno (cane o gatto) si compra con le gemme** (25 💎 l'uno, può uscire anche dagli scrigni). Chi lo aveva già lo tiene. Chi non ne ha uno parte senza.
+- **Negozio delle gemme** nella scheda Shop: tutto ciò che si compra con le gemme sta lì (cappelli, colori, accessori dell'omino, compagno, colori di insegna e tappeto). Nel Profilo resta solo il nome del rifugio.
+- **Per tornare indietro**: `git checkout 9226d34 -- web tests Changelog`.
+
 ## v0.17.2 · 2026-11-26 · Reception attaccata alle stanze, pareti alte con finestre
 
 - **Reception** quasi attaccata alla stanza più a sinistra: quando si apre una nuova stanza scivola di lato e segue il rifugio mentre cresce. Il riquadro "Pareti più calde" (insul) si è spostato a sinistra per fare posto.

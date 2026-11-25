@@ -6,7 +6,7 @@
   const st = R.settings;
   let toast = () => {};
 
-  const fresh = () => ({ streak: 0, lastClaim: '', lastSeen: 0, album: {}, albumDone: false, deco: { sign: 'red', rug: 'red', name: '' }, prestige: 0, chest: { pts: 0, opened: 0 }, vip: {}, game: { last: 0, best: 0 } });
+  const fresh = () => ({ streak: 0, lastClaim: '', album: {}, albumDone: false, deco: { sign: 'red', rug: 'red', name: '' }, prestige: 0, chest: { pts: 0, opened: 0 }, vip: {}, game: { last: 0, best: 0 } });
   function M() {
     let m = st.get('meta');
     if (!m || typeof m !== 'object') { m = fresh(); st.set('meta', m); return m; }
@@ -39,16 +39,6 @@
     return i;
   }
 
-  // --- guadagno mentre sei via: la reception incassa anche a gioco chiuso (fino a 8 ore) ---
-  function touch() { const m = M(); m.lastSeen = Date.now(); save(); }
-  function awayCoins(S) {
-    const m = M(); if (!m.lastSeen) { touch(); return { min: 0, coins: 0 }; }
-    const min = Math.min(480, Math.max(0, (Date.now() - m.lastSeen) / 6e4));
-    if (min < 10 || !S || (S.guests || 0) < 3) return { min, coins: 0 };
-    const rate = 0.05 + 0.03 * Math.min(S.guests || 0, 150);
-    return { min: Math.round(min), coins: Math.max(1, Math.round(min * rate * payMul())) };
-  }
-
   // --- eventi di stagione (a data): più guadagno e decorazioni; con ?event=natale si prova ---
   const EVENTS = [
     { id: 'natale', name: 'Magia di Natale', e: '🎄', from: [12, 8], to: [1, 6], mul: 1.25, decor: 'tree', text: 'Ospiti contenti: guadagni +25%' },
@@ -73,10 +63,10 @@
     if (!chestReady()) return null;
     const m = M(); m.chest.opened++; save();
     const C = st.CATALOG, pool = [];
-    ['hat', 'color', 'acc'].forEach(cat => C[cat].forEach(i => { if (!i.premium && i.cost > 0 && !st.has(cat + ':' + i.id)) pool.push({ key: cat + ':' + i.id, name: i.name, cat }); }));
+    ['hat', 'color', 'acc', 'pet'].forEach(cat => C[cat].forEach(i => { if (!i.premium && i.cost > 0 && !st.has(cat + ':' + i.id)) pool.push({ key: cat + ':' + i.id, name: i.name, cat }); }));
     if (pool.length && Math.random() < 0.3) {
       const it = pool[Math.floor(Math.random() * pool.length)]; st.data.owned.push(it.key); st.save();
-      return { kind: 'item', e: it.cat === 'hat' ? '🎩' : it.cat === 'acc' ? '🕶️' : '🎨', text: `Nuovo oggetto: ${it.name}!` };
+      return { kind: 'item', e: it.cat === 'hat' ? '🎩' : it.cat === 'acc' ? '🕶️' : it.cat === 'pet' ? '🐾' : '🎨', text: `Nuovo oggetto: ${it.name}!` };
     }
     const n = [3, 3, 4, 5, 6, 8, 12][Math.floor(Math.random() * 7)]; st.addGems(n);
     return { kind: 'gems', e: '💎', text: `+${n} gemme!` };
@@ -193,15 +183,17 @@
     return `<div class="small">Figurine trovate: ${albumCount()}/${ALBUM.length}. Ogni figurina dà 1 💎, l'album completo 10 💎.</div><div class="medals">${cells}</div>` +
       `<b class="small">Ospiti famosi (${PERSONAS.filter(p => m.vip[p.id]).length}/${PERSONAS.length})</b><div class="seasons">${vips}</div>`;
   }
-  function decoHtml() {
+  function decoNameHtml() {
+    return `<div class="small">Scegli il nome del tuo rifugio: compare sull'insegna della reception. ${prestige() ? `⭐ Nuove gestioni: ${prestige()} (guadagni +${prestige() * 10}%).` : ''} I colori dell'insegna e del tappeto si scelgono nello Shop.</div>` +
+      `<div class="set"><input id="lodgeName" class="txt" maxlength="16" placeholder="Nome del rifugio" value="${lodgeName()}"><button class="mini" data-meta="name">Salva</button></div>`;
+  }
+  function decoHtml() { // colori dell'insegna e del tappeto (alcuni si comprano con le gemme): stanno nel negozio delle gemme
     const m = M(), one = (kind, label) => `<b class="small">${label}</b><div class="look">${DECO[kind].map(d => {
       const key = 'deco:' + kind + ':' + d.id, own = !d.cost || st.has(key), on = m.deco[kind] === d.id;
       const sw = typeof d.col === 'number' ? '#' + d.col.toString(16).padStart(6, '0') : d.col;
       return `<button class="opt${on ? ' on' : ''}${own ? '' : ' lock'}" data-deco="${kind}:${d.id}" data-cost="${d.cost}"><span class="sw" style="background:${sw}"></span>${d.name}${own ? '' : `<i>💎${d.cost}</i>`}</button>`;
     }).join('')}</div>`;
-    return `<div class="small">Scegli il nome del tuo rifugio (compare sull'insegna) e i colori. ${prestige() ? `⭐ Nuove gestioni: ${prestige()} (guadagni +${prestige() * 10}%).` : ''}</div>` +
-      `<div class="set"><input id="lodgeName" class="txt" maxlength="16" placeholder="Nome del rifugio" value="${lodgeName()}"><button class="mini" data-meta="name">Salva</button></div>` +
-      one('sign', 'Colore dell\'insegna') + one('rug', 'Colore del tappeto');
+    return one('sign', 'Colore dell\'insegna') + one('rug', 'Colore del tappeto');
   }
   function gameHtml() {
     const w = gameWait(), m = M();
@@ -212,8 +204,8 @@
 
   R.meta = {
     bind: hud => { toast = m => hud.toast(m); },
-    data: M, touch, dailyInfo, claimDaily, awayCoins, eventNow, EVENTS, payMul, addPts, chestReady, chestInfo, openChest, see, albumCount, ALBUM, PERSONAS, vipPersona, vipServed,
-    DECO, decoGet, decoSet, decoName, lodgeName, prestige, addPrestige, minigame, gameWait, badge, dailyHtml, chestHtml, albumHtml, decoHtml, gameHtml,
+    data: M, dailyInfo, claimDaily, eventNow, EVENTS, payMul, addPts, chestReady, chestInfo, openChest, see, albumCount, ALBUM, PERSONAS, vipPersona, vipServed,
+    DECO, decoGet, decoSet, decoName, lodgeName, prestige, addPrestige, minigame, gameWait, badge, dailyHtml, chestHtml, albumHtml, decoHtml, decoNameHtml, gameHtml,
     onEv(name) { if (name === 'goal') addPts(2); else if (name === 'win') addPts(5); }
   };
 })(window.Rifugio);

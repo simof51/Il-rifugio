@@ -4,8 +4,8 @@
   'use strict';
   const KEY = 'rifugio-settings';
   const defaults = () => ({
-    quality: 'high', daynight: true, weather: true, haptics: true, ambient: true, ambVol: 0.5, pet: 'dog',
-    look: { hat: 'default', color: 0, acc: 'none' }, owned: ['hat:default', 'acc:none', 'color:0', 'color:1'], gems: 0,
+    quality: 'high', daynight: true, weather: true, haptics: true, ambient: true, ambVol: 0.5, pet: 'none',
+    look: { hat: 'default', color: 0, acc: 'none' }, owned: ['hat:default', 'acc:none', 'color:0', 'color:1', 'pet:none'], gems: 0,
     tutorial: false, tips: {}, consent: null, purchases: {}, shopTest: false,
     lang: 'auto', big: false, cb: false, one: false, daily: null, stats: {}, medals: {}
   });
@@ -16,6 +16,9 @@
     const s = readKey(KEY) || readKey(KEY + '-bak');
     if (s) { data = Object.assign(data, s); data.look = Object.assign(defaults().look, s.look || {}); data.tips = s.tips || {}; data.purchases = s.purchases || {}; data.stats = s.stats || {}; data.medals = s.medals || {}; if (!Array.isArray(data.owned)) data.owned = defaults().owned; }
   } catch (e) { /* ignorato */ }
+  // Il compagno ora si compra con le gemme: chi aveva già un cane o un gatto lo tiene (ed è suo).
+  if (data.owned.indexOf('pet:none') < 0) data.owned.push('pet:none');
+  if ((data.pet === 'dog' || data.pet === 'cat') && data.owned.indexOf('pet:' + data.pet) < 0) data.owned.push('pet:' + data.pet);
 
   function save() { try { const j = JSON.stringify(data); localStorage.setItem(KEY, j); localStorage.setItem(KEY + '-bak', j); } catch (e) { /* ignorato */ } }
   // Livelli di qualità grafica: risoluzione massima, ombre, e quanta roba decorativa mostrare (alberi di bordo, fiori, neve, animali).
@@ -40,7 +43,8 @@
       { id: 12, hex: 0xff3d81, name: 'Fucsia', cost: 0, premium: true }, { id: 13, hex: 0x7a5cff, name: 'Ametista', cost: 0, premium: true }
     ],
     acc: [{ id: 'none', name: 'Niente', cost: 0 }, { id: 'sunglasses', name: 'Occhiali da sole', cost: 20 }, { id: 'cape', name: 'Mantello', cost: 60 },
-      { id: 'wings', name: 'Ali', cost: 0, premium: true }]
+      { id: 'wings', name: 'Ali', cost: 0, premium: true }],
+    pet: [{ id: 'none', name: 'Nessuno', cost: 0 }, { id: 'dog', name: '🐶 Cane', cost: 25 }, { id: 'cat', name: '🐱 Gatto', cost: 25 }]
   };
 
   // Salvataggio portatile: tutte le chiavi "rifugio-*" in un unico codice di testo.

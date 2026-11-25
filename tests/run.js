@@ -91,14 +91,10 @@ ok(R.extras.missionsHtml().indexOf('Medaglie') >= 0, 'la pagina delle missioni s
   ok(MT.albumCount() >= 1 && MT.albumHtml().indexOf('Figurine') >= 0, 'l\'album si costruisce');
   const p0 = MT.chestInfo().pts; MT.addPts(25); ok(MT.chestReady() && MT.chestInfo().left >= 2, 'con 25 punti ci sono scrigni da aprire');
   const rc = MT.openChest(); ok(rc && (rc.kind === 'gems' || rc.kind === 'item'), 'lo scrigno dà un premio');
-  m.lastSeen = Date.now() - 3 * 3600e3; const aw = MT.awayCoins({ guests: 40 });
-  ok(aw.coins > 0 && aw.min >= 179 && aw.min <= 181, 'dopo 3 ore la reception ha incassato (' + aw.coins + ' monete)');
-  m.lastSeen = Date.now() - 20 * 3600e3; const cap = MT.awayCoins({ guests: 40 }); ok(cap.min === 480, 'il guadagno da assenti si ferma a 8 ore');
-  m.lastSeen = Date.now() - 2 * 60e3; ok(MT.awayCoins({ guests: 40 }).coins === 0, 'sotto i 10 minuti non c\'è nulla');
   ok(MT.vipPersona() && MT.vipPersona().name, 'gli ospiti VIP hanno un nome');
   const mul0 = MT.payMul(); MT.addPrestige(); ok(MT.payMul() > mul0 - 1e-9 && MT.prestige() === 1, 'la nuova gestione aumenta i guadagni');
   MT.decoName('Casa <b>Mia</b> con un nome lunghissimo'); ok(MT.lodgeName().indexOf('<') < 0 && MT.lodgeName().length <= 16, 'il nome del rifugio è pulito e corto');
-  ok(MT.decoHtml().indexOf('lodgeName') > 0 && MT.dailyHtml().indexOf('days') > 0 && MT.chestHtml().indexOf('chestbox') > 0 && MT.gameHtml().indexOf('Record') > 0, 'le pagine del profilo si costruiscono');
+  ok(MT.decoNameHtml().indexOf('lodgeName') > 0 && MT.decoHtml().indexOf('data-deco') > 0 && MT.dailyHtml().indexOf('days') > 0 && MT.chestHtml().indexOf('chestbox') > 0 && MT.gameHtml().indexOf('Record') > 0, 'le pagine del profilo si costruiscono');
 }
 
 // 5. Salvataggio: copia di sicurezza e ripristino di qualche minuto fa.

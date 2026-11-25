@@ -110,10 +110,12 @@
       const key = `${cat}:${id}`, own = prem ? R.shop.has('cosmetics') : st.has(key);
       return `<button class="opt${on ? ' on' : ''}${own ? '' : ' lock'}" data-look="${key}" data-cost="${cost}" data-prem="${prem ? 1 : 0}">${sw != null ? `<span class="sw" style="background:#${sw.toString(16).padStart(6, '0')}"></span>` : ''}${label}${own ? '' : prem ? '<i>🛍️</i>' : `<i>💎${cost}</i>`}</button>`;
     };
-    return `<div class="small">💎 ${st.get('gems')} gemme (+1 per obiettivo, +10 per ogni stagione completata). ${lookMsg}</div>` +
-      `<b class="small">Cappello</b><div class="look">${C.hat.map(h => item('hat', h.id, h.name, h.cost, look.hat === h.id, null, h.premium)).join('')}</div>` +
-      `<b class="small">Colore</b><div class="look">${C.color.map(c => item('color', c.id, c.name, c.cost, look.color === c.id, c.hex, c.premium)).join('')}</div>` +
-      `<b class="small">Accessorio</b><div class="look">${C.acc.map(a => item('acc', a.id, a.name, a.cost, look.acc === a.id, null, a.premium)).join('')}</div>`;
+    return `<div class="small">💎 ${st.get('gems')} gemme. Le trovi giocando: +1 per obiettivo, +10 per ogni stagione completata, premi giornalieri, scrigni e video. Tocca un oggetto per comprarlo e indossarlo. ${lookMsg}</div>` +
+      `<b class="small">Omino · Cappello</b><div class="look">${C.hat.map(h => item('hat', h.id, h.name, h.cost, look.hat === h.id, null, h.premium)).join('')}</div>` +
+      `<b class="small">Omino · Colore</b><div class="look">${C.color.map(c => item('color', c.id, c.name, c.cost, look.color === c.id, c.hex, c.premium)).join('')}</div>` +
+      `<b class="small">Omino · Accessorio</b><div class="look">${C.acc.map(a => item('acc', a.id, a.name, a.cost, look.acc === a.id, null, a.premium)).join('')}</div>` +
+      `<b class="small">Compagno che ti segue</b><div class="look">${C.pet.map(p => item('pet', p.id, p.name, p.cost, st.get('pet') === p.id, null, false)).join('')}</div>` +
+      MT.decoHtml();
   }
   // Shop: gemme e miglioramenti speciali. Gli acquisti passano da Google Play Billing; fuori dall'app installata dal Play non si addebita nulla.
   let shopMsg = '';
@@ -134,8 +136,7 @@
       tgS('ambient', 'Suoni d\'ambiente') + slider('ambVol', 'Volume ambiente', 'st', st.get('ambVol')) + tgS('haptics', 'Vibrazione') +
       tgS('daynight', 'Giorno e notte') + tgS('weather', 'Meteo (pioggia, nebbia, temporali)') +
       `<b class="small">Lingua</b>${opts([{ v: 'auto', l: '🌐 Auto' }].concat(Object.keys(R.i18n.LANGS).map(k => ({ v: k, l: R.i18n.LANGS[k] }))), st.get('lang'), 'data-lang')}` +
-      `<b class="small">Qualità grafica (si applica ricaricando)</b>${opts(Object.keys(Qs).map(k => ({ v: k, l: Qs[k].label })), st.get('quality'), 'data-q')}` +
-      `<b class="small">Il tuo compagno</b>${opts([{ v: 'dog', l: '🐶 Cane' }, { v: 'cat', l: '🐱 Gatto' }, { v: 'none', l: 'Nessuno' }], st.get('pet'), 'data-pet')}`;
+      `<b class="small">Qualità grafica (si applica ricaricando)</b>${opts(Object.keys(Qs).map(k => ({ v: k, l: Qs[k].label })), st.get('quality'), 'data-q')}`;
   }
   function accessHtml() { return tgS('big', 'Testo grande') + tgS('cb', 'Colori per daltonici') + tgS('one', 'Modalità una mano'); }
   let snapMsg = '';
@@ -211,15 +212,14 @@
       h = H('🗺️ Le tue città') + R.cities.map(cityCard).join('') +
         (levelDone() ? '' : `<div class="row"><button class="btn ghost" id="menuReset">${confirmReset ? 'Sicuro? Tocca di nuovo' : 'Ricomincia questa stagione'}</button></div>`) + prestigeHtml();
     } else if (tab === 'shop') {
-      h = H('🛍️ Shop') + shopHtml() + H('🎁 Video a premio') + adsHtml();
+      h = H('🛍️ Shop') + shopHtml() + H('🎁 Video a premio') + adsHtml() + H('💎 Negozio delle gemme') + lookHtml();
     } else if (tab === 'profile') {
       h = H('👤 Profilo') + `<div class="stats"><div><b>${S.coins}</b><span>monete</span></div><div><b>${S.guests}</b><span>ospiti</span></div><div><b>${S.wood}</b><span>legna</span></div><div><b>${st.get('gems')}</b><span>gemme 💎</span></div></div>` +
         H('🎁 Premio giornaliero') + MT.dailyHtml() + H('📦 Scrigno') + MT.chestHtml() +
         H('🎯 Missioni e medaglie') + R.extras.missionsHtml() +
         section('album', `📖 Album (${MT.albumCount()}/${MT.ALBUM.length})`, MT.albumHtml()) +
         section('game', '🎮 Mini-gioco', MT.gameHtml()) +
-        section('deco', '🏠 Il tuo rifugio', MT.decoHtml()) +
-        H('👕 Il tuo omino') + lookHtml();
+        section('deco', '🏠 Nome del rifugio', MT.decoNameHtml());
     } else {
       h = H('⚙️ Impostazioni') + settingsHtml() + H('♿ Accessibilità') + accessHtml() + H('💾 Salvataggio portatile') + saveHtml() + H('🔒 Privacy e consenso') + privacyHtml() +
         (SHOW_DEBUG || debug ? section('dbg', '🛠 Debug', `<div class="dbg">${debugPanel()}</div>`) : '');
@@ -287,7 +287,6 @@
     else if (d.lang) { st.set('lang', d.lang); reloadSaved(); }
     else if (t.id === 'snapBack') { if (state.restoreSnap()) { snapMsg = 'Ripristino riuscito, riavvio…'; rerender(); setTimeout(() => location.reload(), 700); } else { snapMsg = 'Nessun salvataggio precedente disponibile.'; rerender(); } }
     else if (d.q) { st.set('quality', d.q); reloadSaved(); }
-    else if (d.pet) { st.set('pet', d.pet); reloadSaved(); }
     else if (d.buy) { buyFlow(d.buy); }
     else if (d.ad) { adFlow(); }
     else if (t.id === 'shopRestore') { R.shop.restore().then(r => { shopMsg = r === 'ok' ? 'Acquisti ripristinati.' : 'Il ripristino non è ancora disponibile.'; rerender(); }); }
@@ -295,7 +294,9 @@
       const [cat, id] = d.look.split(':'), cost = +d.cost, key = d.look;
       if (d.prem === '1' && !R.shop.has('cosmetics')) { tab = 'shop'; shopMsg = 'Questo oggetto è nel "Pacchetto stile".'; rerender(); return; }
       if (!st.buy(key, cost)) { lookMsg = 'Gemme insufficienti: completa altri obiettivi.'; rerender(); return; }
-      const look = Object.assign({}, st.get('look')); look[cat] = cat === 'color' ? +id : id; st.set('look', look); audio.sfx('buy'); reloadSaved();
+      if (cat === 'pet') st.set('pet', id);
+      else { const look = Object.assign({}, st.get('look')); look[cat] = cat === 'color' ? +id : id; st.set('look', look); }
+      audio.sfx('buy'); reloadSaved();
     }
     else if (d.ads) { st.set('consent', { ads: !consent().ads, ts: Date.now() }); rerender(); }
     else if (t.id === 'codeMake') { codeText = st.exportCode(); codeMsg = 'Codice creato: copialo (tocca il riquadro e seleziona tutto).'; try { if (navigator.clipboard) navigator.clipboard.writeText(codeText).then(() => { codeMsg = 'Codice creato e copiato negli appunti.'; rerender(); }).catch(() => {}); } catch (e2) { /* ignorato */ } rerender(); }
@@ -333,30 +334,13 @@
   $('photoClose').onclick = () => { $('photo').classList.add('hidden'); game.pause(false); };
   $('photoShare').onclick = () => R.extras.sharePhoto(shot).then(r => { $('photoMsg').textContent = r === 'shared' ? 'Condivisa!' : r === 'saved' ? 'Foto salvata nei download.' : r === 'cancel' ? '' : 'Non riesco a condividere la foto su questo dispositivo.'; });
 
-  // All'avvio: premio giornaliero e, se sei stato via, i soldi che la reception ha incassato nel frattempo (si possono raddoppiare con un video).
+  // All'avvio: se c'è il premio giornaliero da ritirare, compare la finestra.
   function afterStart() {
-    const away = MT.awayCoins(state.data); MT.touch(); started = true;
-    const steps = [];
-    if (MT.dailyInfo().can) steps.push(next => {
-      showPop('🎁 Premio di oggi', MT.dailyHtml(false), [{ t: 'Ritira', fn: () => { const r = MT.claimDaily(); closePop(); if (r) { audio.sfx('buy'); hud.toast(`🎁 +${r.gems} 💎 · serie di ${r.streak} ${r.streak === 1 ? 'giorno' : 'giorni'}`); } updateBadge(); next(); } }]);
-    });
-    if (away.coins > 0) steps.push(next => {
-      const h = Math.floor(away.min / 60), m = away.min % 60, when = h ? `${h} h ${m} min` : `${m} min`;
-      const canAd = R.ads.available() && R.ads.left() > 0 && R.ads.wait() === 0;
-      const btns = [{ t: `Ritira ${away.coins} 🪙`, fn: () => { game.addReception(away.coins); closePop(); audio.sfx('coin'); next(); } }];
-      if (canAd) btns.push({ t: '🎬 Raddoppia con un video', ghost: true, fn: async e => {
-        e.disabled = true; const r = await R.ads.watch(0);
-        game.addReception(r === 'ok' ? away.coins * 2 : away.coins); closePop(); audio.sfx(r === 'ok' ? 'buy' : 'coin');
-        if (r !== 'ok') hud.toast('Video non completato: ritirate le monete normali'); next();
-      } });
-      showPop('👋 Bentornato!', `<p>Mentre eri via (${when}) la receptionist ha incassato <b>${away.coins} 🪙</b>: le trovi sul bancone.</p>`, btns);
-    });
-    const next = () => { const f = steps.shift(); if (f) f(next); };
-    setTimeout(next, 700);
+    if (!MT.dailyInfo().can) return;
+    setTimeout(() => {
+      showPop('🎁 Premio di oggi', MT.dailyHtml(false), [{ t: 'Ritira', fn: () => { const r = MT.claimDaily(); closePop(); if (r) { audio.sfx('buy'); hud.toast(`🎁 +${r.gems} 💎 · serie di ${r.streak} ${r.streak === 1 ? 'giorno' : 'giorni'}`); } updateBadge(); } }]);
+    }, 700);
   }
-  let started = false; // l'ora dell'ultima visita si aggiorna solo dopo "Inizia" (prima serve per calcolare quanto sei stato via)
-  setInterval(() => { if (started) MT.touch(); }, 30000);
-  addEventListener('pagehide', () => { if (started) MT.touch(); });
   $('start').onclick = () => { audio.unlock(); audio.playMusic(level.season); hud.hideIntro(); game.start(); afterStart(); };
   $('keep').onclick = () => { hud.hideWin(); game.resume(); };
 

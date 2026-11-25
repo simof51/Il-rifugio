@@ -1043,7 +1043,7 @@
       const g = B.person(look ? look.coat : COATS[Math.floor(Math.random() * COATS.length)], look ? look.hat : CONFETTI[Math.floor(Math.random() * CONFETTI.length)], false, OUTFIT,
         Object.assign({ shorts: SHORTS[Math.floor(Math.random() * SHORTS.length)], shoes: Math.random() < 0.5 ? 0xffffff : 0x3d8bff }, look ? look.opt : {}));
       g.scale.setScalar(kind === 'vip' ? 1 : 0.88); g.position.set(SPAWN[0], 0, SPAWN[1]);
-      const gu = { g, r, b, state: 'in', path: [[r.cx, -2.8], [b.x, -4.6]], stay: P.guest_stay * (kind === 'vip' ? 1.4 : 1), cold: 0, want: false, served: false, el: hud.label('pill', ''), vip: kind === 'vip', scout: kind === 'scout', rush: kind === 'rush' ? 24 : 0, taken: false };
+      const gu = { g, r, b, state: 'queue', path: [], stay: P.guest_stay * (kind === 'vip' ? 1.4 : 1), cold: 0, want: false, served: false, el: hud.label('pill', ''), vip: kind === 'vip', scout: kind === 'scout', rush: kind === 'rush' ? 24 : 0, taken: false };
       b.guest = gu; guests.push(gu);
       return gu;
     }
@@ -1090,7 +1090,7 @@
       if (happy) {
         const pay = Math.round((P.pay + (gu.served ? P.tip : 0)) * (gu.vip ? 3 : gu.scout ? 1.5 : 1) * (R.shop.has('boost') ? 1.5 : 1) * MT.payMul()); // "Ospiti generosi" dallo shop: +50%; poi evento di stagione e nuove gestioni
         // passa dalla reception e lascia i soldi sul bancone
-        gu.pay = pay; gu.path = [[gu.r.cx, -2.8], [RECEP.x - 0.9 + Math.random() * 1.8, RECEP.z + 1.35]];
+        gu.pay = pay; gu.path = [[gu.r.cx, -2.8], [RECEP.x + 0.7 + Math.random() * 0.6, RECEP.z + 1.35]]; // si paga a destra del bancone, vicino alla ciotola; la fila per entrare sta a sinistra
         S.happy++; S.guests++; EX.ev('guest'); if (gu.vip) { EX.ev('vip'); MT.vipServed(gu.persona); }
       } else {
         S.happy = Math.max(0, S.happy - P.cold_penalty);
@@ -1251,9 +1251,16 @@
       eventT -= dt; if (S.done >= 3 && S.fed > 0 && eventT <= 0) { eventT = 75 + Math.random() * 60; runEvent(); }
       // ospiti
       if (S.fed > 0) { spawnT -= dt; if (spawnT <= 0) { spawnT = (P.guest_spawn_min + Math.random() * (P.guest_spawn_max - P.guest_spawn_min)) * (hasEffect('sign') ? P.sign_mul : 1); spawnGuest(); } }
+      const queue = guests.filter(g => g.state === 'queue'); // fila alla reception, nell'ordine di arrivo
       for (let i = guests.length - 1; i >= 0; i--) {
         const gu = guests[i];
-        if (gu.state === 'in') {
+        if (gu.state === 'queue') {
+          const k = queue.indexOf(gu); gu.path = [[RECEP.x - 0.55, RECEP.z + 1.45 + k * 0.85]];
+          if (B.follow(gu.g, gu.path, 2.8, dt)) { // al suo posto nella fila: il primo fa il check-in e poi va in stanza
+            gu.g.rotation.y = Math.PI;
+            if (k === 0) { gu.wait = (gu.wait || 0) + dt; if (gu.wait > 1.1) { gu.wait = 0; recep.hop = 0.4; A.sfx('click'); gu.state = 'in'; gu.path = [[gu.r.cx, -2.8], [gu.b.x, -4.6]]; } }
+          } else gu.wait = 0;
+        } else if (gu.state === 'in') {
           if (B.follow(gu.g, gu.path, 2.6, dt)) {
             gu.state = 'bed'; seatGuest(gu); A.sfx('guest'); fauna.react();
             MT.see('g_' + (gu.vip ? 'vip' : gu.scout ? 'scout' : gu.rush > 0 ? 'rush' : 'hiker'));
@@ -1412,9 +1419,6 @@
         if (ev) { MT.see('e_event'); hud.toast(`${ev.e} ${ev.name}: ${ev.text}`); }
         else if (S.done > 0) hud.toast(`${level.cityEmoji || ''} ${level.cityName || ''} · ${level.emoji} ${level.name}`);
       },
-      // Soldi lasciati sul bancone mentre il giocatore era via.
-      addReception(n) { recep.n += n; drawRecep(); recep.hop = 0.6; save(); },
-      receptionCoins: () => recep.n,
       resume() { running = true; },
       seasonNote,
       // Foto ricordo: ridisegna la scena e la mette in una cornice (le scritte HTML non compaiono).
