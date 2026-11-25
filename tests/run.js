@@ -33,7 +33,7 @@ R.order.forEach(id => {
   ok(!keys.has(l.saveKey), id + ': chiave di salvataggio unica'); keys.add(l.saveKey);
   ok(l.objectives.length >= 36, id + ': almeno 36 obiettivi (' + l.objectives.length + ')');
   ok(['inverno', 'primavera', 'estate', 'autunno'].includes(l.season), id + ': stagione valida');
-  ok(l.objectives.every(o => o.n > 0), id + ': ogni obiettivo ha una quantità positiva');
+  ok(l.objectives.every(o => o.n === undefined || o.n > 0), id + ': ogni obiettivo ha una quantità positiva (se manca vale 1)');
   ok(l.objectives.every(o => typeof o.text === 'string' || typeof o.label === 'string' || o.stat), id + ': ogni obiettivo ha testo o statistica');
   const ids = l.unlocks.map(u => u.id);
   ok(new Set(ids).size === ids.length, id + ': id degli sblocchi unici');
