@@ -1,10 +1,11 @@
 // Test automatici (senza browser): node tests/run.js
 // Controllano i dati di tutte le tappe, le traduzioni, le missioni e i salvataggi. Si lanciano a ogni push (GitHub Actions).
 'use strict';
+process.on('uncaughtException', e => { console.log('::error::' + String(e && e.stack || e).split('\n').slice(0, 3).join(' | ')); process.exit(1); });
 const fs = require('fs'), path = require('path'), vm = require('vm');
 const WEB = path.join(__dirname, '..', 'web');
 let fails = 0, passed = 0;
-const ok = (cond, msg) => { if (cond) passed++; else { fails++; console.error('✗ ' + msg); } };
+const ok = (cond, msg) => { if (cond) passed++; else { fails++; console.error('✗ ' + msg); console.log('::error::' + msg); } };
 
 // Ambiente finto del browser: quanto basta per caricare i file che non toccano la grafica.
 const store = {};
