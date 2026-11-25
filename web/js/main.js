@@ -99,7 +99,7 @@
       `<b class="small">Colore</b><div class="look">${C.color.map(c => item('color', c.id, c.name, c.cost, look.color === c.id, c.hex, c.premium)).join('')}</div>` +
       `<b class="small">Accessorio</b><div class="look">${C.acc.map(a => item('acc', a.id, a.name, a.cost, look.acc === a.id, null, a.premium)).join('')}</div>`;
   }
-  // Shop: gemme e miglioramenti speciali. Ogni acquisto chiede prima un adulto (calcolo). Finché non c'è Google Play Billing non si addebita nulla.
+  // Shop: gemme e miglioramenti speciali. Gli acquisti passano da Google Play Billing; fuori dall'app installata dal Play non si addebita nulla.
   let shopMsg = '';
   function shopHtml() {
     const note = R.shop.ready() ? (R.shop.providerName() === 'prova' ? '🧪 Acquisti di PROVA: nessun addebito, servono solo a provare lo shop.' : '') :
@@ -110,7 +110,7 @@
     }).join('');
     return `<div class="small">💎 ${st.get('gems')} gemme. ${note}</div>${shopMsg ? `<div class="small"><b>${shopMsg}</b></div>` : ''}${rows}` +
       `<div class="row"><button class="btn ghost" id="shopRestore">Ripristina acquisti</button></div>` +
-      `<div class="small">Prezzi con IVA inclusa. Gli acquisti sono legati al tuo account Google. Per comprare serve un adulto. Le gemme servono solo per cambiare l'aspetto dell'omino: non danno vantaggi nel gioco.</div>`;
+      `<div class="small">Prezzi con IVA inclusa. Gli acquisti sono legati al tuo account Google. Le gemme servono solo per cambiare l'aspetto dell'omino: non danno vantaggi nel gioco.</div>`;
   }
   function settingsHtml() {
     const Qs = st.QUALITY;
@@ -176,18 +176,8 @@
   function openMenu() { confirmReset = false; dbgMsg = ''; renderMenu(); $('menu').classList.remove('hidden'); game.pause(true); audio.sfx('click'); }
   function closeMenu() { $('menu').classList.add('hidden'); game.pause(false); audio.sfx('click'); }
   $('menuBtn').onclick = openMenu; $('menuClose').onclick = closeMenu;
-  // Blocco per i genitori: un calcolo da adulti prima di ogni acquisto.
-  function askGate() {
-    return new Promise(resolve => {
-      const a = 6 + Math.floor(Math.random() * 4), b = 6 + Math.floor(Math.random() * 4);
-      $('gateQ').textContent = `${a} × ${b} = ?`; $('gateA').value = ''; $('gateMsg').textContent = ''; $('gate').classList.remove('hidden'); $('gateA').focus();
-      const done = ok => { $('gate').classList.add('hidden'); $('gateOk').onclick = $('gateNo').onclick = null; resolve(ok); };
-      $('gateNo').onclick = () => done(false);
-      $('gateOk').onclick = () => { if (+$('gateA').value === a * b) done(true); else { $('gateMsg').textContent = 'Risposta sbagliata: chiedi a un adulto.'; $('gateA').value = ''; } };
-    });
-  }
+  // Acquisto: parte subito (la conferma con il PIN o l'impronta la chiede Google Play).
   async function buyFlow(id) {
-    if (!(await askGate())) return;
     const r = await R.shop.buy(id);
     shopMsg = r === 'ok' ? 'Acquisto riuscito, grazie! ' + (R.shop.byId(id).kind === 'gems' ? `+${R.shop.byId(id).gems} gemme` : 'Miglioramento attivo.') : r === 'cancel' ? 'Acquisto annullato.' : r === 'pending' ? 'Pagamento in attesa di conferma da Google Play: arriverà appena confermato.' : 'Acquisto non disponibile ora: nessun addebito. Riprova più tardi.';
     if (r === 'ok') audio.sfx('buy');

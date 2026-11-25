@@ -9,6 +9,23 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.11.1 · 2026-11-26 · Tolto il calcolo prima degli acquisti
+
+**Richiesto**: rimuovere il controllo con il calcolo per gli acquisti.
+
+**Modificato**
+| File | Cosa |
+|---|---|
+| `web/js/main.js`, `index.html` | Tolti il calcolo e la finestra "Chiedi a un adulto": l'acquisto parte subito. La conferma con PIN o impronta resta quella di Google Play. Testi dello shop aggiornati. |
+| `web/sw.js` | `CACHE` v20. |
+
+**Nota**: se l'app sarà indicata al Play come rivolta anche ai bambini, le regole per le famiglie possono chiedere una conferma prima dei pagamenti: da controllare prima della pubblicazione.
+
+**Per tornare indietro**
+- `git checkout 8311ab5 -- web`
+
+---
+
 ## v0.11.0 · 2026-11-26 · Tutto il necessario per gli acquisti in app (Google Play Billing)
 
 **Richiesto**: aggiungere all'app tutto ciò che serve per fare acquisti in app.
