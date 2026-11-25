@@ -89,7 +89,7 @@ R.order.forEach(id => {
   }
   ps.forEach(u => { const dx = Math.max(Math.abs(u.pos[0] - pl.layout.stand) - 1.25, 0), dz = Math.max(Math.abs(u.pos[1] - 0.2) - 0.65, 0); ok(Math.hypot(dx, dz) >= 1.1, id + ': riquadro addosso al banco: ' + u.id); });
 });
-ok(new Set(['valle-inverno', 'mulini-inverno', 'porto-inverno'].map(id => R.levels[id].place.layout.stand)).size === 3, 'le tre città hanno il banco in posti diversi');
+ok(new Set(['inverno', 'mulini-inverno', 'porto-inverno'].map(id => R.levels[id].place.layout.stand)).size === 3, 'le tre città hanno il banco in posti diversi');
 ok(new Set(R.order.map(id => R.levels[id].place.host.name)).size === 12, 'ogni posto ha il suo ospite speciale');
 
 // 4b. Premio giornaliero, scrigni, album, guadagno da assenti, prestigio e decorazioni.
