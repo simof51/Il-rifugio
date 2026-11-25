@@ -9,6 +9,11 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.24.2 · 2026-11-26 · Freccia guida 3D
+
+- La freccia del tutorial attorno all'omino ora è in 3D (asta e punta, con luce e ombreggiatura), ad altezza busto e più staccata dal giocatore (2,3 m).
+- **Per tornare indietro**: `git checkout 639a437 -- web Changelog`.
+
 ## v0.24.1 · 2026-11-26 · Obiettivi da 1 anche nelle vecchie partite, freccia guida in tutorial
 
 - **Obiettivi da 1**: le partite iniziate con la v0.21.1 partivano dal 5° obiettivo (salvato). Ora, se i primi 4 non sono davvero fatti, si riparte dall'1.
