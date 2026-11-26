@@ -87,6 +87,7 @@
     function hideStick() { stick.style.display = 'none'; }
 
     return {
+      setSnack(show, n, cap, e) { const c = $('snackChip'); if (c.hidden === show) c.hidden = !show; if (show) { setText($('snackE'), e); setText($('snackN'), n + '/' + cap, true); } },
       label, put, toast, floatText, updateFloats, setStats, setTask, showStick, moveKnob, hideStick, setEnv, setGems, hint, setNext,
       setCamera(c) { cam = c; },
       hideIntro() { $('intro').classList.add('hidden'); },

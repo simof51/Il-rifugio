@@ -5,9 +5,9 @@
   // Disposizione per città: dove sta il banco delle bevande, da che lato cresce la reception, in che ordine si aprono le stanze
   // e quali riquadri (upgrade) si spostano per non finire addosso al banco.
   const LAYOUT = {
-    valle: { stand: 3, recep: 'left', rooms: [0, 6, -6], pads: {} },
-    mulini: { stand: -4.5, recep: 'right', rooms: [0, 6, -6], pads: { waiter: [1.2, -0.4], bag: [3.2, 5.2], bag2: [6.4, 5.4], saw: [9.8, 5.8], sign: [13.4, 5.2] } },
-    porto: { stand: 8, recep: 'left', rooms: [0, -6, 6], pads: { room1: [-6, -6.5], room2: [6, -6.5], boots: [2.2, -0.6], sign: [15.6, 6.2] } }
+    valle: { stand: 3, snack: 0.1, recep: 'left', rooms: [0, 6, -6], pads: {} },
+    mulini: { stand: -4.5, snack: -1.4, recep: 'right', rooms: [0, 6, -6], pads: { waiter: [1.2, -0.4], bag: [3.2, 5.2], bag2: [6.4, 5.4], saw: [9.8, 5.8], sign: [13.4, 5.2] } },
+    porto: { stand: 8, snack: 5, recep: 'left', rooms: [0, -6, 6], pads: { room1: [-6, -6.5], room2: [6, -6.5], boots: [2.2, -0.6], sign: [15.6, 6.2] } }
   };
   // Aspetto per città: colore delle pareti, cornici, tende sulle finestre, cappotti degli ospiti, cappelli e divisa della receptionist.
   // "style" cambia la forma della baita (vedi game.js): alpine = tronchi e tetto spiovente, dutch = mattoni e facciata a gradoni, harbor = pareti bianche, fascia blu e bandiera.
@@ -56,5 +56,7 @@
     const cocoa = lv.unlocks.find(u => u.id === 'cocoa'), cocoa2 = lv.unlocks.find(u => u.id === 'cocoa2');
     if (cocoa) cocoa.pos = [L.stand, 5];
     if (cocoa2) cocoa2.pos = [L.stand + 3.6, 5];
+    const sn = lv.unlocks.find(u => u.id === 'snack'); // il banco dei dolci nasce dove si paga, davanti alle camere
+    if (sn) { sn.pos = [L.snack, 0.2]; sn.title = { inverno: 'Torte calde', primavera: 'Pasticcini', estate: 'Gelati', autunno: 'Caldarroste' }[season]; }
   });
 })(window.Rifugio);

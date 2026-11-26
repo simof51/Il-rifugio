@@ -77,6 +77,7 @@
       { id: 'mascot', title: v.mascotName, cost: k(105), pos: lake ? [-10, 9] : [-18, 1], requires: P(8), effect: 'mascot' },
       { id: 'waiter2', title: `Cameriere ${v.roomShort} 2`, cost: k(112), pos: [9.6, -1.8], requires: P(9), effect: 'waiter', room: 1, needRoom: 1 },
       { id: 'helper3', title: `${v.helperTitle} 3`, cost: k(235), pos: [-13.5, 2.4], requires: P(9), effect: 'helper', room: 2, needRoom: 2 },
+      { id: 'snack', title: 'Banco dolci', cost: k(140), pos: [0.2, 0.2], requires: P(5), effect: 'snack' },
       { id: 'waiter3', title: `Cameriere ${v.roomShort} 3`, cost: k(132), pos: [-9.2, -2.2], requires: P(11), effect: 'waiter', room: 2, needRoom: 2 }
     ];
   };

@@ -246,3 +246,11 @@ body::before{display:none}
 .sc{background:#eef3fa}.sc.done{background:#d9f7e4}.sc.cur{background:#ffe9a8}
 .day{background:#fff;border:2px solid #dbe7f5}.day.got{background:#d9f7e4;border-color:#38d17a}.day.now{background:#ffe9a8;border-color:#ffab2e}
 @media(prefers-reduced-motion:reduce){.card,.conf,.day.now,#tabbar button.dot::after{animation:none}}
+
+/* Attività nuove: mini mappa, avviso dell'evento, chip dei dolci */
+#minimap{position:fixed;top:calc(68px + var(--safe-t) + 52px);right:calc(10px + var(--safe-r));width:110px;height:84px;background:rgba(255,255,255,.72);border:2px solid #fff;border-radius:14px;box-shadow:0 4px 12px rgba(18,38,66,.2);pointer-events:none;z-index:1}
+#evtChip{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(150px + var(--safe-b));background:#fff;border:3px solid #ffb62e;border-radius:999px;padding:6px 16px;font-weight:700;color:#1f2a37;box-shadow:0 4px 12px rgba(18,38,66,.25);pointer-events:none;z-index:4;white-space:nowrap}
+#snackChip span{font-size:17px}
+body:has(.modal:not(.hidden)) #minimap,body:has(.modal:not(.hidden)) #evtChip{display:none}
+.mbar{height:6px;border-radius:9px;background:#eef2f6;overflow:hidden;margin-top:4px}.mbar i{display:block;height:100%;background:linear-gradient(90deg,#ffd23a,#4cd964)}
+.mrow.col{display:block}.mrow.col>div:first-child{display:flex;justify-content:space-between;gap:10px}

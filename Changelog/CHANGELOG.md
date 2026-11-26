@@ -9,6 +9,17 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.29.0 · 2026-11-26 · Attività nuove e mini mappa
+
+- **Città da giocare**: Valle con legnaia e slitta (porta la legna ai fuochi), Borgo dei Mulini con orto da raccogliere, Porto con il battello che sbarca ospiti (+25%).
+- **Banco dei dolci** (nuovo riquadro): torte, pasticcini, gelati o caldarroste secondo la stagione; i camerieri li servono.
+- **Richieste degli ospiti**: coperta, cuscino, giornale, torcia da prendere alla reception, con mancia.
+- **Eventi**: bufera, festa (paga doppia), tubo rotto da riparare.
+- **Stelle del rifugio**: ogni stella intera fa pagare il 4% in più.
+- **Mini mappa** in alto a destra.
+
+**Per tornare indietro:** `git checkout 8ecef8c -- web Changelog`
+
 ## v0.28.0 · 2026-11-26 · Codice del gioco diviso in parti
 
 - `web/js/game.js` alleggerito: effetti, percorsi, bordi e decorazioni, strutture, lanterne e mascotte stanno in `web/js/parts/`. Il gioco non cambia.

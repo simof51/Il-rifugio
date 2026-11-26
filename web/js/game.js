@@ -69,6 +69,7 @@
     const inLM = (x, z, pad) => !!LM && Math.hypot(x - LM.x, z - LM.z) < LM.r + (pad || 0);
     // I punti upgrade (riquadri a terra) non devono finire sotto la neve, un sasso o un albero: attorno a loro niente decorazioni.
     const PADS = (level.unlocks || []).map(u => u.pos);
+    PADS.push(...(R.parts.city.RESERVE[level.cityId || 'valle'] || [])); // spazio per l'attivita' della citta'
     const nearPad = (x, z, r) => PADS.some(p => Math.hypot(p[0] - x, p[1] - z) < r);
     const snowy = TH.fall === 'snow'; // d'inverno: neve che cade, sassi e cespugli innevati
 
@@ -639,20 +640,22 @@
       const g = h.g, p = g.position; h.cd -= dt;
       if (h.state === 'idle') {
         const gu = guests.find(x => wantsDrink(x, h.ri) && !x.taken);
-        if (h.cup > 0 && gu) { h.target = gu; gu.taken = true; h.state = 'toGuest'; }
-        else if (gu && cocoa.open && cocoa.cups > 0) { h.target = gu; gu.taken = true; h.state = 'toStand'; }
+        if (h.cup > 0 && gu && h.item === (gu.want === 'snack')) { h.target = gu; gu.taken = true; h.state = 'toGuest'; }
+        else if (gu && stockOf(gu)) { h.target = gu; gu.taken = true; h.state = 'toStand'; }
         else if (nav(h, h.home[0], h.home[1], 3.2, dt, 0.3)) { B.walk(g, 0, dt); g.rotation.y = 0; }
       }
       else if (h.state === 'toStand') {
         if (!h.target || h.target.state !== 'bed' || h.target.served) { if (h.target) h.target.taken = false; h.target = null; h.state = 'idle'; }
-        else if (nav(h, COCOA_PICK[0], COCOA_PICK[1] + 0.3, 3.4, dt, 0.9)) {
-          const take = Math.min(cocoa.cups, 2, cupCapW() - h.cup);
+        else { const sweet = h.target.want === 'snack', at = sweet ? ACT.SNACK_PICK : COCOA_PICK;
+        if (nav(h, at[0], at[1] + 0.3, 3.4, dt, 0.9)) {
+          if (h.item !== sweet) { h.cup = 0; h.item = sweet; }
+          const take = Math.min(stockOf(h.target), 2, cupCapW() - h.cup);
           if (take > 0) {
-            cocoa.cups -= take; h.cup += take; B.toss(g, 0.2); A.sfx('pickup');
-            for (let k = 0; k < take; k++) { _v.set(10.55 + Math.min(5, cocoa.cups + k) * 0.28, 1.3, -6.55); fly('cup', _v, o => g.userData.tray.getWorldPosition(o), 0.35, 0.7, () => B.setTray(g, h.cup), k * 0.1); }
+            if (sweet) ACT.snack.n -= take; else cocoa.cups -= take; h.cup += take; B.toss(g, 0.2); A.sfx('pickup');
+            for (let k = 0; k < take; k++) { _v.set(at[0] + (k - 0.5) * 0.28, 1.3, 0.45); fly('cup', _v, o => g.userData.tray.getWorldPosition(o), 0.35, 0.7, () => B.setTray(g, h.cup), k * 0.1); }
             h.state = 'toGuest';
           } else { h.target.taken = false; h.target = null; h.state = 'idle'; }
-        }
+        } }
       }
       else if (h.state === 'toGuest') {
         const gu = h.target;
@@ -663,13 +666,14 @@
       }
     }
     const cupCapW = () => 2;
+    const stockOf = gu => gu.want === 'snack' ? (ACT.snack.open ? ACT.snack.n : 0) : (cocoa.open ? cocoa.cups : 0);
     // Una bevanda vola dallo zaino (o dal vassoio) all'ospite: quando arriva paga la mancia e fa festa.
     function serveGuest(gu, fromObj) {
       const rushWin = gu.rush > 0; // servito in tempo: premio
       gu.served = true;
       fromObj.getWorldPosition(_v);
       fly('cup', _v, o => o.set(gu.b.x, 1.1, -6.4), 0.45, 1.0, () => {
-        S.cocoa++; gu.cold = 0; hud.floatText(TX.thanks, gu.b.x, 1.6, -6.4); A.sfx('cup'); EX.ev('cup');
+        if (gu.want === 'snack') S.snacks = (S.snacks || 0) + 1; else S.cocoa++; gu.cold = 0; hud.floatText(TX.thanks, gu.b.x, 1.6, -6.4); A.sfx('cup'); EX.ev('cup');
         if (rushWin) { EX.ev('rush'); S.coins += 40; R.settings.addGems(2); hud.toast('⚡ Servizio lampo! +40 monete e 2 gemme'); A.sfx('goal'); fauna.celebrate(); }
         burst(gu.b.x, 1.3, -6.4, 6, [0xff7ac6, 0xff4d4d], 1.4, 3, 0.9, 0.12, 1.5);
       });
@@ -730,6 +734,7 @@
       else if (pd.effect === 'saw') refreshTools();
       else if (pd.effect === 'lamps') buildLamps();
       else if (pd.effect === 'mascot') buildMascot(pd);
+      else if (pd.effect === 'snack') ACT.openSnack();
       // "bag", "bag2", "boots", "axe", "insul", "sign" e "cocoa2" sono letti da hasEffect()
       // (un aiutante è un oggetto "helper" o "waiter" legato alla stanza pd.room: rooms[pd.room] deve esistere)
     }
@@ -764,7 +769,7 @@
       Object.assign(player.userData, np.userData);
     }
     function applyDeco() { if (recep.redraw) recep.redraw(); if (recep.rug) recep.rug.material = B.tint(MT.decoGet('rug').col); }
-    const carry = { logs: 0, cups: 0 };
+    const carry = { logs: 0, cups: 0, snacks: 0 };
     let inLogs = 0, inCups = 0; // pezzi ancora in volo verso lo zaino: compaiono sulla schiena solo quando arrivano
     // Lo zaino ha due scomparti separati: legna e bevande.
     const logCap = () => hasEffect('bag2') ? P.bag_huge_logs : hasEffect('bag') ? P.bag_big_logs : P.bag_logs;
@@ -778,6 +783,11 @@
     const cocoaMax = () => hasEffect('cocoa2') ? P.cocoa2_max : P.cocoa_max;
     const refreshStack = () => B.drawStack(stackG, Math.max(0, carry.logs - inLogs), Math.max(0, carry.cups - inCups));
     const stars = () => Math.min(P.stars_max, S.happy * P.star_per_guest);
+    const guests = []; // ospiti presenti
+    // Attivita' in piu' (banco dolci, richieste, eventi, arredo) e attivita' della citta': vedi parts/activities.js e parts/city.js
+    const G2 = { T, scene, B, mats, box, cyl, ball, hud, A, P, S, level, player, rooms, guests, carry, cols, fly, burst, _v, CONFETTI, RECEP, EX, CITYID, SEASON_ID, SEA_Z, firePos, landLog, spawnGuest, refreshStack, cocoaMax, cocoaInterval, cupCap, stars,
+      snackX: PL.layout.snack != null ? PL.layout.snack : 0, later: after, env: () => env, restock: () => { if (cocoa.open) cocoa.cups = Math.min(cocoaMax(), cocoa.cups + 1); } };
+    const ACT = R.parts.activities(G2), CITY = R.parts.city(G2);
     openRoom(rooms[0]); // la prima stanza è sempre aperta
     rooms.forEach((r, i) => { r.pileN = S.piles[i] || 0; drawPile(r); });
     pads.forEach(pd => { if (state.isBought(pd.id)) applyEffect(pd); });
@@ -808,7 +818,7 @@
     }
 
     // --- ospiti -------------------------------------------------------------
-    const guests = []; let spawnT = 2;
+    let spawnT = 2;
     // L'ospite si sdraia (letto o lettino) oppure, dove ci sono tavolini e sedie, si siede al tavolo con le braccia in avanti.
     function seatGuest(gu) {
       const u = gu.g.userData;
@@ -820,7 +830,7 @@
       } else { gu.g.rotation.set(-Math.PI / 2, 0, 0); gu.g.position.set(gu.b.x, 0.62, -5.7); u.blob.visible = false; }
     }
     // kind: undefined (ospite normale), 'vip' (paga il triplo), 'scout' (squadra: pagano il 50% in più), 'rush' (ospite affamato: servito in fretta dà un premio).
-    function spawnGuest(kind) {
+    function spawnGuest(kind, path) {
       let fb = null;
       for (const r of rooms) if (r.open) for (const b of r.beds) if (!b.guest && !fb) fb = [r, b];
       if (!fb) return null;
@@ -831,8 +841,8 @@
       const hatOpt = !look && PL.hats && PL.hats.length && Math.random() < 0.55 ? { hat: PL.hats[Math.floor(Math.random() * PL.hats.length)] } : {};
       const g = B.person(look ? look.coat : pool[Math.floor(Math.random() * pool.length)], look ? look.hat : CONFETTI[Math.floor(Math.random() * CONFETTI.length)], false, OUTFIT,
         Object.assign({ shorts: SHORTS[Math.floor(Math.random() * SHORTS.length)], shoes: Math.random() < 0.5 ? 0xffffff : 0x3d8bff }, look ? look.opt : hatOpt));
-      g.scale.setScalar(kind === 'vip' || kind === 'host' ? 1 : 0.88); const road = inRoads[Math.floor(Math.random() * inRoads.length)]; g.position.set(road[0][0], 0, road[0][1]); g.rotation.y = Math.PI / 2;
-      const gu = { g, r, b, state: 'road', path: road.slice(1).map(p => p.slice()), stay: P.guest_stay * (kind === 'vip' ? 1.4 : 1), cold: 0, want: false, served: false, el: hud.label('pill', ''), vip: kind === 'vip', scout: kind === 'scout', rush: kind === 'rush' ? 24 : 0, taken: false };
+      g.scale.setScalar(kind === 'vip' || kind === 'host' ? 1 : 0.88); const road = path || inRoads[Math.floor(Math.random() * inRoads.length)]; g.position.set(road[0][0], 0, road[0][1]); g.rotation.y = Math.PI / 2;
+      const gu = { g, r, b, state: 'road', path: road.slice(1).map(p => p.slice()), stay: P.guest_stay * (kind === 'vip' ? 1.4 : 1), cold: 0, want: false, served: false, el: hud.label('pill', ''), vip: kind === 'vip', boat: kind === 'boat', scout: kind === 'scout', rush: kind === 'rush' ? 24 : 0, taken: false };
       b.guest = gu; guests.push(gu);
       return gu;
     }
@@ -882,7 +892,7 @@
       const g = gu.g; g.rotation.set(0, 0, 0); g.position.set(gu.b.x, 0, -4.6); gu.b.guest = null; gu.state = 'out'; g.userData.blob.visible = true;
       gu.path = [[gu.r.cx, -3.1]].concat(exitFrom(gu.r.cx)); // cold: esce subito, verso est
       if (happy) {
-        const pay = Math.round((P.pay + (gu.served ? P.tip : 0)) * (gu.vip ? 3 : gu.host ? 4 : gu.scout ? 1.5 : 1) * (R.shop.has('boost') ? 1.5 : 1) * MT.payMul()); // "Ospiti generosi" dallo shop: +50%; poi evento di stagione e nuove gestioni
+        const pay = Math.round((P.pay + (gu.served ? P.tip : 0)) * (gu.vip ? 3 : gu.host ? 4 : gu.scout ? 1.5 : 1) * (R.shop.has('boost') ? 1.5 : 1) * MT.payMul() * ACT.payBonus(gu)); // "Ospiti generosi" dallo shop: +50%; poi evento di stagione e nuove gestioni
         // passa dalla reception e lascia i soldi sul bancone
         gu.pay = pay; gu.path = [[gu.r.cx, -2.8], [RECEP.x + 0.7 + Math.random() * 0.6, RECEP.z + 1.35]]; // si paga a destra del bancone, vicino alla ciotola; la fila per entrare sta a sinistra
         S.happy++; S.guests++; EX.ev('guest'); if (gu.vip) { EX.ev('vip'); MT.vipServed(gu.persona); }
@@ -1016,8 +1026,9 @@
         cupMeshes.forEach((c, i) => { c.visible = i < cocoa.cups; });
       }
       for (const gu of guests) {
-        if (gu.state === 'bed' && gu.want && !gu.served && carry.cups > 0 && Math.hypot(p.x - gu.b.x, p.z + 6.6) < 2) {
-          carry.cups--; changed = true; refreshStack();
+        const key = gu.want === 'snack' ? 'snacks' : 'cups';
+        if (gu.state === 'bed' && gu.want && !gu.served && carry[key] > 0 && Math.hypot(p.x - gu.b.x, p.z + 6.6) < 2) {
+          carry[key]--; changed = true; refreshStack();
           B.toss(player, 0.26); if (!moving) player.rotation.y = Math.atan2(gu.b.x - p.x, -6.6 - p.z);
           serveGuest(gu, stackG);
         }
@@ -1073,6 +1084,7 @@
             gu.state = 'bed'; seatGuest(gu); A.sfx('guest'); fauna.react();
             MT.see('g_' + (gu.vip ? 'vip' : gu.scout ? 'scout' : gu.rush > 0 ? 'rush' : 'hiker'));
             gu.want = cocoa.open && (gu.vip || gu.scout || gu.rush > 0 || Math.random() < P.cocoa_chance);
+            if (gu.want && ACT.snack.open && !gu.rush && Math.random() < 0.35) gu.want = 'snack';
           }
         } else if (gu.state === 'bed') {
           if (gu.rush > 0 && !gu.served) gu.rush -= dt;
@@ -1085,6 +1097,7 @@
           if (gu.pay > 0) gu.wait = 0.8; else { scene.remove(gu.g); gu.el.remove(); guests.splice(i, 1); }
         }
       }
+      ACT.update(dt); CITY.update(dt);
       helpers.forEach(h => h && updateHelper(h, dt));
       waiters.forEach(h => h && updateWaiter(h, dt));
 
@@ -1195,7 +1208,8 @@
         let txt = '', cls = 'pill';
         if (gu.state === 'bed') {
           if (gu.r.fuel <= 0) { txt = TX.cold; cls += ' cold'; }
-          else if (gu.want && !gu.served) { txt = TX.want; cls += ' want'; }
+          else if (gu.want && !gu.served) { txt = gu.want === 'snack' ? ACT.SN.e + '?' : TX.want; cls += ' want'; }
+          else if (gu.req) { txt = gu.req.e + '?'; cls += ' want'; }
           const badge = gu.host ? `${gu.host.e} ${gu.host.name}` : gu.vip ? '⭐ VIP' : gu.scout ? '🏕️' : gu.rush > 0 && !gu.served ? `⏱${Math.ceil(gu.rush)}` : '';
           if (badge) txt = txt ? `${badge} ${txt}` : badge;
         }
@@ -1203,9 +1217,14 @@
         if (gu.el.className !== cls) gu.el.className = cls;
         hud.put(gu.el, gu.b.x, gu.r.sit ? 2.2 : 1.4, gu.r.sit ? -6 : -6.6, !!txt);
       });
+      ACT.overlays(); CITY.overlays(); MINIMAP(dt);
       hud.updateFloats(dt);
     }
 
+    const MINIMAP = R.parts.minimap({ P, player, rooms, guests, recep: () => ({ x: RECEP.x, z: RECEP.z, n: recep.n }),
+      stands: () => (cocoa.open ? [[STAND.x, STAND.z]] : []).concat(ACT.snack.open ? [[ACT.SNACK_PICK[0], STAND.z]] : []),
+      pads: () => pads.filter(pd => !state.isBought(pd.id) && padShown(pd) && S.coins >= pd.cost - state.paid(pd.id)).map(pd => [pd.x, pd.z]),
+      spots: () => ACT.spots().concat(CITY.spots()) });
     function resize() { renderer.setSize(innerWidth, innerHeight, false); cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); }
     addEventListener('resize', resize); resize();
     cam.position.set(0, 15, 12);
@@ -1238,6 +1257,7 @@
       // Cambi estetici al volo (negozio delle gemme e profilo), senza riavviare il gioco.
       applyLook, applyDeco, setPet(kind) { fauna.setPet(kind); },
       addCoins(n) { S.coins += n; },
+      furnish(i, id) { const r = ACT.furnish(i, id); if (r === 'ok') save(); return r; }, furnHtml: () => ACT.furnHtml(),
       // Foto ricordo: ridisegna la scena e la mette in una cornice (le scritte HTML non compaiono).
       photo() { renderer.render(scene, cam); return EX.photo(renderer.domElement, `${level.cityEmoji || ''} ${level.cityName || ''} · ${level.emoji} ${level.name}`); },
       pause(on) { paused = !!on; if (on) { endJoy(); save(); } },
@@ -1269,7 +1289,7 @@
         weather(k) { env.setWeather(k); }, time(n) { env.setTime(n); }, autoEnv() { env.release(); env.setWeather('auto'); },
         event(k) { if (!S.fed) S.fed = 1; if (k === 'scout') for (let i = 0; i < 3; i++) spawnGuest('scout'); else spawnGuest(k); },
         gems(n) { R.settings.addGems(n); },
-        scene, renderer,
+        scene, renderer, act: ACT, city: CITY,
         perf() { return { calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geos: renderer.info.memory.geometries, tex: renderer.info.memory.textures, lights: scene.children.filter(o => o.isLight).length, shadow: renderer.shadowMap.enabled, ratio: renderer.getPixelRatio(), objs: scene.children.length }; },
         info() { return { fast: speedMul > 1, fps: fpsOn, done: S.done, total: objectives.length, env: env.info(), critters: fauna.count() }; }
       }
