@@ -15,6 +15,7 @@
       if (cv.hidden !== !on) cv.hidden = !on;
       t -= dt; if (!on || t > 0) return;
       t = 0.25; blink = !blink;
+      const task = document.getElementById('task'); if (task) { const y = Math.ceil(task.getBoundingClientRect().bottom) + 8 + 'px'; if (cv.style.top !== y) cv.style.top = y; } // sempre sotto la scheda dell'obiettivo
       g.clearRect(0, 0, 220, 168);
       for (const r of rooms) {
         if (!r.open) continue;
