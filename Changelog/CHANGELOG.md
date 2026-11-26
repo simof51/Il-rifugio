@@ -9,6 +9,13 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.27.2 · 2026-11-26 · Meno monete nelle box più alte
+
+- Box Argento: 🪙150 invece di 300 (oggetti già tutti tuoi: 200 invece di 400).
+- Box Oro: 🪙250 invece di 600 (oggetti già tutti tuoi: 300 invece di 800).
+
+**Per tornare indietro:** `git checkout a62f868 -- web Changelog`
+
 ## v0.27.1 · 2026-11-26 · Mystery box meno generose
 
 - Premi molto più bassi e probabilità dei premi buoni molto ridotte. Prezzi invariati (50, 100, 125 💎).
