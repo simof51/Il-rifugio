@@ -9,6 +9,12 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.28.0 · 2026-11-26 · Codice del gioco diviso in parti
+
+- `web/js/game.js` alleggerito: effetti, percorsi, bordi e decorazioni, strutture, lanterne e mascotte stanno in `web/js/parts/`. Il gioco non cambia.
+
+**Per tornare indietro:** `git checkout 9712e2c -- web Changelog`
+
 ## v0.27.2 · 2026-11-26 · Meno monete nelle box più alte
 
 - Box Argento: 🪙150 invece di 300 (oggetti già tutti tuoi: 200 invece di 400).
