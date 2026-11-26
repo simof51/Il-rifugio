@@ -367,9 +367,16 @@
     ["Raccogli l'orto ai Mulini", "Harvest the Windmill garden", "Cosecha el huerto de los Molinos", "Récolte le potager des Moulins", "Ernte den Mühlengarten"],
     ["Accogli il battello al Porto", "Welcome the boat at the Harbour", "Recibe el barco en el Puerto", "Accueille le bateau au Port", "Empfange das Boot im Hafen"],
     ["👆 Vai verso un albero: segui la freccia gialla", "👆 Go to a tree: follow the yellow arrow", "👆 Ve a un árbol: sigue la flecha amarilla", "👆 Va vers un arbre : suis la flèche jaune", "👆 Geh zu einem Baum: Folge dem gelben Pfeil"],
+    ["🪴 Pianta", "🪴 Plant", "🪴 Planta", "🪴 Plante", "🪴 Pflanze"],
+    ["🟪 Tappetino", "🟪 Small rug", "🟪 Alfombrilla", "🟪 Petit tapis", "🟪 Kleiner Teppich"],
+    ["🖼️ Quadro", "🖼️ Painting", "🖼️ Cuadro", "🖼️ Tableau", "🖼️ Bild"],
+    ["💡 Lampada", "💡 Lamp", "💡 Lámpara", "💡 Lampe", "💡 Lampe"],
+    ["📚 Libreria", "📚 Bookshelf", "📚 Estantería", "📚 Bibliothèque", "📚 Bücherregal"],
+    ["🧸 Orsetto", "🧸 Teddy bear", "🧸 Osito", "🧸 Nounours", "🧸 Teddybär"],
   ];
   // Frasi con numeri: [espressione, [en, es, fr, de]] con $1, $2…
   const RX = [
+    [/^Missioni della settimana · 💎(\d+) l'una$/, ['Weekly missions · 💎$1 each', 'Misiones semanales · 💎$1 cada una', 'Missions de la semaine · 💎$1 chacune', 'Wochenmissionen · je 💎$1']],
     [/^🪓 Vai verso .+: segui la freccia gialla$/, ['🪓 Go to a tree: follow the yellow arrow', '🪓 Ve a un árbol: sigue la flecha amarilla', '🪓 Va vers un arbre : suis la flèche jaune', '🪓 Geh zu einem Baum: Folge dem gelben Pfeil']],
     [/^🌲 Fermati vicino all'.+: la .+ si taglia da sola!$/, ['🌲 Stop near the tree: it gets chopped by itself!', '🌲 Párate junto al árbol: ¡se corta solo!', "🌲 Arrête-toi près de l'arbre : il se coupe tout seul !", '🌲 Bleib beim Baum stehen: Er wird von selbst gehackt!']],
     [/^🔥 Porta la .+ al .+, dove c'è la barra del fuoco$/, ['🔥 Take the wood to the fire, where the fire bar is', '🔥 Lleva la leña al fuego, donde está la barra', '🔥 Apporte le bois au feu, là où est la jauge', '🔥 Bring das Holz zum Feuer, wo der Balken ist']],
