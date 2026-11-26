@@ -9,6 +9,16 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.27.1 · 2026-11-26 · Mystery box meno generose
+
+- Premi molto più bassi e probabilità dei premi buoni molto ridotte. Prezzi invariati (50, 100, 125 💎).
+  - Legno: 🪙100 70%, 🪙200 22%, colore 7%, 💎25 1%.
+  - Argento: 🪙300 75%, accessorio 12%, cappello 12%, 💎60 1%.
+  - Oro: 🪙600 76%, compagno 10%, cappello raro 12%, 💎90 2%.
+- Monete date al posto di oggetti già tutti tuoi: 200 / 400 / 800.
+
+**Per tornare indietro:** `git checkout 82cf71e -- web Changelog`
+
 ## v0.27.0 · 2026-11-26 · Mystery box al posto degli scrigni
 
 - **Tolto il sistema degli scrigni** (punti, barra, sezione nel Profilo). Il 7° giorno del premio giornaliero dà le sole 15 💎; lo spicchio "punti scrigno" della ruota ora è 🪙 300. Gli scrigni non ancora aperti non vengono convertiti.

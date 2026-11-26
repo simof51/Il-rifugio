@@ -57,14 +57,14 @@
   // Le probabilità si mostrano accanto a ogni scatola: il Play Store lo richiede per gli acquisti a sorpresa.
   const BOXES = [
     { id: 'legno', e: '📦', name: 'Box Legno', cost: 50, prizes: [
-      { p: 40, kind: 'coins', n: 300 }, { p: 25, kind: 'coins', n: 600 },
-      { p: 30, kind: 'item', label: '🎨 Colore', keys: [2, 3, 4, 5, 6, 7, 8, 9].map(i => 'color:' + i), alt: 600 }, { p: 5, kind: 'gems', n: 80 }] },
+      { p: 70, kind: 'coins', n: 100 }, { p: 22, kind: 'coins', n: 200 },
+      { p: 7, kind: 'item', label: '🎨 Colore', keys: [2, 3, 4, 5, 6, 7, 8, 9].map(i => 'color:' + i), alt: 200 }, { p: 1, kind: 'gems', n: 25 }] },
     { id: 'argento', e: '🎁', name: 'Box Argento', cost: 100, prizes: [
-      { p: 30, kind: 'coins', n: 1200 }, { p: 30, kind: 'item', label: '🕶️ Accessorio', keys: ['acc:sunglasses', 'acc:cape'], alt: 1500 },
-      { p: 30, kind: 'item', label: '🎩 Cappello', keys: ['hat:catears', 'hat:chef', 'hat:tophat'], alt: 1500 }, { p: 10, kind: 'gems', n: 180 }] },
+      { p: 75, kind: 'coins', n: 300 }, { p: 12, kind: 'item', label: '🕶️ Accessorio', keys: ['acc:sunglasses', 'acc:cape'], alt: 400 },
+      { p: 12, kind: 'item', label: '🎩 Cappello', keys: ['hat:catears', 'hat:chef', 'hat:tophat'], alt: 400 }, { p: 1, kind: 'gems', n: 60 }] },
     { id: 'oro', e: '👑', name: 'Box Oro', cost: 125, prizes: [
-      { p: 25, kind: 'coins', n: 2500 }, { p: 35, kind: 'item', label: '🐾 Compagno', keys: ['pet:dog', 'pet:cat'], alt: 3000 },
-      { p: 30, kind: 'item', label: '👑 Cappello raro', keys: ['hat:cowboy', 'hat:crown'], alt: 3000 }, { p: 10, kind: 'gems', n: 250 }] }
+      { p: 76, kind: 'coins', n: 600 }, { p: 10, kind: 'item', label: '🐾 Compagno', keys: ['pet:dog', 'pet:cat'], alt: 800 },
+      { p: 12, kind: 'item', label: '👑 Cappello raro', keys: ['hat:cowboy', 'hat:crown'], alt: 800 }, { p: 2, kind: 'gems', n: 90 }] }
   ];
   const itemName = key => { const [cat, id] = key.split(':'), it = st.CATALOG[cat].find(i => String(i.id) === id); return it ? it.name : id; };
   // Apre una scatola: toglie le gemme e dà il premio (le monete le aggiunge chi chiama). null se mancano le gemme.
