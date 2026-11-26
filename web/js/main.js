@@ -70,7 +70,7 @@
   const dbg = game.debug;
   const MT = R.meta;
 
-  // Finestra a comparsa (premio giornaliero, bentornato, scrigno, mini-gioco): il gioco resta in pausa finché è aperta.
+  // Finestra a comparsa (premio giornaliero, mystery box, mini-gioco): il gioco resta in pausa finché è aperta.
   let popStop = null;
   function showPop(title, html, btns) {
     $('popTitle').textContent = title; $('popBody').innerHTML = html;
@@ -202,10 +202,10 @@
       h = H('🗺️ Le tue città') + R.cities.map(cityCard).join('') +
         (levelDone() ? '' : `<div class="row"><button class="btn ghost" id="menuReset">${confirmReset ? 'Sicuro? Tocca di nuovo' : 'Ricomincia questa stagione'}</button></div>`) + prestigeHtml();
     } else if (tab === 'shop') {
-      h = H('🛍️ Shop') + shopHtml() + H('🎁 Video a premio') + adsHtml() + H('🎡 Ruota della fortuna') + MT.wheelHtml(R.ads.available()) + H('💎 Negozio delle gemme') + lookHtml();
+      h = H('🛍️ Shop') + shopHtml() + H('🎁 Video a premio') + adsHtml() + H('🎡 Ruota della fortuna') + MT.wheelHtml(R.ads.available()) + H('💎 Negozio delle gemme') + MT.boxesHtml() + lookHtml();
     } else if (tab === 'profile') {
       h = H('👤 Profilo') + `<div class="stats"><div><b>${S.coins}</b><span>monete</span></div><div><b>${S.guests}</b><span>ospiti</span></div><div><b>${S.wood}</b><span>legna</span></div><div><b>${st.get('gems')}</b><span>gemme 💎</span></div></div>` +
-        H('🛂 Passaporto') + MT.passportHtml() + H('🎁 Premio giornaliero') + MT.dailyHtml() + H('📦 Scrigno') + MT.chestHtml() +
+        H('🛂 Passaporto') + MT.passportHtml() + H('🎁 Premio giornaliero') + MT.dailyHtml() +
         H('🎯 Missioni e medaglie') + R.extras.missionsHtml() +
         section('album', `📖 Album (${MT.albumCount()}/${MT.ALBUM.length})`, MT.albumHtml()) +
         section('game', '🎮 Mini-gioco', MT.gameHtml()) +
@@ -258,10 +258,13 @@
     if (k === 'daily') {
       const r = MT.claimDaily(); if (!r) return;
       audio.sfx('buy'); hud.toast(`🎁 +${r.gems} 💎 · serie di ${r.streak} ${r.streak === 1 ? 'giorno' : 'giorni'}`); rerender();
-    } else if (k === 'chest') {
-      const r = MT.openChest(); if (!r) return;
+    } else if (k.indexOf('box:') === 0) { // mystery box (negozio delle gemme)
+      const r = MT.openBox(k.slice(4));
+      if (!r) { hud.toast('Gemme insufficienti'); return; }
+      if (r.kind === 'coins') game.addCoins(r.n);
+      const ico = r.kind === 'coins' ? '🪙' : r.kind === 'gems' ? '💎' : r.e, txt = r.kind === 'item' ? `Nuovo oggetto: ${r.name}!` : `+${r.n} ${ico}`;
       audio.sfx('goal');
-      showPop('🎁 Scrigno aperto!', `<div class="reward"><i>${r.e}</i><b>${r.text}</b></div>`, [{ t: 'Che bello!', fn: () => { closePop(); rerender(); } }]);
+      showPop('🎁 Mystery box', `<div class="reward"><i>${ico}</i><b>${txt}</b></div>`, [{ t: 'Che bello!', fn: () => { closePop(); rerender(); } }]);
     } else if (k === 'game') {          // una partita gratis al giorno
       if (!MT.gameInfo().free) return;
       MT.useGame('free'); startMinigame();
@@ -283,8 +286,8 @@
       const s = res.seg; if (s.kind === 'coins') game.addCoins(s.n); // le monete si aggiungono subito (anche se chiudi prima della fine)
       showPop('🎡 Ruota della fortuna', '<div id="whBox"></div><div id="whMsg" class="reward"></div>', [{ t: 'Chiudi', ghost: true, fn: () => { closePop(); rerender(); } }]);
       popStop = MT.wheelAnimate($('whBox'), res.i, () => {
-        const txt = s.kind === 'coins' ? `+${s.n} 🪙` : s.kind === 'gems' ? `+${s.n} 💎` : `+${s.n} 📦`;
-        $('whMsg').innerHTML = `<i>${s.sup ? '👑' : s.kind === 'coins' ? '🪙' : s.kind === 'gems' ? '💎' : '📦'}</i><b>${s.sup ? 'SUPER PREMIO! ' : ''}${txt}</b>`;
+        const txt = s.kind === 'coins' ? `+${s.n} 🪙` : `+${s.n} 💎`;
+        $('whMsg').innerHTML = `<i>${s.sup ? '👑' : s.kind === 'coins' ? '🪙' : '💎'}</i><b>${s.sup ? 'SUPER PREMIO! ' : ''}${txt}</b>`;
         audio.sfx(s.sup ? 'goal' : 'buy');
       });
     } else if (k === 'name') {

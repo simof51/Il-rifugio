@@ -1,18 +1,18 @@
 // Cose che fanno tornare a giocare: premio giornaliero con serie, guadagno mentre sei via, album delle figurine, ospiti VIP con nome,
-// eventi di stagione, scrigni, decorazioni, "nuova gestione" (prestigio) e un mini-gioco. Tutto sul dispositivo, niente rete.
+// eventi di stagione, mystery box, decorazioni, "nuova gestione" (prestigio) e un mini-gioco. Tutto sul dispositivo, niente rete.
 // I dati stanno nelle impostazioni (st.get('meta')); il gioco chiama R.meta.* e il menu mostra le schede (main.js).
 (function (R) {
   'use strict';
   const st = R.settings;
   let toast = () => {};
 
-  const fresh = () => ({ streak: 0, lastClaim: '', nameChanges: 0, wheel: null, passport: {}, cityDone: {}, worldDone: 0, album: {}, albumDone: false, deco: { sign: 'red', rug: 'red', name: '' }, prestige: 0, chest: { pts: 0, opened: 0 }, vip: {}, game: { best: 0, day: '', freeUsed: false, adN: 0, lastEnd: 0 } });
+  const fresh = () => ({ streak: 0, lastClaim: '', nameChanges: 0, wheel: null, passport: {}, cityDone: {}, worldDone: 0, album: {}, albumDone: false, deco: { sign: 'red', rug: 'red', name: '' }, prestige: 0, vip: {}, game: { best: 0, day: '', freeUsed: false, adN: 0, lastEnd: 0 } });
   function M() {
     let m = st.get('meta');
     if (!m || typeof m !== 'object') { m = fresh(); st.set('meta', m); return m; }
     const f = fresh();
     Object.keys(f).forEach(k => { if (m[k] == null) m[k] = f[k]; });
-    m.deco = Object.assign(f.deco, m.deco); m.chest = Object.assign(f.chest, m.chest); m.game = Object.assign(f.game, m.game);
+    m.deco = Object.assign(f.deco, m.deco); m.game = Object.assign(f.game, m.game);
     return m;
   }
   const save = () => st.set('meta', M());
@@ -35,7 +35,6 @@
     const i = dailyInfo(); if (!i.can) return null;
     const m = M(); m.streak = i.streak; m.lastClaim = today(); save();
     st.addGems(i.gems);
-    if (i.idx === 6) addPts(10);
     return i;
   }
 
@@ -54,22 +53,39 @@
   }
   const payMul = () => { const ev = eventNow(); return (1 + 0.1 * Math.min(10, M().prestige)) * (ev ? ev.mul : 1); };
 
-  // --- scrigni: punti da obiettivi, missioni e figurine; ogni 10 punti un scrigno ---
-  const CHEST_AT = 10;
-  function addPts(n) { const m = M(); m.chest.pts += n; save(); }
-  const chestReady = () => Math.floor(M().chest.pts / CHEST_AT) > M().chest.opened;
-  const chestInfo = () => { const m = M(); return { pts: m.chest.pts - m.chest.opened * CHEST_AT, ready: chestReady(), at: CHEST_AT, left: Math.floor(m.chest.pts / CHEST_AT) - m.chest.opened }; };
-  function openChest() {
-    if (!chestReady()) return null;
-    const m = M(); m.chest.opened++; save();
-    const C = st.CATALOG, pool = [];
-    ['hat', 'color', 'acc', 'pet'].forEach(cat => C[cat].forEach(i => { if (!i.premium && i.cost > 0 && !st.has(cat + ':' + i.id)) pool.push({ key: cat + ':' + i.id, name: i.name, cat }); }));
-    if (pool.length && Math.random() < 0.3) {
-      const it = pool[Math.floor(Math.random() * pool.length)]; st.data.owned.push(it.key); st.save();
-      return { kind: 'item', e: it.cat === 'hat' ? '🎩' : it.cat === 'acc' ? '🕶️' : it.cat === 'pet' ? '🐾' : '🎨', text: `Nuovo oggetto: ${it.name}!` };
-    }
-    const n = [3, 3, 4, 5, 6, 8, 12][Math.floor(Math.random() * 7)]; st.addGems(n);
-    return { kind: 'gems', e: '💎', text: `+${n} gemme!` };
+  // --- mystery box: tre scatole comprate con le gemme, ognuna con premi diversi (p = probabilità in percentuale, la somma fa 100).
+  // Le probabilità si mostrano accanto a ogni scatola: il Play Store lo richiede per gli acquisti a sorpresa.
+  const BOXES = [
+    { id: 'legno', e: '📦', name: 'Box Legno', cost: 50, prizes: [
+      { p: 40, kind: 'coins', n: 300 }, { p: 25, kind: 'coins', n: 600 },
+      { p: 30, kind: 'item', label: '🎨 Colore', keys: [2, 3, 4, 5, 6, 7, 8, 9].map(i => 'color:' + i), alt: 600 }, { p: 5, kind: 'gems', n: 80 }] },
+    { id: 'argento', e: '🎁', name: 'Box Argento', cost: 100, prizes: [
+      { p: 30, kind: 'coins', n: 1200 }, { p: 30, kind: 'item', label: '🕶️ Accessorio', keys: ['acc:sunglasses', 'acc:cape'], alt: 1500 },
+      { p: 30, kind: 'item', label: '🎩 Cappello', keys: ['hat:catears', 'hat:chef', 'hat:tophat'], alt: 1500 }, { p: 10, kind: 'gems', n: 180 }] },
+    { id: 'oro', e: '👑', name: 'Box Oro', cost: 125, prizes: [
+      { p: 25, kind: 'coins', n: 2500 }, { p: 35, kind: 'item', label: '🐾 Compagno', keys: ['pet:dog', 'pet:cat'], alt: 3000 },
+      { p: 30, kind: 'item', label: '👑 Cappello raro', keys: ['hat:cowboy', 'hat:crown'], alt: 3000 }, { p: 10, kind: 'gems', n: 250 }] }
+  ];
+  const itemName = key => { const [cat, id] = key.split(':'), it = st.CATALOG[cat].find(i => String(i.id) === id); return it ? it.name : id; };
+  // Apre una scatola: toglie le gemme e dà il premio (le monete le aggiunge chi chiama). null se mancano le gemme.
+  function openBox(id) {
+    const box = BOXES.find(b => b.id === id); if (!box || st.get('gems') < box.cost) return null;
+    st.addGems(-box.cost);
+    let r = Math.random() * 100, pz = box.prizes[box.prizes.length - 1];
+    for (const q of box.prizes) { r -= q.p; if (r < 0) { pz = q; break; } }
+    if (pz.kind === 'coins') return { kind: 'coins', n: pz.n };
+    if (pz.kind === 'gems') { st.addGems(pz.n); return { kind: 'gems', n: pz.n }; }
+    const free = pz.keys.filter(k => !st.has(k));
+    if (!free.length) return { kind: 'coins', n: pz.alt }; // già tutti tuoi: monete
+    const key = free[Math.floor(Math.random() * free.length)]; st.data.owned.push(key); st.save();
+    return { kind: 'item', key, name: itemName(key), e: pz.label.split(' ')[0] };
+  }
+  const prizeText = q => q.kind === 'coins' ? `🪙 ${q.n}` : q.kind === 'gems' ? `💎 ${q.n}` : q.label;
+  function boxesHtml() {
+    const gems = st.get('gems');
+    return `<b class="small">Mystery box</b>` + BOXES.map(b => `<div class="mbox"><div class="mhead"><span class="mico">${b.e}</span><b>${b.name}</b><button class="mini" data-meta="box:${b.id}"${gems >= b.cost ? '' : ' disabled'}>💎 ${b.cost}</button></div>` +
+      `<div class="odds">${b.prizes.map(q => `<span>${prizeText(q)} <i>${q.p}%</i></span>`).join('')}</div></div>`).join('') +
+      '<div class="small">Oggetti già tutti tuoi: ricevi monete.</div>';
   }
 
   // --- album: figurine da trovare giocando ---
@@ -87,9 +103,9 @@
   function see(id) {
     const m = M(); if (m.album[id]) return false;
     const a = ALBUM.find(x => x.id === id); if (!a) return false;
-    m.album[id] = Date.now(); save(); st.addGems(1); addPts(1);
+    m.album[id] = Date.now(); save(); st.addGems(1);
     toast(`📖 Nuova figurina: ${a.e} ${a.name} (+1 💎)`);
-    if (!m.albumDone && ALBUM.every(x => M().album[x.id])) { m.albumDone = true; save(); st.addGems(10); addPts(5); toast('📖 Album completo! +10 gemme 💎'); }
+    if (!m.albumDone && ALBUM.every(x => M().album[x.id])) { m.albumDone = true; save(); st.addGems(10); toast('📖 Album completo! +10 gemme 💎'); }
     return true;
   }
   const albumCount = () => ALBUM.filter(a => M().album[a.id]).length;
@@ -109,7 +125,7 @@
     if (!p) return;
     const m = M(), first = !m.vip[p.id]; m.vip[p.id] = (m.vip[p.id] || 0) + 1; save();
     toast(`${p.e} ${p.name}: «${p.line}»`);
-    if (first) { st.addGems(2); addPts(1); }
+    if (first) st.addGems(2);
   }
 
   // --- decorazioni del rifugio ---
@@ -137,7 +153,7 @@
 
   // --- nuova gestione (prestigio): +10% sui guadagni per sempre, fino a 10 volte ---
   const prestige = () => M().prestige;
-  function addPrestige() { const m = M(); m.prestige = Math.min(10, m.prestige + 1); save(); addPts(3); return m.prestige; }
+  function addPrestige() { const m = M(); m.prestige = Math.min(10, m.prestige + 1); save(); return m.prestige; }
 
   // --- mini-gioco "Pioggia di monete": 20 secondi, tocca le monete che cadono ---
   // Regole: una partita gratis al giorno; poi fino a 3 partite al giorno guardando un video, con almeno 5 minuti fra una partita e la successiva.
@@ -181,14 +197,14 @@
     return () => { over = true; cancelAnimationFrame(raf); };
   }
 
-  // --- ruota della fortuna (nello Shop): 8 spicchi con monete, gemme, punti scrigno e un super premio ---
+  // --- ruota della fortuna (nello Shop): 8 spicchi con monete, gemme e un super premio ---
   // Una giratina gratis al giorno, una guardando un video, poi con le gemme.
   const WHEEL = [
     { l: '🪙 80', kind: 'coins', n: 80, w: 24, col: '#ffd23a' },
     { l: '💎 2', kind: 'gems', n: 2, w: 22, col: '#6aa9ff' },
     { l: '🪙 200', kind: 'coins', n: 200, w: 16, col: '#ffb02e' },
     { l: '💎 5', kind: 'gems', n: 5, w: 12, col: '#34d399' },
-    { l: '📦 +5', kind: 'pts', n: 5, w: 10, col: '#c084fc' },
+    { l: '🪙 300', kind: 'coins', n: 300, w: 10, col: '#c084fc' },
     { l: '🪙 500', kind: 'coins', n: 500, w: 8, col: '#ff7a3d' },
     { l: '💎 12', kind: 'gems', n: 12, w: 6, col: '#3d8bff' },
     { l: '👑 💎 60', kind: 'gems', n: 60, w: 2, col: '#ff4d8a', sup: true }
@@ -205,7 +221,7 @@
     let r = Math.random() * WHEEL.reduce((a, s) => a + s.w, 0), i = 0;
     for (; i < WHEEL.length - 1; i++) { r -= WHEEL[i].w; if (r < 0) break; }
     const s = WHEEL[i];
-    if (s.kind === 'gems') st.addGems(s.n); else if (s.kind === 'pts') addPts(s.n);
+    if (s.kind === 'gems') st.addGems(s.n);
     save();
     return { i, seg: s };
   }
@@ -250,9 +266,9 @@
     m.passport[levelId] = Date.now(); save();
     const lv = R.levels[levelId], city = lv && R.cities.find(c => c.id === lv.cityId);
     if (city && !m.cityDone[city.id] && city.levels.every(id => m.passport[id])) {
-      m.cityDone[city.id] = 1; save(); st.addGems(CITY_BONUS); addPts(10);
+      m.cityDone[city.id] = 1; save(); st.addGems(CITY_BONUS);
       toast(`🏆 ${city.emoji} ${city.name} completata! +${CITY_BONUS} 💎`);
-      if (R.cities.every(c => m.cityDone[c.id]) && !m.worldDone) { m.worldDone = 1; save(); st.addGems(WORLD_BONUS); addPts(20); toast(`🌍 Tutte le città completate! +${WORLD_BONUS} 💎`); }
+      if (R.cities.every(c => m.cityDone[c.id]) && !m.worldDone) { m.worldDone = 1; save(); st.addGems(WORLD_BONUS); toast(`🌍 Tutte le città completate! +${WORLD_BONUS} 💎`); }
     }
     return true;
   }
@@ -269,13 +285,8 @@
   function dailyHtml(withBtn) {
     const i = dailyInfo();
     const days = DAILY.map((g, k) => `<div class="day${k < (i.can ? i.idx : i.idx + 1) ? ' got' : ''}${k === i.idx && i.can ? ' now' : ''}"><i>${k === 6 ? '🎁' : '💎'}</i><b>${g}</b><span>${k + 1}</span></div>`).join('');
-    return `<div class="days">${days}</div><div class="small">${i.can ? `Oggi ${i.gems} 💎${i.idx === 6 ? ' + scrigno' : ''} · serie ${i.streak}` : `Serie ${i.streak} · domani ${i.next} 💎`}</div>` +
+    return `<div class="days">${days}</div><div class="small">${i.can ? `Oggi ${i.gems} 💎 · serie ${i.streak}` : `Serie ${i.streak} · domani ${i.next} 💎`}</div>` +
       (withBtn === false ? '' : `<div class="row"><button class="btn" data-meta="daily"${i.can ? '' : ' disabled'}>${i.can ? '🎁 Ritira il premio' : 'Torna domani'}</button></div>`);
-  }
-  function chestHtml() {
-    const c = chestInfo();
-    return `<div class="chestbox${c.ready ? ' ready' : ''}"><span class="cico">${c.ready ? '🎁' : '📦'}</span><div><b>${c.ready ? `${c.left} ${c.left === 1 ? 'scrigno' : 'scrigni'} da aprire!` : 'Scrigno'}</b><div class="bar"><i style="width:${(c.ready ? 100 : c.pts / c.at * 100).toFixed(0)}%"></i></div>${c.ready ? '' : `<span class="small">${c.pts}/${c.at}</span>`}</div></div>` +
-      `<div class="row"><button class="btn" data-meta="chest"${c.ready ? '' : ' disabled'}>Apri lo scrigno</button></div>`;
   }
   function albumHtml() {
     const m = M();
@@ -303,12 +314,11 @@
       `<div class="row"><button class="btn" data-meta="game"${i.free ? '' : ' disabled'}>${i.free ? '🎯 Gioca gratis' : '🎯 Gratis: usata'}</button></div>` +
       `<div class="row"><button class="btn ghost" data-meta="gameAd"${adOk && i.adLeft > 0 && wt <= 0 ? '' : ' disabled'}>${adTxt}</button></div>`;
   }
-  const badge = () => dailyInfo().can || chestReady();
+  const badge = () => dailyInfo().can;
 
   R.meta = {
     bind: hud => { toast = m => hud.toast(m); },
-    data: M, dailyInfo, claimDaily, eventNow, EVENTS, payMul, addPts, chestReady, chestInfo, openChest, see, albumCount, ALBUM, PERSONAS, vipPersona, vipServed,
-    DECO, decoGet, decoSet, decoName, nameCost, lodgeName, prestige, addPrestige, minigame, gameInfo, useGame, badge, stamp, passportHtml, WHEEL, wheelInfo, wheelSpin, wheelAnimate, wheelHtml, dailyHtml, chestHtml, albumHtml, decoHtml, decoNameHtml, gameHtml,
-    onEv(name) { if (name === 'goal') addPts(2); else if (name === 'win') addPts(5); }
+    data: M, dailyInfo, claimDaily, eventNow, EVENTS, payMul, BOXES, openBox, boxesHtml, see, albumCount, ALBUM, PERSONAS, vipPersona, vipServed,
+    DECO, decoGet, decoSet, decoName, nameCost, lodgeName, prestige, addPrestige, minigame, gameInfo, useGame, badge, stamp, passportHtml, WHEEL, wheelInfo, wheelSpin, wheelAnimate, wheelHtml, dailyHtml, albumHtml, decoHtml, decoNameHtml, gameHtml
   };
 })(window.Rifugio);

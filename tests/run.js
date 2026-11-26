@@ -92,7 +92,7 @@ R.order.forEach(id => {
 ok(new Set(['inverno', 'mulini-inverno', 'porto-inverno'].map(id => R.levels[id].place.layout.stand)).size === 3, 'le tre città hanno il banco in posti diversi');
 ok(new Set(R.order.map(id => R.levels[id].place.host.name)).size === 12, 'ogni posto ha il suo ospite speciale');
 
-// 4b. Premio giornaliero, scrigni, album, guadagno da assenti, prestigio e decorazioni.
+// 4b. Premio giornaliero, mystery box, album, guadagno da assenti, prestigio e decorazioni.
 {
   const MT = R.meta, g0b = R.settings.get('gems');
   const i1 = MT.dailyInfo(); ok(i1.can && i1.idx === 0 && i1.gems === 2, 'primo giorno: premio 2 gemme');
@@ -104,8 +104,11 @@ ok(new Set(R.order.map(id => R.levels[id].place.host.name)).size === 12, 'ogni p
   m.lastClaim = ys; m.streak = 6; ok(MT.dailyInfo().idx === 6 && MT.dailyInfo().gems === 15, 'giorno dopo giorno: il 7° dà 15 gemme');
   ok(MT.see('g_vip') === true && MT.see('g_vip') === false, 'una figurina si trova una sola volta');
   ok(MT.albumCount() >= 1 && MT.albumHtml().indexOf('Figurine') >= 0, 'l\'album si costruisce');
-  const p0 = MT.chestInfo().pts; MT.addPts(25); ok(MT.chestReady() && MT.chestInfo().left >= 2, 'con 25 punti ci sono scrigni da aprire');
-  const rc = MT.openChest(); ok(rc && (rc.kind === 'gems' || rc.kind === 'item'), 'lo scrigno dà un premio');
+  ok(MT.BOXES.length === 3 && MT.BOXES.map(b => b.cost).join() === '50,100,125', 'tre mystery box da 50, 100 e 125 gemme');
+  MT.BOXES.forEach(b => ok(b.prizes.reduce((a, q) => a + q.p, 0) === 100, b.id + ': le probabilità fanno 100'));
+  { R.settings.data.gems = 10; ok(MT.openBox('legno') === null && R.settings.get('gems') === 10, 'senza gemme la scatola non si apre'); }
+  { let good = true; for (let k = 0; k < 60; k++) { const b = MT.BOXES[k % 3]; R.settings.data.gems = b.cost; const r = MT.openBox(b.id); if (!r || !['coins', 'gems', 'item'].includes(r.kind) || R.settings.get('gems') < 0) good = false; if (r && r.kind === 'item' && !r.name) good = false; } ok(good, 'ogni scatola dà sempre un premio valido'); }
+  ok(MT.boxesHtml().indexOf('box:oro') > 0 && MT.boxesHtml().indexOf('%') > 0, 'le scatole mostrano le probabilità');
   ok(MT.vipPersona() && MT.vipPersona().name, 'gli ospiti VIP hanno un nome');
   const mul0 = MT.payMul(); MT.addPrestige(); ok(MT.payMul() > mul0 - 1e-9 && MT.prestige() === 1, 'la nuova gestione aumenta i guadagni');
   MT.decoName('Casa <b>Mia</b> con un nome lunghissimo'); ok(MT.lodgeName().indexOf('<') < 0 && MT.lodgeName().length <= 16, 'il nome del rifugio è pulito e corto');
@@ -114,7 +117,7 @@ ok(new Set(R.order.map(id => R.levels[id].place.host.name)).size === 12, 'ogni p
   ok(R.cities.every(c => c.perk), 'ogni città ha un\'anteprima');
   { const w0 = R.settings.get('gems'); let n = 0; for (let k = 0; k < 40; k++) { const r = MT.wheelSpin('gems'); if (r) { n++; ok(r.seg && r.i >= 0 && r.i < MT.WHEEL.length, 'la ruota dà uno spicchio valido'); } } ok(n >= 0 && R.settings.get('gems') >= 0 && w0 >= 0, 'la ruota non manda le gemme sotto zero'); }
   { const f1 = MT.wheelSpin('free'), f2 = MT.wheelSpin('free'); ok(f1 && !f2, 'la ruota gratis gira una volta al giorno'); }
-  ok(MT.decoNameHtml().indexOf('lodgeName') > 0 && MT.decoHtml().indexOf('data-deco') > 0 && MT.dailyHtml().indexOf('days') > 0 && MT.chestHtml().indexOf('chestbox') > 0 && MT.gameHtml().indexOf('record') > 0, 'le pagine del profilo si costruiscono');
+  ok(MT.decoNameHtml().indexOf('lodgeName') > 0 && MT.decoHtml().indexOf('data-deco') > 0 && MT.dailyHtml().indexOf('days') > 0 && MT.gameHtml().indexOf('record') > 0, 'le pagine del profilo si costruiscono');
 }
 
 // 5. Salvataggio: copia di sicurezza e ripristino di qualche minuto fa.

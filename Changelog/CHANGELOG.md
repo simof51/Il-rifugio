@@ -9,6 +9,16 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.27.0 · 2026-11-26 · Mystery box al posto degli scrigni
+
+- **Tolto il sistema degli scrigni** (punti, barra, sezione nel Profilo). Il 7° giorno del premio giornaliero dà le sole 15 💎; lo spicchio "punti scrigno" della ruota ora è 🪙 300. Gli scrigni non ancora aperti non vengono convertiti.
+- **3 mystery box** nel negozio delle gemme, con le probabilità scritte su ciascuna:
+  - Box Legno (50 💎): 300 🪙 40%, 600 🪙 25%, un colore 30%, 80 💎 5%.
+  - Box Argento (100 💎): 1200 🪙 30%, un accessorio 30%, un cappello 30%, 180 💎 10%.
+  - Box Oro (125 💎): 2500 🪙 25%, un compagno 35%, un cappello raro (cowboy/corona) 30%, 250 💎 10%.
+  Se gli oggetti di quel tipo sono già tutti tuoi, arrivano monete.
+- **Per tornare indietro**: `git checkout 10c0103 -- web tests Changelog`.
+
 ## v0.26.0 · 2026-11-26 · Città nette e diverse, passaporto per proseguire
 
 - **Baite di stile diverso per città** (cambia anche con l'interno):
