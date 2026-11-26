@@ -98,7 +98,9 @@
     { id: 'n_night', e: '🌙', name: 'Notte', desc: 'Gioca di notte' }, { id: 'r_pay', e: '💰', name: 'Primo incasso', desc: 'Ritira i soldi alla reception' },
     { id: 's_inverno', e: '❄️', name: 'Inverno', desc: 'Gioca una stagione d\'inverno' }, { id: 's_primavera', e: '🌸', name: 'Primavera', desc: 'Gioca una stagione di primavera' },
     { id: 's_estate', e: '☀️', name: 'Estate', desc: 'Gioca una stagione d\'estate' }, { id: 's_autunno', e: '🍂', name: 'Autunno', desc: 'Gioca una stagione d\'autunno' },
-    { id: 'e_event', e: '🎉', name: 'Evento', desc: 'Gioca durante un evento di stagione' }
+    { id: 'e_event', e: '🎉', name: 'Evento', desc: 'Gioca durante un evento di stagione' },
+    { id: 'c_sled', e: '🛷', name: 'Slitta', desc: 'Usa la legnaia in Valle' }, { id: 'c_garden', e: '🌷', name: 'Raccolto', desc: 'Raccogli l\'orto ai Mulini' },
+    { id: 'c_boat', e: '🚢', name: 'Battello', desc: 'Accogli il battello al Porto' }
   ];
   function see(id) {
     const m = M(); if (m.album[id]) return false;
@@ -109,6 +111,10 @@
     return true;
   }
   const albumCount = () => ALBUM.filter(a => M().album[a.id]).length;
+  // Premi a tappe: ogni 5 figurine trovate si possono ritirare delle gemme.
+  const ALBUM_STEP = 5, ALBUM_GEMS = 3;
+  const albumReady = () => Math.max(0, Math.floor(albumCount() / ALBUM_STEP) - (M().albumPaid || 0));
+  function claimAlbum() { const n = albumReady(); if (!n) return 0; const m = M(); m.albumPaid = (m.albumPaid || 0) + n; save(); st.addGems(n * ALBUM_GEMS); return n * ALBUM_GEMS; }
 
   // --- ospiti VIP con nome e storia ---
   const PERSONAS = [
@@ -200,14 +206,14 @@
   // --- ruota della fortuna (nello Shop): 8 spicchi con monete, gemme e un super premio ---
   // Una giratina gratis al giorno, una guardando un video, poi con le gemme.
   const WHEEL = [
-    { l: '🪙 80', kind: 'coins', n: 80, w: 24, col: '#ffd23a' },
+    { l: '🪙 60', kind: 'coins', n: 60, w: 24, col: '#ffd23a' },
     { l: '💎 2', kind: 'gems', n: 2, w: 22, col: '#6aa9ff' },
-    { l: '🪙 200', kind: 'coins', n: 200, w: 16, col: '#ffb02e' },
-    { l: '💎 5', kind: 'gems', n: 5, w: 12, col: '#34d399' },
-    { l: '🪙 300', kind: 'coins', n: 300, w: 10, col: '#c084fc' },
-    { l: '🪙 500', kind: 'coins', n: 500, w: 8, col: '#ff7a3d' },
-    { l: '💎 12', kind: 'gems', n: 12, w: 6, col: '#3d8bff' },
-    { l: '👑 💎 60', kind: 'gems', n: 60, w: 2, col: '#ff4d8a', sup: true }
+    { l: '🪙 120', kind: 'coins', n: 120, w: 16, col: '#ffb02e' },
+    { l: '💎 4', kind: 'gems', n: 4, w: 12, col: '#34d399' },
+    { l: '🪙 180', kind: 'coins', n: 180, w: 10, col: '#c084fc' },
+    { l: '🪙 300', kind: 'coins', n: 300, w: 8, col: '#ff7a3d' },
+    { l: '💎 8', kind: 'gems', n: 8, w: 6, col: '#3d8bff' },
+    { l: '👑 💎 40', kind: 'gems', n: 40, w: 1, col: '#ff4d8a', sup: true }
   ];
   const WHEEL_COST = 25;
   function wheelState() { const m = M(); if (!m.wheel || m.wheel.day !== today()) { m.wheel = { day: today(), free: false, ad: false }; save(); } return m.wheel; }
@@ -292,7 +298,8 @@
     const m = M();
     const cells = ALBUM.map(a => `<div class="medal${m.album[a.id] ? ' ok' : ''}"><i>${m.album[a.id] ? a.e : '❔'}</i><b>${m.album[a.id] ? a.name : '???'}</b><span>${a.desc}</span></div>`).join('');
     const vips = PERSONAS.map(p => `<span class="sc${m.vip[p.id] ? ' done' : ' lock'}"><b>${m.vip[p.id] ? p.e : '❔'}</b>${m.vip[p.id] ? p.name : '???'}</span>`).join('');
-    return `<div class="small">Figurine ${albumCount()}/${ALBUM.length}</div><div class="medals">${cells}</div>` +
+    const prize = albumReady() ? `<div class="row"><button class="btn" data-meta="albumprize">💎 ${albumReady() * ALBUM_GEMS}</button></div>` : `<div class="small">Ogni ${ALBUM_STEP} figurine: ${ALBUM_GEMS} 💎</div>`;
+    return `<div class="small">Figurine ${albumCount()}/${ALBUM.length}</div>${prize}<div class="medals">${cells}</div>` +
       `<b class="small">Ospiti famosi (${PERSONAS.filter(p => m.vip[p.id]).length}/${PERSONAS.length})</b><div class="seasons">${vips}</div>`;
   }
   function decoNameHtml() {
@@ -318,7 +325,7 @@
 
   R.meta = {
     bind: hud => { toast = m => hud.toast(m); },
-    data: M, dailyInfo, claimDaily, eventNow, EVENTS, payMul, BOXES, openBox, boxesHtml, see, albumCount, ALBUM, PERSONAS, vipPersona, vipServed,
+    data: M, dailyInfo, claimDaily, eventNow, EVENTS, payMul, BOXES, openBox, boxesHtml, see, albumCount, albumReady, claimAlbum, ALBUM, PERSONAS, vipPersona, vipServed,
     DECO, decoGet, decoSet, decoName, nameCost, lodgeName, prestige, addPrestige, minigame, gameInfo, useGame, badge, stamp, passportHtml, WHEEL, wheelInfo, wheelSpin, wheelAnimate, wheelHtml, dailyHtml, albumHtml, decoHtml, decoNameHtml, gameHtml
   };
 })(window.Rifugio);

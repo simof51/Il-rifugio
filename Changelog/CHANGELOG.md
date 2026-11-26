@@ -9,6 +9,18 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.30.0 · 2026-11-26 · Missioni, arredo, animazioni, musica per città, traduzioni
+
+- **Missioni della settimana** (6 💎 l'una), barre di avanzamento, 3 medaglie nuove; premi da ritirare per medaglie (2 💎) e album (3 💎 ogni 5 figurine, 3 figurine nuove).
+- **Arreda le stanze** (Profilo): 6 mobili a monete, +4% dagli ospiti di quella stanza.
+- **Personaggi**: capelli, occhi che si chiudono, saluti. **Effetti**: monete che volano al contatore, anelli sugli acquisti, fuochi d'artificio a fine stagione.
+- **Musica** diversa per città (valzer ai Mulini, ritmo di mare al Porto).
+- **Mini mappa** si spegne dalle Impostazioni.
+- **Traduzioni** di città, ospiti speciali, testi delle stagioni, tutorial e novità.
+- **Ruota della fortuna** meno generosa: 🪙 60/120/180/300, 💎 2/4/8, super 40.
+
+**Per tornare indietro:** `git checkout 2e7fe82 -- web tests Changelog rifugio-design.md`
+
 ## v0.29.0 · 2026-11-26 · Attività nuove e mini mappa
 
 - **Città da giocare**: Valle con legnaia e slitta (porta la legna ai fuochi), Borgo dei Mulini con orto da raccogliere, Porto con il battello che sbarca ospiti (+25%).

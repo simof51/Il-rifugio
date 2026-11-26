@@ -133,7 +133,7 @@
     const Qs = st.QUALITY;
     // "Suoni" comprende anche i suoni d'ambiente (vento, pioggia, uccellini): un solo interruttore e un solo volume.
     return tgA('sfx', 'Suoni') + slider('sfxVol', 'Volume suoni', 'audio', audio.state.sfxVol) + tgA('music', 'Musica') + slider('musVol', 'Volume musica', 'audio', audio.state.musVol) +
-      tgS('haptics', 'Vibrazione') +
+      tgS('haptics', 'Vibrazione') + `<div class="set"><span>Mini mappa</span><button class="tg${st.get('minimap') !== false ? ' on' : ''}" data-map="1">${st.get('minimap') !== false ? 'Sì' : 'No'}</button></div>` +
       tgS('daynight', 'Giorno e notte') + tgS('weather', 'Meteo (pioggia, nebbia, temporali)') +
       `<b class="small">Lingua</b>${opts([{ v: 'auto', l: '🌐 Auto' }].concat(Object.keys(R.i18n.LANGS).map(k => ({ v: k, l: R.i18n.LANGS[k] }))), st.get('lang'), 'data-lang')}` +
       `<b class="small">Qualità grafica (si applica ricaricando)</b>${opts(Object.keys(Qs).map(k => ({ v: k, l: Qs[k].label })), st.get('quality'), 'data-q')}`;
@@ -209,6 +209,7 @@
         H('🎯 Missioni e medaglie') + R.extras.missionsHtml() +
         section('album', `📖 Album (${MT.albumCount()}/${MT.ALBUM.length})`, MT.albumHtml()) +
         section('game', '🎮 Mini-gioco', MT.gameHtml()) +
+        section('furn', '🛋️ Arreda le stanze', game.furnHtml()) +
         section('deco', '🏠 Nome del rifugio', MT.decoNameHtml());
     } else {
       h = H('⚙️ Impostazioni') + settingsHtml() + H('🔒 Privacy e consenso') + privacyHtml() +
@@ -258,6 +259,9 @@
     if (k === 'daily') {
       const r = MT.claimDaily(); if (!r) return;
       audio.sfx('buy'); hud.toast(`🎁 +${r.gems} 💎 · serie di ${r.streak} ${r.streak === 1 ? 'giorno' : 'giorni'}`); rerender();
+    } else if (k.indexOf('medal:') === 0 || k === 'albumprize') { // premi di medaglie e album
+      const n = k === 'albumprize' ? MT.claimAlbum() : R.extras.claimMedal(k.slice(6));
+      if (n) { audio.sfx('buy'); hud.toast(`+${n} gemme!`); rerender(); }
     } else if (k.indexOf('box:') === 0) { // mystery box (negozio delle gemme)
       const r = MT.openBox(k.slice(4));
       if (!r) { hud.toast('Gemme insufficienti'); return; }
@@ -305,6 +309,7 @@
     if (d.sec) { secs[d.sec] = !secs[d.sec]; rerender(); }
     else if (d.tg) { audio.set(d.tg, !audio.state[d.tg]); audio.unlock(); rerender(); audio.sfx('click'); }
     else if (d.st) { st.set(d.st, !st.get(d.st)); audio.refresh(); rerender(); }
+    else if (d.map) { st.set('minimap', st.get('minimap') === false); rerender(); }
     else if (d.lang) { st.set('lang', d.lang); reloadSaved(); }
     else if (d.q) { st.set('quality', d.q); reloadSaved(); }
     else if (d.buy) { buyFlow(d.buy); }
@@ -322,6 +327,11 @@
     else if (d.ads) { st.set('consent', { ads: !consent().ads, ts: Date.now() }); rerender(); }
     else if (t.id === 'menuReset') { if (confirmReset) reset(); else { confirmReset = true; rerender(); } }
     else if (d.meta) metaAct(d.meta);
+    else if (d.furn) {
+      const [i, id] = d.furn.split(':'), r = game.furnish(+i, id);
+      if (r === 'coins') hud.toast('Monete insufficienti'); else if (r === 'ok') audio.sfx('buy');
+      rerender();
+    }
     else if (d.deco) {
       const [kind, id] = d.deco.split(':'), cost = +d.cost, key = `deco:${kind}:${id}`;
       if (cost && !st.has(key) && !st.buy(key, cost)) { hud.toast('Gemme insufficienti'); return; }
@@ -360,7 +370,7 @@
       showPop('🎁 Premio di oggi', MT.dailyHtml(false), [{ t: 'Ritira', fn: () => { const r = MT.claimDaily(); closePop(); if (r) { audio.sfx('buy'); hud.toast(`🎁 +${r.gems} 💎 · serie di ${r.streak} ${r.streak === 1 ? 'giorno' : 'giorni'}`); } updateBadge(); } }]);
     }, 700);
   }
-  $('start').onclick = () => { audio.unlock(); audio.playMusic(level.season); hud.hideIntro(); game.start(); afterStart(); };
+  $('start').onclick = () => { audio.unlock(); audio.playMusic(level.season, level.cityId); hud.hideIntro(); game.start(); afterStart(); };
   $('keep').onclick = () => { hud.hideWin(); game.resume(); };
   $('goNext').onclick = () => { game.save(); location.reload(); }; // la tappa vinta è salvata: al riavvio parte la successiva
 

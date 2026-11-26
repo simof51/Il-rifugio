@@ -104,7 +104,25 @@
     }
 
     // Musica: arpeggio a ottavi sull'accordo di turno, basso sul primo e terzo quarto, ogni tanto una nota di melodia.
+    // Ogni città ha il suo modo di suonare: Valle = carillon, Mulini = valzer da organetto, Porto = ritmo di mare con spazzole.
+    const CITY_STYLE = { valle: { shift: 0, mul: 1 }, mulini: { shift: 3, mul: 1.18, bar: 6, wave: 'triangle' }, porto: { shift: -2, mul: 1.06, wave: 'sine', sync: true } };
     function playStep(s, n, t) {
+      const c = s.city || CITY_STYLE.valle, k = c.shift, w = c.wave || s.wave;
+      if (c.bar === 6) { // valzer: basso sul primo tempo, accordo sugli altri due
+        const bar6 = Math.floor(n / 6) % s.prog.length, j = n % 6, ch6 = s.prog[bar6];
+        if (j === 0) tone(mtof(ch6[0] - 12 + k), 0.6, 'sine', 0.75, t, 0, musG);
+        if (j === 2 || j === 4) ch6.forEach(m => tone(mtof(m + k), 0.28, 'square', 0.07, t, 0, musG));
+        if (j % 2 === 0 && Math.random() < 0.65) tone(mtof(s.scale[(bar6 * 2 + j / 2) % s.scale.length] + k), 0.5, w, 0.38, t, 0, musG);
+        return;
+      }
+      if (c.sync) {
+        const bar8 = Math.floor(n / 8) % s.prog.length, j = n % 8, ch8 = s.prog[bar8];
+        if (j === 0 || j === 3 || j === 6) tone(mtof(ch8[j === 3 ? 2 : 0] - 12 + k), 0.45, 'sine', 0.75, t, 0, musG);
+        if (j === 2 || j === 5 || j === 7) ch8.forEach(m => tone(mtof(m + 12 + k), 0.2, 'triangle', 0.14, t, 0, musG));
+        if (j % 2 === 1) noise(0.05, 0.06 * st.musVol, 5000, 'highpass', t);
+        if ((j === 0 || j === 4) && Math.random() < 0.7) tone(mtof(s.scale[Math.floor(Math.random() * s.scale.length)] + k), 0.7, w, 0.34, t, 0, musG);
+        return;
+      }
       const bar = Math.floor(n / 8) % s.prog.length, i = n % 8, ch = s.prog[bar];
       tone(mtof(ch[[0, 1, 2, 1, 2, 1, 2, 1][i]] + 12), 0.5, s.wave, 0.5, t, 0, musG);
       if (i === 0 || i === 4) tone(mtof(ch[0] - 12), 0.7, 'sine', 0.7, t, 0, musG);
@@ -139,7 +157,7 @@
       // Chiamata dall'ambiente (meteo e ora): aggiorna i suoni d'ambiente.
       ambient(o) { if (!ctx || ctx.state !== 'running') return; Object.assign(ambOpt, o); ensureAmbient(); applyAmbient(); },
       refresh() { applyAmbient(); },
-      playMusic(id) { song = SONGS[id] || SONGS.inverno; step = 0; nextT = 0; startTimer(); },
+      playMusic(id, city) { const base = SONGS[id] || SONGS.inverno, c = CITY_STYLE[city] || CITY_STYLE.valle; song = Object.assign({}, base, { bpm: base.bpm * c.mul, city: c }); step = 0; nextT = 0; startTimer(); },
       set(key, value) { st[key] = value; save(); apply(); if (key === 'sfx' || key === 'sfxVol') applyAmbient(); }
     };
   };

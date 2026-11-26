@@ -276,6 +276,10 @@
       }
       ball(0.3, mats.skin, 0, 1.52 - HIP, 0, up);
       const face = new T.Mesh(faceGeo(), mats.face); face.position.y = 1.52 - HIP; up.add(face);
+      // capelli sulla nuca (colori diversi) e palpebre per battere gli occhi
+      if (!waiter) { const HAIR = [0x3a2418, 0x6b3f1f, 0xd9a441, 0x24201d, 0xb5452a]; const hr = new T.Mesh(cached('hairB', () => new T.SphereGeometry(0.312, 14, 8, Math.PI, Math.PI, Math.PI * 0.2, Math.PI * 0.52)), tint(opt.hair || HAIR[Math.floor(Math.random() * HAIR.length)])); hr.position.y = 1.52 - HIP; up.add(hr); }
+      const lids = new T.Group(); lids.position.y = 1.52 - HIP; lids.visible = false; up.add(lids);
+      [-0.11, 0.11].forEach(x => { const l = new T.Mesh(cached('lid', () => new T.SphereGeometry(0.08, 8, 6)), mats.skin); l.position.set(x, 0.03, 0.272); l.scale.set(1, 1, 0.75); lids.add(l); });
       const customHat = !waiter && opt.hat && opt.hat !== 'default';
       if (!waiter && !customHat) {
         const cap = new T.Mesh(cached('cap', () => new T.SphereGeometry(0.32, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.42)), hatM); cap.position.y = 1.57 - HIP; cap.castShadow = true; up.add(cap);
@@ -312,7 +316,7 @@
       // ombra di contatto morbida sotto i piedi (si nasconde quando l'ospite si sdraia)
       const blob = new T.Mesh(cached('blob', () => new T.CircleGeometry(0.42, 16).rotateX(-Math.PI / 2)), mats.blob); blob.position.y = 0.04; blob.renderOrder = 1; g.add(blob);
       Object.assign(g.userData, {
-        blob, legs, up, arms: arms.map(a => a.sh), elbows: arms.map(a => a.el),
+        blob, lids, waveT: 0, legs, up, arms: arms.map(a => a.sh), elbows: arms.map(a => a.el),
         axe: withTool ? axe(arms[1].el) : null, saw: withTool ? chainsaw(arms[1].el) : null, tool: 'axe',
         tray, trayCups, hold: false, hb: 0,
         ph: 0, t: Math.random() * 6, mv: 0, chopT: 0, chopDur: 1, ck: 1, cb: 0, tossT: 0, tossDur: 1, tk: 1, tb: 0
@@ -395,11 +399,14 @@
       u.elbows[0].rotation.z = elz[0]; u.elbows[1].rotation.z = elz[1];
       u.up.rotation.x = lean; u.up.rotation.y = tw;
       u.up.position.y = HIP + Math.abs(Math.sin(u.ph)) * 0.05 * u.mv + Math.sin(u.t * 2.4) * 0.008 * (1 - u.mv);
+      if (u.lids) u.lids.visible = (u.t % 3.7) < 0.13; // batte gli occhi
+      if (u.waveT > 0) { u.waveT = Math.max(0, u.waveT - dt); u.arms[1].rotation.x = 0; u.arms[1].rotation.z = 2.5 + Math.sin(u.t * 14) * 0.35; u.elbows[1].rotation.x = -0.3; } // saluto
       const show = u.cb > 0.15;
       if (u.axe) u.axe.visible = show && u.tool === 'axe';
       if (u.saw) u.saw.visible = show && u.tool === 'saw';
     }
     // Avvia un colpo d'ascia o un lancio della durata indicata (secondi).
+    function wave(o, dur) { o.userData.waveT = dur || 1.4; }
     function swing(o, dur) { o.userData.chopT = o.userData.chopDur = dur; }
     function toss(o, dur) { o.userData.tossT = o.userData.tossDur = dur || 0.25; }
     // Frazione della durata del colpo in cui l'ascia arriva sul tronco (serve per far reagire l'albero al momento giusto).
@@ -435,6 +442,6 @@
       }
     }
 
-    return { T, M, mats, tint, add, box, cyl, ball, clear, tree, person, setTool, setTray, walk, swing, toss, HIT_AT, moveTo, follow, drawStack, cupGeo, coinGeo, logGeo, mergeParts, cached, sm };
+    return { T, M, mats, tint, add, box, cyl, ball, clear, tree, person, setTool, setTray, walk, wave, swing, toss, HIT_AT, moveTo, follow, drawStack, cupGeo, coinGeo, logGeo, mergeParts, cached, sm };
   };
 })(window.Rifugio);

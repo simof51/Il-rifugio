@@ -19,7 +19,7 @@ const ctx = {
 };
 ctx.window = ctx; vm.createContext(ctx);
 const load = f => vm.runInContext(fs.readFileSync(path.join(WEB, f), 'utf8'), ctx, { filename: f });
-['js/namespace.js', 'js/levels/common.js', 'js/levels/inverno.js', 'js/levels/primavera.js', 'js/levels/estate.js', 'js/levels/autunno.js', 'js/levels/cities.js', 'js/levels/places.js', 'js/settings.js', 'js/i18n.js', 'js/extras.js', 'js/meta.js', 'js/state.js'].forEach(load);
+['js/namespace.js', 'js/levels/common.js', 'js/levels/inverno.js', 'js/levels/primavera.js', 'js/levels/estate.js', 'js/levels/autunno.js', 'js/levels/cities.js', 'js/levels/places.js', 'js/settings.js', 'js/i18n.js', 'js/extras.js', 'js/meta.js', 'js/state.js', 'js/parts/city.js', 'js/parts/activities.js'].forEach(load);
 const R = ctx.Rifugio;
 
 // 1. Ogni tappa ha i dati che servono, senza duplicati e con numeri sensati.
@@ -118,6 +118,22 @@ ok(new Set(R.order.map(id => R.levels[id].place.host.name)).size === 12, 'ogni p
   { const w0 = R.settings.get('gems'); let n = 0; for (let k = 0; k < 40; k++) { const r = MT.wheelSpin('gems'); if (r) { n++; ok(r.seg && r.i >= 0 && r.i < MT.WHEEL.length, 'la ruota dà uno spicchio valido'); } } ok(n >= 0 && R.settings.get('gems') >= 0 && w0 >= 0, 'la ruota non manda le gemme sotto zero'); }
   { const f1 = MT.wheelSpin('free'), f2 = MT.wheelSpin('free'); ok(f1 && !f2, 'la ruota gratis gira una volta al giorno'); }
   ok(MT.decoNameHtml().indexOf('lodgeName') > 0 && MT.decoHtml().indexOf('data-deco') > 0 && MT.dailyHtml().indexOf('days') > 0 && MT.gameHtml().indexOf('record') > 0, 'le pagine del profilo si costruiscono');
+}
+
+// 4c. Missioni della settimana, premi di medaglie e album, banco dei dolci, arredo, ruota.
+{
+  const EX = R.extras, MT = R.meta;
+  const w = EX.weeklies(); ok(w.list.length === 3 && new Set(w.list.map(m => m.id)).size === 3, 'tre missioni della settimana diverse');
+  R.settings.set('medals', { m1: 1 }); const g0 = R.settings.get('gems');
+  ok(EX.claimMedal('m1') === 2 && EX.claimMedal('m1') === 0 && R.settings.get('gems') === g0 + 2, 'il premio di una medaglia si ritira una volta');
+  ok(EX.claimMedal('m9') === 0, 'una medaglia non vinta non dà premi');
+  MT.ALBUM.slice(0, 10).forEach(a => MT.see(a.id)); const n = MT.albumReady(), g1 = R.settings.get('gems');
+  ok(n >= 2 && MT.claimAlbum() === n * 3 && MT.claimAlbum() === 0 && R.settings.get('gems') === g1 + n * 3, 'i premi dell\'album si ritirano una volta');
+  R.order.forEach(id => { const l = R.levels[id], s = l.unlocks.find(u => u.id === 'snack'); ok(!!s && s.pos[0] === l.place.layout.snack && s.title !== 'Banco dolci', id + ': banco dei dolci al suo posto'); });
+  ok(R.parts.activities.FURN.every(f => f.cost > 0) && new Set(R.parts.activities.FURN.map(f => f.id)).size === R.parts.activities.FURN.length, 'arredo con id unici e prezzi');
+  ['valle', 'mulini', 'porto'].forEach(c => ok(Array.isArray(R.parts.city.RESERVE[c]), c + ': zone dell\'attività'));
+  R.order.forEach(id => { const l = R.levels[id]; (R.parts.city.RESERVE[l.cityId] || []).forEach(([x, z]) => ok(l.unlocks.every(u => Math.hypot(u.pos[0] - x, u.pos[1] - z) >= 2), id + ': attività della città lontana dai riquadri')); });
+  ok(MT.WHEEL.every(s => s.l.indexOf(String(s.n)) >= 0), 'le etichette della ruota corrispondono ai premi');
 }
 
 // 5. Salvataggio: copia di sicurezza e ripristino di qualche minuto fa.

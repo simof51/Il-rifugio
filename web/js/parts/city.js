@@ -9,7 +9,8 @@
     const winter = SEASON_ID === 'inverno';
     const near = (x, z, r) => Math.hypot(player.position.x - x, player.position.z - z) < r;
     const ready = () => S.done >= 2 && S.fed > 0;
-    const done = (x, z) => { G.EX.ev('city'); burst(x, 1, z, 10, [0xffd23a, 0x4cd964, 0xffffff], 2, 4, 0.7, 0.1); };
+    const CARD = { valle: 'c_sled', mulini: 'c_garden', porto: 'c_boat' };
+    const done = (x, z) => { G.MT.see(CARD[CITYID]); G.EX.ev('city'); burst(x, 1, z, 10, [0xffd23a, 0x4cd964, 0xffffff], 2, 4, 0.7, 0.1); };
     let update = () => {}, overlays = () => {}, spots = () => [], now = () => {};
 
     if (CITYID === 'valle') {

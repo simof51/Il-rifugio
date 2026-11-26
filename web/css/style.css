@@ -254,3 +254,4 @@ body::before{display:none}
 body:has(.modal:not(.hidden)) #minimap,body:has(.modal:not(.hidden)) #evtChip{display:none}
 .mbar{height:6px;border-radius:9px;background:#eef2f6;overflow:hidden;margin-top:4px}.mbar i{display:block;height:100%;background:linear-gradient(90deg,#ffd23a,#4cd964)}
 .mrow.col{display:block}.mrow.col>div:first-child{display:flex;justify-content:space-between;gap:10px}
+.flycoin{position:fixed;width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff2a8,#f2b632 60%,#c98a00);box-shadow:0 2px 4px rgba(0,0,0,.25);pointer-events:none;z-index:6;transition:left .7s cubic-bezier(.5,-0.2,.7,1),top .7s cubic-bezier(.3,0,.8,.7),opacity .7s}

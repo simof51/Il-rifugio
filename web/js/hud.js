@@ -41,6 +41,19 @@
       clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('on'), 2400);
     }
 
+    // Monete che volano dal punto del mondo fino al contatore in alto.
+    function coinRain(x, y, z, n) {
+      if (!cam) return;
+      V.set(x, y, z).project(cam);
+      const sx = (V.x + 1) / 2 * innerWidth, sy = (1 - V.y) / 2 * innerHeight, to = $('coinN').parentElement.getBoundingClientRect();
+      for (let i = 0; i < Math.min(8, n); i++) {
+        const c = document.createElement('i'); c.className = 'flycoin';
+        c.style.left = sx + (Math.random() - 0.5) * 50 + 'px'; c.style.top = sy + (Math.random() - 0.5) * 30 + 'px'; c.style.transitionDelay = i * 0.05 + 's';
+        document.body.appendChild(c);
+        requestAnimationFrame(() => requestAnimationFrame(() => { c.style.left = to.left + 10 + 'px'; c.style.top = to.top + 8 + 'px'; c.style.opacity = '0.4'; }));
+        setTimeout(() => c.remove(), 900 + i * 50);
+      }
+    }
     function floatText(txt, x, y, z) { floats.push({ el: label('float', txt), x, y, z, t: 0 }); }
     function updateFloats(dt) {
       for (let i = floats.length - 1; i >= 0; i--) {
@@ -88,7 +101,7 @@
 
     return {
       setSnack(show, n, cap, e) { const c = $('snackChip'); if (c.hidden === show) c.hidden = !show; if (show) { setText($('snackE'), e); setText($('snackN'), n + '/' + cap, true); } },
-      label, put, toast, floatText, updateFloats, setStats, setTask, showStick, moveKnob, hideStick, setEnv, setGems, hint, setNext,
+      coinRain, label, put, toast, floatText, updateFloats, setStats, setTask, showStick, moveKnob, hideStick, setEnv, setGems, hint, setNext,
       setCamera(c) { cam = c; },
       hideIntro() { $('intro').classList.add('hidden'); },
       showWin(title, text, next, nextId) {

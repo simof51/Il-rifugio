@@ -282,7 +282,7 @@
     }
 
     // Effetti (oggetti volanti, particelle, tempi): vedi parts/fx.js
-    const { _v, _w, after, fly, updateFlyers, burst, updateParts, tickLater } = R.parts.fx({ T, scene, B, mats });
+    const { _v, _w, after, fly, updateFlyers, burst, updateAll, tickLater, ring, fireworks } = R.parts.fx({ T, scene, B, mats });
 
 
     // --- stanze -------------------------------------------------------------
@@ -532,7 +532,7 @@
     function collectRecep() {
       const n = recep.n; if (n <= 0) return;
       S.coins += n; S.collected += n; recep.n = 0; S.recep = 0; drawRecep(); recep.hop = 0.6; MT.see('r_pay');
-      hud.floatText('+' + n, player.position.x, 2.4, player.position.z);
+      hud.floatText('+' + n, player.position.x, 2.4, player.position.z); hud.coinRain(RECEP.x + 0.95, 1.5, RECEP.z + 0.1, n);
       _v.set(RECEP.x + 0.95, 1.4, RECEP.z + 0.1);
       for (let k = 0; k < Math.min(n, 10); k++) fly('coin', _v, o => o.set(player.position.x, 1.3, player.position.z), 0.4, 0.8, null, k * 0.045);
       burst(RECEP.x + 0.95, 1.5, RECEP.z + 0.1, 8, [0xffd23a, 0xfff2a8], 2, 4, 0.6, 0.1); A.sfx('coin');
@@ -785,7 +785,7 @@
     const stars = () => Math.min(P.stars_max, S.happy * P.star_per_guest);
     const guests = []; // ospiti presenti
     // Attivita' in piu' (banco dolci, richieste, eventi, arredo) e attivita' della citta': vedi parts/activities.js e parts/city.js
-    const G2 = { T, scene, B, mats, box, cyl, ball, hud, A, P, S, level, player, rooms, guests, carry, cols, fly, burst, _v, CONFETTI, RECEP, EX, CITYID, SEASON_ID, SEA_Z, firePos, landLog, spawnGuest, refreshStack, cocoaMax, cocoaInterval, cupCap, stars,
+    const G2 = { T, scene, B, mats, box, cyl, ball, hud, A, P, S, level, player, rooms, guests, carry, cols, fly, burst, _v, CONFETTI, RECEP, EX, MT, CITYID, SEASON_ID, SEA_Z, firePos, landLog, spawnGuest, refreshStack, cocoaMax, cocoaInterval, cupCap, stars,
       snackX: PL.layout.snack != null ? PL.layout.snack : 0, later: after, env: () => env, restock: () => { if (cocoa.open) cocoa.cups = Math.min(cocoaMax(), cocoa.cups + 1); } };
     const ACT = R.parts.activities(G2), CITY = R.parts.city(G2);
     openRoom(rooms[0]); // la prima stanza è sempre aperta
@@ -893,6 +893,7 @@
       gu.path = [[gu.r.cx, -3.1]].concat(exitFrom(gu.r.cx)); // cold: esce subito, verso est
       if (happy) {
         const pay = Math.round((P.pay + (gu.served ? P.tip : 0)) * (gu.vip ? 3 : gu.host ? 4 : gu.scout ? 1.5 : 1) * (R.shop.has('boost') ? 1.5 : 1) * MT.payMul() * ACT.payBonus(gu)); // "Ospiti generosi" dallo shop: +50%; poi evento di stagione e nuove gestioni
+        B.wave(g, 1.6); hud.floatText('😊', gu.b.x, 2.2, -5.5);
         // passa dalla reception e lascia i soldi sul bancone
         gu.pay = pay; gu.path = [[gu.r.cx, -2.8], [RECEP.x + 0.7 + Math.random() * 0.6, RECEP.z + 1.35]]; // si paga a destra del bancone, vicino alla ciotola; la fila per entrare sta a sinistra
         S.happy++; S.guests++; EX.ev('guest'); if (gu.vip) { EX.ev('vip'); MT.vipServed(gu.persona); }
@@ -1009,7 +1010,7 @@
           fly('log', _v, firePos(r, new T.Vector3()), 0.38, 0.9, () => landLog(r));
         }
         if (r.pileN > 0 && Math.hypot(p.x - r.cx - 1.7, p.z - PILE_Z) < 1.5) {
-          const n = r.pileN; S.coins += n; S.collected += n; hud.floatText('+' + n, p.x, 2.4, p.z); r.pileN = 0; drawPile(r);
+          const n = r.pileN; S.coins += n; S.collected += n; hud.floatText('+' + n, p.x, 2.4, p.z); hud.coinRain(r.cx + 1.7, 0.4, PILE_Z, n); r.pileN = 0; drawPile(r);
           // le monete volano verso l'omino
           _v.set(r.cx + 1.7, 0.4, PILE_Z);
           for (let k = 0; k < Math.min(n, 8); k++) fly('coin', _v, o => o.set(player.position.x, 1.3, player.position.z), 0.4, 0.8, null, k * 0.045);
@@ -1042,7 +1043,7 @@
           const paid = state.paid(pd.id), step = Math.min(S.coins, Math.max(1, Math.ceil(pd.cost / 40)), pd.cost - paid);
           S.coins -= step; S.paid[pd.id] = paid + step;
           if (S.paid[pd.id] >= pd.cost) {
-            S.bought[pd.id] = true; applyEffect(pd); hud.toast(pd.title + ' sbloccato! ✨'); save();
+            S.bought[pd.id] = true; applyEffect(pd); hud.toast(pd.title + ' sbloccato! ✨'); save(); ring(pd.x, pd.z, 0xffd23a); after(0.18, () => ring(pd.x, pd.z, 0x4cd964)); B.wave(player, 1.4);
             burst(pd.x, 0.8, pd.z, 26, CONFETTI, 4, 7, 1.1, 0.16); hopT = 0.5; A.sfx('buy');
           }
         }
@@ -1104,12 +1105,14 @@
       // obiettivi
       while (S.done < objectives.length && objValue(objectives[S.done]) >= objTarget(objectives[S.done])) {
         const rw = objectives[S.done].reward || 10;
-        S.done++; S.coins += rw; hud.toast(`Obiettivo completato! +${rw} monete 🎉`); save(); fauna.celebrate(); EX.ev('goal');
+        S.done++; S.coins += rw; hud.toast(`Obiettivo completato! +${rw} monete 🎉`); save(); fauna.celebrate(); EX.ev('goal'); B.wave(player, 1.2);
         burst(p.x, 1.6, p.z, 34, CONFETTI, 4.5, 8, 1.2, 0.17); hopT = 0.5; A.sfx('goal');
       }
       if (S.done >= objectives.length && !S.won) {
-        S.won = true; R.settings.addGems(4); hud.toast('Stagione completata! +4 gemme 💎'); MT.stamp(level.id); save(); running = false; endJoy(); EX.ev('win');
-        hud.showWin(TX.winTitle, TX.winText(S), TX.winNext, level.next);
+        S.won = true; R.settings.addGems(4); hud.toast('Stagione completata! +4 gemme 💎'); MT.stamp(level.id); save(); EX.ev('win');
+        // prima la festa (fuochi d'artificio), poi la finestra
+        fireworks(p.x, p.z, CONFETTI); A.sfx('goal'); B.wave(player, 2.4);
+        after(2.8, () => { running = false; endJoy(); hud.showWin(TX.winTitle, TX.winText(S), TX.winNext, level.next); });
       }
       saveT += dt; if (saveT > 2) { saveT = 0; save(); }
     }
@@ -1238,7 +1241,7 @@
         if (perfT >= 8) { if (perfSlow / perfT > 0.6 && R.settings.get('quality') !== 'low' && R.settings.tip('perf')) hud.toast('🐢 Il gioco va a scatti? Prova la qualità Media o Bassa: menu ☰ → Impostazioni'); perfT = 0; perfSlow = 0; }
       }
       if (fpsOn) { fpsN++; fpsT += raw; if (fpsT >= 0.5) { fpsEl.textContent = Math.round(fpsN / fpsT) + ' fps'; fpsN = 0; fpsT = 0; } }
-      if (running && !paused) { update(dt); tickLater(dt); updateFlyers(dt); updateParts(dt); env.update(dt); fauna.update(dt); }
+      if (running && !paused) { update(dt); tickLater(dt); updateFlyers(dt); updateAll(dt); env.update(dt); fauna.update(dt); }
       anim(dt); renderer.shadowMap.needsUpdate = (shadowN++ & 1) === 0; renderer.render(scene, cam); overlays(dt); refreshHud(); // le ombre si ridisegnano un fotogramma su due: dimezza il costo senza che si noti
       requestAnimationFrame(frame);
     }

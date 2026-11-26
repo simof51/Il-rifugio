@@ -44,3 +44,13 @@ Il gioco è destinato al Google Play Store, con pubblicità e un eventuale shop 
 - Verificare le prestazioni su un telefono vero (molti abeti con ombre e materiali propri).
 - Sostituire le primitive con asset low-poly (per esempio Kenney o Quaternius, CC0).
 - Livello 2: estate al lago (barche, campeggio, grigliate).
+
+## Aggiunte (v0.29 - v0.30)
+
+- Attività di città: Valle legnaia e slitta (deposito 30, consegne da 5); Mulini orto (6 piante, 24 s, 40% della paga e una scorta al banco); Porto battello (3 ospiti, +25%).
+- Banco dei dolci: sblocco da 140 monete dopo 5 acquisti; il 35% degli ordini diventa un dolce.
+- Richieste (dal 6° obiettivo, 22% degli ospiti senza ordine, 30 s, mancia 1,5 volte la paga).
+- Eventi (dall'8° obiettivo, ogni 150-240 s): bufera 25 s, festa 30 s (paga doppia), tubo rotto 35 s.
+- Paga: +4% per stella intera, +4% per mobile della stanza (mobili 60-300 monete).
+- Missioni settimanali 3 x 6 gemme; medaglie 2 gemme; album 3 gemme ogni 5 figurine.
+- Ruota: monete 60/120/180/300, gemme 2/4/8, super premio 40.

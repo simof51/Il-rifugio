@@ -54,6 +54,11 @@
     function tickLater(dt) {
       for (let i = later.length - 1; i >= 0; i--) { later[i].t -= dt; if (later[i].t <= 0) { const f = later[i].fn; later.splice(i, 1); f(); } }
     }
-    return { _v, _w, after, fly, updateFlyers, burst, updateParts, tickLater };
+    // Anello che si allarga a terra (acquisti) e fuochi d'artificio (fine stagione).
+    const rings = [], ringGeo = new T.RingGeometry(0.8, 1, 32).rotateX(-Math.PI / 2);
+    function ring(x, z, color) { const m = new T.Mesh(ringGeo, new T.MeshBasicMaterial({ color, transparent: true, depthWrite: false, side: T.DoubleSide })); m.position.set(x, 0.12, z); scene.add(m); rings.push({ m, t: 0 }); }
+    function fireworks(x, z, colors) { for (let k = 0; k < 7; k++) after(k * 0.32, () => burst(x + (Math.random() - 0.5) * 9, 3 + Math.random() * 2.5, z - 1 + (Math.random() - 0.5) * 5, 30, [colors[k % colors.length], 0xffffff], 4, 3, 1.3, 0.16, 4)); }
+    const updateAll = dt => { updateParts(dt); for (let i = rings.length - 1; i >= 0; i--) { const r = rings[i]; r.t += dt; const k = r.t / 0.7; r.m.scale.setScalar(0.5 + k * 2.6); r.m.material.opacity = Math.max(0, 1 - k); if (k >= 1) { scene.remove(r.m); r.m.material.dispose(); rings.splice(i, 1); } } };
+    return { ring, fireworks, updateAll, _v, _w, after, fly, updateFlyers, burst, updateParts, tickLater };
   };
 })(window.Rifugio);
