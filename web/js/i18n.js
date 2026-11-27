@@ -373,6 +373,8 @@
     ["💡 Lampada", "💡 Lamp", "💡 Lámpara", "💡 Lampe", "💡 Lampe"],
     ["📚 Libreria", "📚 Bookshelf", "📚 Estantería", "📚 Bibliothèque", "📚 Bücherregal"],
     ["🧸 Orsetto", "🧸 Teddy bear", "🧸 Osito", "🧸 Nounours", "🧸 Teddybär"],
+    ["Addetto ai bagni", "Bathroom attendant", "Encargado de baños", "Agent d'entretien", "Bad-Pfleger"],
+    ["🧹 Assumi l'addetto che rifornisce i bagni", "🧹 Hire the bathroom attendant", "🧹 Contrata al encargado de los baños", "🧹 Embauche l'agent des salles de bain", "🧹 Stelle den Bad-Pfleger ein"],
     ["Sala mensa", "Dining hall", "Comedor", "Réfectoire", "Speisesaal"],
     ["Sala cinema", "Cinema room", "Sala de cine", "Salle de cinéma", "Kinosaal"],
     ["Impianto migliore", "Better system", "Mejor instalación", "Meilleure installation", "Bessere Anlage"],

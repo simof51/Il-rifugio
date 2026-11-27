@@ -1,4 +1,4 @@
-// Pezzi in comune delle stagioni: elenco degli obiettivi (50) e degli sblocchi (28), con le parole che cambiano da stagione a stagione
+// Pezzi in comune delle stagioni: elenco degli obiettivi (51) e degli sblocchi (29), con le parole che cambiano da stagione a stagione
 // (e da città a città: cibi e bevande). Tutte le stagioni li usano: ogni stagione definisce il suo vocabolario "v".
 // Vocabolario v: wood, treeArt/trees (albero), guest/guests, guestEmoji, firstGuest, drinks (bevande al plurale), drink (singolare), stand, stand2,
 // standTitle, stand2Title, fire/fires, room (femminile), roomTitle, roomShort, helper (articolo + nome), helperTitle, bootsName, bootsTitle,
@@ -41,6 +41,7 @@
       room(3),
       S('restock', 14, '🧼 Porta 14 scorte ai bagni', 'bath'),
       room(4),
+      B('cleaner', '🧹 Assumi l\'addetto che rifornisce i bagni'),
       B('insul', '🧱 Migliora l\'impianto: consuma meno'),
       S('collected', 220, '🪙 Raccogli 220 monete', 'pile'),
       B('snack', '🍰 Metti in mensa il banco dei dolci'),
@@ -89,6 +90,7 @@
       help(0, 155, 3),
       { id: 'axe', title: 'Attrezzo affilato', cost: k(72), pos: [7, -29.6], requires: P(3), effect: 'axe' },
       room(2, 110, 3), room(3, 170, 5),
+      { id: 'cleaner', title: 'Addetto ai bagni', cost: k(180), pos: [10.6, -25], requires: P(6), effect: 'cleaner' },
       { id: 'insul', title: 'Impianto migliore', cost: k(92), pos: [3, -27], requires: P(4), effect: 'insul' },
       { id: 'snack', title: 'Banco dolci', cost: k(140), pos: [-4.5, -1.6], requires: P(5), effect: 'snack', needMensa: true },
       { id: 'lamps', title: 'Lanterne', cost: k(62), pos: [-12, 9.3], requires: P(5), effect: 'lamps' },

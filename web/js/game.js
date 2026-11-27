@@ -272,7 +272,7 @@
     GU = R.parts.guests({ scene, B, hud, A, P, S, L, PL, TX, RES, EX, MT, rooms, mensa, cinema, boiler, guests, recep: RECEP, fly, burst, _v, outfit: OUTFIT, snackE: ACT.SN.e,
       hasEffect, payBonus: gu => ACT.payBonus(gu), payAtReception, fauna: () => fauna, drinkOpen, snackOpen, foodOpen: () => drinkOpen() || snackOpen(),
       exitPoint: gu => gu.seat ? [gu.seat.x, gu.seat.z + 0.6] : gu.chair ? [gu.chair.x, gu.chair.z - 0.7] : [gu.b.x, gu.r.def.z0 + 3.1] });
-    const STAFF = R.parts.staff({ T, B, A, P, L, cols, boiler, guests, res: RES_M, findPath, collide, fly, burst, after, _v, outfit: OUTFIT, RES, hasEffect, chopInterval, feedOne,
+    const STAFF = R.parts.staff({ T, B, A, P, L, cols, rooms, boiler, guests, res: RES_M, findPath, collide, fly, burst, after, _v, outfit: OUTFIT, RES, hasEffect, chopInterval, feedOne,
       serve: (gu, o) => GU.serve(gu, o), stock: w => w === 'snack' ? (ACT.snack.open ? ACT.snack.n : 0) : (cocoa.open ? cocoa.cups : 0), takeStock: (w, n) => { if (w === 'snack') ACT.snack.n -= n; else cocoa.cups -= n; } });
 
     // --- piazzole di sblocco --------------------------------------------------
@@ -324,6 +324,7 @@
       else if (pd.effect === 'harvester') RES_M.buy();
       else if (pd.effect === 'helper') STAFF.spawnHelper(pd.room);
       else if (pd.effect === 'waiter') STAFF.spawnWaiter(pd.room);
+      else if (pd.effect === 'cleaner') STAFF.spawnCleaner();
       else if (pd.effect === 'saw') refreshTools();
       else if (pd.effect === 'lamps') buildLamps();
       else if (pd.effect === 'mascot') buildMascot(pd);
@@ -701,7 +702,7 @@
       pause(on) { paused = !!on; if (on) { endJoy(); save(); } },
       save,
       debug: {
-        player, S, carry, trees: nodes, rooms, helpers: STAFF.helpers, waiters: STAFF.waiters, guests, cocoa, pads, padShown, openRoom, openCocoa, boiler, mensa, cinema, L, machine: RES_M.machine,
+        player, S, carry, trees: nodes, rooms, helpers: STAFF.helpers, waiters: STAFF.waiters, guests, cleaner: STAFF.cleaner, cocoa, pads, padShown, openRoom, openCocoa, boiler, mensa, cinema, L, machine: RES_M.machine,
         spawnHelper: STAFF.spawnHelper, spawnWaiter: STAFF.spawnWaiter, spawnGuest: GU.spawn,
         tp(x, z) { player.position.x = x; player.position.z = z; },
         coins(n) { S.coins += n; },
@@ -719,7 +720,7 @@
         fillFuel() { boiler.fuel = P.fuel_max; rooms.forEach(r => { r.soap = r.paper = 4; }); },
         fillBag() { carry.logs = logCap(); carry.cups = cupCap(); carry.soap = carry.paper = supCap(); refreshStack(); },
         fillStand() { if (cocoa.open) cocoa.cups = cocoaMax(); },
-        hireAll() { pads.forEach(pd => { if (pd.effect === 'helper' || pd.effect === 'waiter') buyPad(pd); }); },
+        hireAll() { pads.forEach(pd => { if (pd.effect === 'helper' || pd.effect === 'waiter' || pd.effect === 'cleaner') buyPad(pd); }); },
         fast(on) { speedMul = on ? 2 : 1; },
         showFps(on) { fpsOn = !!on; if (!fpsEl) { fpsEl = document.createElement('div'); fpsEl.style.cssText = 'position:fixed;left:8px;bottom:8px;background:rgba(0,0,0,.6);color:#fff;font:12px monospace;padding:3px 6px;border-radius:6px;z-index:50'; document.body.appendChild(fpsEl); } fpsEl.hidden = !on; },
         weather(k) { env.setWeather(k); }, time(n) { env.setTime(n); }, autoEnv() { env.release(); env.setWeather('auto'); },

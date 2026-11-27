@@ -63,4 +63,5 @@ Il gioco è destinato al Google Play Store, con pubblicità e un eventuale shop 
 - Bagni: 4 saponi e 4 rotoli; ogni ospite ne usa uno; senza scorte paga il 35% in meno. Sgabuzzino: 8 / 12 / 18 per tipo.
 - Ospite: reception, letto, mensa (se aperta), cinema (+60% della paga base), reception, uscita.
 - Mensa: tutti i banchi; 12 posti; all'inizio serve il giocatore, poi fino a 3 camerieri.
-- 50 obiettivi, 28 sblocchi.
+- 51 obiettivi, 29 sblocchi.
+- Addetto ai bagni (180, dopo 6 acquisti): porta fino a 8 saponi e 8 rotoli per volta dallo sgabuzzino ai bagni che ne hanno meno.

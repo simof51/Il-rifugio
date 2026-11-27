@@ -1,10 +1,11 @@
-// Personale (parte di game.js): raccoglitori (portano la roba dal campo al locale caldaia/cucina) e camerieri della mensa.
+// Personale (parte di game.js): raccoglitori (portano la roba dal campo al locale caldaia/cucina), camerieri della mensa
+// e addetto ai bagni (prende le scorte nello sgabuzzino e le porta dove mancano).
 (function (R) {
   'use strict';
   const HCOL = [0x3fae6e, 0x2f7bd6, 0xd0883a];
 
   (R.parts = R.parts || {}).staff = function (G) {
-    const { T, B, A, P, L, cols, boiler, guests, res, findPath, collide, fly, burst, after, _v, outfit, RES } = G;
+    const { T, B, A, P, L, cols, rooms, boiler, guests, res, findPath, collide, fly, burst, after, _v, outfit, RES } = G;
     const helpers = [], waiters = [];
 
     function nav(h, tx, tz, sp, dt, stop) {
@@ -93,9 +94,48 @@
         }
       }
     }
+    // --- addetto ai bagni ------------------------------------------------------
+    const CAP = 8; // saponi e rotoli che porta per volta
+    let cleaner = null;
+    function spawnCleaner() {
+      if (cleaner) return;
+      const g = B.person(0x1fb5a8, 0xffffff, false, 'spring', { acc: 'none' }); g.position.set(L.closet.pick[0], 0, L.closet.pick[1]);
+      const sg = stack(g);
+      cleaner = { g, sg, soap: 0, paper: 0, state: 'idle', cd: 0, room: null };
+    }
+    const need = r => r.open && (r.soap < 4 || r.paper < 4);
+    const canServe = (r, h) => (r.soap < 4 && h.soap > 0) || (r.paper < 4 && h.paper > 0);
+    const emptiest = list => list.sort((a, b) => (a.soap + a.paper) - (b.soap + b.paper))[0];
+    const load = h => B.drawStack(h.sg, 0, Math.ceil((h.soap + h.paper) / 3));
+    function updateCleaner(h, dt) {
+      const g = h.g; h.cd -= dt;
+      if (h.state === 'idle') {
+        const r = emptiest(rooms.filter(x => need(x) && canServe(x, h)));
+        if (r) { h.room = r; h.state = 'toBath'; }
+        else if (rooms.some(need)) h.state = 'toCloset';
+        else if (nav(h, L.closet.pick[0], L.closet.pick[1], 3, dt, 0.4)) B.walk(g, 0, dt);
+      } else if (h.state === 'toCloset') {
+        if (nav(h, L.closet.pick[0], L.closet.pick[1], 3.4, dt, 0.8)) { h.state = 'take'; h.cd = 0.6; }
+      } else if (h.state === 'take') {
+        B.walk(g, 0, dt);
+        if (h.cd <= 0) { h.soap = h.paper = CAP; load(h); B.toss(g, 0.2); h.state = 'idle'; }
+      } else if (h.state === 'toBath') {
+        const r = h.room;
+        if (!need(r) || !canServe(r, h)) h.state = 'idle';
+        else if (nav(h, r.def.restock[0], r.def.restock[1], 3.4, dt, 0.8)) h.state = 'fill';
+      } else {
+        const r = h.room; B.walk(g, 0, dt);
+        if (!canServe(r, h)) { h.state = 'idle'; return; }
+        if (h.cd <= 0) {
+          h.cd = 0.25; const kind = r.soap < 4 && h.soap > 0 ? 'soap' : 'paper';
+          h[kind]--; r[kind]++; load(h); B.toss(g, 0.2);
+          _v.set(g.position.x, 1.2, g.position.z); fly('cup', _v, o => o.set(r.def.bath.x, 0.9, r.def.bath.z), 0.3, 0.6);
+        }
+      }
+    }
     return {
-      helpers, waiters, spawnHelper, spawnWaiter,
-      update(dt) { helpers.forEach(h => h && updateHelper(h, dt)); waiters.forEach(h => h && updateWaiter(h, dt)); },
+      helpers, waiters, spawnHelper, spawnWaiter, spawnCleaner, cleaner: () => cleaner,
+      update(dt) { helpers.forEach(h => h && updateHelper(h, dt)); waiters.forEach(h => h && updateWaiter(h, dt)); if (cleaner) updateCleaner(cleaner, dt); },
       tools(t) { helpers.forEach(h => h && B.setTool(h.g, t)); }
     };
   };

@@ -9,6 +9,13 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.32.0 · 2026-11-27 · Addetto ai bagni
+
+- Nuovo aiutante assumibile (riquadro da 180 monete accanto allo sgabuzzino): prende sapone e carta igienica e rifornisce i bagni da solo.
+- Nuovo obiettivo per assumerlo (51 in tutto).
+
+**Per tornare indietro:** `git checkout 78cb53f -- web tests Changelog rifugio-design.md`
+
 ## v0.31.0 · 2026-11-27 · Rifugio in verticale
 
 - **Mappa alta e stretta**: campo in cima, locale caldaia/cucina e sgabuzzino, corridoio centrale con **8 stanze** (4 per lato, 2 letti e bagno), **sala mensa** e **sala cinema**, reception in basso.
