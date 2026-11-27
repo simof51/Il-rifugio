@@ -2,7 +2,7 @@
 (function (R) {
   'use strict';
   (R.parts = R.parts || {}).minimap = function (G) {
-    const { L, player, rooms, guests, boiler, mensa, cinema } = G;
+    const { L, wing, player, rooms, guests, boiler, mensa, cinema } = G;
     const cv = document.createElement('canvas'); cv.id = 'minimap'; cv.width = 128; cv.height = 230; document.body.appendChild(cv);
     const g = cv.getContext('2d');
     const X0 = -17, X1 = 17, Z0 = -57, Z1 = 12;
@@ -19,10 +19,11 @@
       g.clearRect(0, 0, 128, 230);
       rect(L.field.x0, L.field.x1, L.field.z0, L.field.z1, 'rgba(110,180,80,.35)');
       rect(X0, X1, L.roadZ - 1, L.roadZ + 1, '#b9b4a8');
-      rect(-L.HW, L.HW, -23, 6, '#d9b7a0');
+      rect(-L.HW, L.HW, -23, wing.end, '#d9b7a0');
+      rect(-L.HW - L.ROOM_W, L.HW + L.ROOM_W, wing.end - 0.2, wing.end + 0.3, '#7a5a45');
       rect(L.boiler.x0, L.boiler.x1, L.boiler.z0, L.boiler.z1, boiler.fuel <= 0 ? (blink ? '#ff3b30' : '#ffb3ae') : boiler.fuel < 12 ? '#ffb02e' : '#9aa1ab');
       rect(L.closet.x0, L.closet.x1, L.closet.z0, L.closet.z1, '#4fa3ff');
-      for (const r of rooms) rect(r.def.x0 + 0.2, r.def.x1 - 0.2, r.def.z0 + 0.2, r.def.z1 - 0.2, !r.open ? 'rgba(160,140,120,.25)' : (r.soap < 2 || r.paper < 2) && blink ? '#b46bff' : '#c9a27a');
+      for (const r of rooms) if (r.def.row < wing.rows) rect(r.def.x0 + 0.2, r.def.x1 - 0.2, r.def.z0 + 0.2, r.def.z1 - 0.2, !r.open ? 'rgba(160,140,120,.25)' : (r.soap < 2 || r.paper < 2) && blink ? '#b46bff' : '#c9a27a');
       rect(L.mensa.x0, L.mensa.x1, L.mensa.z0 + 0.2, L.mensa.z1, mensa.open ? '#f2c86a' : 'rgba(160,140,120,.25)');
       rect(L.cinema.x0, L.cinema.x1, L.cinema.z0 + 0.2, L.cinema.z1, cinema.open ? '#8a6bb0' : 'rgba(160,140,120,.25)');
       G.stands().forEach(([x, z]) => { g.fillStyle = '#b8452f'; g.fillRect(px(x) - 4, pz(z) - 3, 8, 6); });

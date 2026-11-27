@@ -99,11 +99,13 @@ R.order.forEach(id => {
     ok((u.requires.purchases || 0) <= bought, id + ': ' + o.bought + ' è visibile quando serve (' + u.requires.purchases + ' > ' + bought + ')');
     ok(!u.needMensa || seen.has('mensa'), id + ': la mensa viene prima di ' + o.bought);
     ok(u.effect !== 'waiter' || seen.has('cocoa'), id + ': il banco viene prima del cameriere');
+    ok(!u.needWing || seen.has('wing' + u.needWing), id + ': l\'ampliamento viene prima di ' + o.bought);
     seen.add(o.bought); bought++;
   });
   ok(bought === ps.length, id + ': ogni sblocco ha il suo obiettivo (' + bought + '/' + ps.length + ')');
   ok(!!R.RES[l.season] && l.objectives.every(o => o.text.indexOf('undefined') < 0), id + ': testi della stagione completi');
 });
+R.order.forEach(id => ok(R.levels[id].unlocks.filter(u => u.effect === 'room').every(u => u.needWing === Math.floor(u.room / 2)), id + ': ogni fila di stanze ha il suo ampliamento'));
 ok(new Set(Object.keys(R.RES).map(k => R.RES[k].kind)).size === 4, 'ogni stagione raccoglie una cosa diversa');
 ok(R.parts.layout('mulini').mensa.x0 > 0 && R.parts.layout('valle').mensa.x0 < 0, 'ai Mulini la pianta è specchiata');
 ok(new Set(R.order.map(id => R.levels[id].place.host.name)).size === 12, 'ogni posto ha il suo ospite speciale');

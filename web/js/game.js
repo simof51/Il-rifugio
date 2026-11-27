@@ -75,7 +75,7 @@
       for (let i = 0; i <= len; i += 1.4) roadPts.push([x0 + (x1 - x0) * i / len, z0 + (z1 - z0) * i / len]);
     }
     const ROAD_W = 2;
-    road(-34, L.roadZ, 34, L.roadZ, ROAD_W); road(0, F.z1, 0, L.roadZ, 2.4); road(0, L.roadZ, 0, -29, 2.4); road(0, 5.5, 0, 10, 2.4);
+    road(-34, L.roadZ, 34, L.roadZ, ROAD_W); road(0, F.z1, 0, L.roadZ, 2.4); road(0, L.roadZ, 0, -29, 2.4);
     const nearRoad = (x, z, r) => roadPts.some(p => Math.hypot(p[0] - x, p[1] - z) < r);
     const walkP0 = []; for (let x = -16; x <= 16; x += 0.5) walkP0.push({ x, z: L.roadZ });
 
@@ -135,7 +135,8 @@
 
     // --- edificio -------------------------------------------------------------
     const BLD = R.parts.building({ T, scene, B, mats, box, cyl, ball, PL, L, cols, RES });
-    const { rooms, openRoom, mensa, openMensa, cinema, openCinema } = BLD;
+    const { rooms, openRoom, mensa, openMensa, cinema, openCinema, wing } = BLD;
+    const expand = n => { BLD.expand(n); NAV.invalidate(); }; // il muro in fondo si sposta: i percorsi si ricalcolano
     R.parts.scenery({ T, scene, B, mats, box, cyl, ball, PL, P, trees: [], cols, ROAD_W, SEA_Z, CANAL, FARMS, CHAPEL, SEASON_ID, nearPad, nearRoad, inLake, inLM });
 
     // --- banchi della mensa -------------------------------------------------
@@ -308,6 +309,7 @@
     });
     function padShown(pd) {
       if (pd.needMensa && !mensa.open) return false;
+      if (pd.needWing && wing.rows <= pd.needWing) return false; // serve prima l'ampliamento
       if (pd.effect === 'waiter' && !state.isBought('cocoa')) return false;
       const need = pd.requires && pd.requires.purchases;
       return !need || Object.keys(S.bought).length >= need;
@@ -317,6 +319,7 @@
     function refreshTools() { const t = hasEffect('saw') ? 'saw' : 'axe'; B.setTool(player, t); STAFF.tools(t); }
     function applyEffect(pd) {
       if (pd.effect === 'room') openRoom(rooms[pd.room]);
+      else if (pd.effect === 'expand') expand(pd.wing);
       else if (pd.effect === 'mensa') openMensa();
       else if (pd.effect === 'cinema') openCinema();
       else if (pd.effect === 'cocoa') openCocoa();
@@ -332,6 +335,7 @@
     function buyPad(pd) {
       if (!pd || state.isBought(pd.id)) return;
       if (pd.needMensa) buyPad(pads.find(p => p.id === 'mensa'));
+      if (pd.needWing) buyPad(pads.find(p => p.id === 'wing' + pd.needWing));
       if (pd.effect === 'waiter') buyPad(pads.find(p => p.id === 'cocoa'));
       S.paid[pd.id] = pd.cost; S.bought[pd.id] = true; applyEffect(pd);
     }
@@ -343,6 +347,8 @@
     }
 
     openRoom(rooms[0]);
+    // Partite iniziate prima degli ampliamenti: le stanze già comprate hanno anche il loro ampliamento.
+    for (let k = 2; k < 8; k++) if (S.bought['room' + k]) for (let w = 1; w <= Math.floor(k / 2); w++) S.bought['wing' + w] = true;
     // Partite iniziate prima della mensa: se i banchi erano già comprati, la mensa è data.
     if (['cocoa', 'cocoa2', 'snack', 'waiter', 'waiter2', 'waiter3'].some(id => S.bought[id])) S.bought.mensa = true;
     pads.forEach(pd => { if (state.isBought(pd.id)) applyEffect(pd); });
@@ -663,7 +669,7 @@
       hud.updateFloats(dt);
     }
 
-    const MINIMAP = R.parts.minimap({ L, player, rooms, guests, boiler, mensa, cinema, recep: () => ({ x: RECEP.x, z: RECEP.z, n: recep.n }),
+    const MINIMAP = R.parts.minimap({ L, wing, player, rooms, guests, boiler, mensa, cinema, recep: () => ({ x: RECEP.x, z: RECEP.z, n: recep.n }),
       stands: () => (cocoa.open ? [L.stands.cocoa] : []).concat(ACT.snack.open ? [L.stands.snack] : []),
       pads: () => pads.filter(pd => !state.isBought(pd.id) && padShown(pd) && S.coins >= pd.cost - state.paid(pd.id)).map(pd => [pd.x, pd.z]),
       spots: () => ACT.spots().concat(CITY.spots()) });
@@ -702,7 +708,7 @@
       pause(on) { paused = !!on; if (on) { endJoy(); save(); } },
       save,
       debug: {
-        player, S, carry, trees: nodes, rooms, helpers: STAFF.helpers, waiters: STAFF.waiters, guests, cleaner: STAFF.cleaner, cocoa, pads, padShown, openRoom, openCocoa, boiler, mensa, cinema, L, machine: RES_M.machine,
+        player, S, carry, trees: nodes, rooms, helpers: STAFF.helpers, waiters: STAFF.waiters, guests, cleaner: STAFF.cleaner, cocoa, pads, padShown, wing, openRoom, openCocoa, boiler, mensa, cinema, L, machine: RES_M.machine,
         spawnHelper: STAFF.spawnHelper, spawnWaiter: STAFF.spawnWaiter, spawnGuest: GU.spawn,
         tp(x, z) { player.position.x = x; player.position.z = z; },
         coins(n) { S.coins += n; },

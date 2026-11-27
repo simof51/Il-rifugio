@@ -70,3 +70,9 @@ Il gioco è destinato al Google Play Store, con pubblicità e un eventuale shop 
 
 - Dall'alto: campo recintato, strada, reception, locale caldaia/cucina e sgabuzzino, corridoio con le stanze, mensa e cinema, giardino.
 - Campo (o bosco): un solo appezzamento 30 x 15 con angoli tondi (raggio 3,5), staccionata e cancello a sud largo 4,8; il macchinario scarica uscendo dal cancello.
+
+## Ampliamenti (v0.34)
+
+- Dall'alto: campo, strada, reception, caldaia/cucina e sgabuzzino, mensa e cinema, file di stanze.
+- Si parte con la stanza 1 (sinistra). Ogni fila ha due stanze; il muro in fondo chiude corridoio e fila.
+- Ampliamento 1/2/3: 90, 220, 380 monete (dopo 3, 8, 14 acquisti); ciascuno aggiunge una fila. 54 obiettivi, 32 sblocchi.

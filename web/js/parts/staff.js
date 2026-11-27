@@ -64,7 +64,7 @@
 
     function spawnWaiter(i) {
       if (waiters[i]) return;
-      const home = [L.mensa.cx + (i - 1) * 1.6, 4.4], g = B.person(0x17171d, 0x17171d, false, 'waiter'); g.position.set(home[0], 0, home[1]);
+      const home = [L.mensa.cx + (i - 1) * 1.6, L.mensa.z1 - 0.6], g = B.person(0x17171d, 0x17171d, false, 'waiter'); g.position.set(home[0], 0, home[1]);
       waiters[i] = { g, cup: 0, item: false, state: 'idle', cd: 0, target: null, home };
     }
     const waiting = gu => gu.state === 'table' && !gu.served;

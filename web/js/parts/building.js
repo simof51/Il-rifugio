@@ -43,8 +43,9 @@
     const slab = (w, h, d, m, x, y, z, p) => { const o = new T.Mesh(B.cached(`sl${w.toFixed(2)}_${h.toFixed(2)}_${d.toFixed(2)}`, () => new T.BoxGeometry(w, h, d)), m); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; p.add(o); return o; };
 
     // --- corridoio centrale e ingresso ------------------------------------
-    floor(-L.HW, L.HW, -23, 6, corrM, null, 0.055);
-    for (let z = -22; z < 6; z += 2) floor(-0.25, 0.25, z, z + 0.9, trimM, null, 0.07);
+    // il tratto tra mensa e cinema c'è sempre; quello fra le stanze si allunga di una fila a ogni ampliamento
+    floor(-L.HW, L.HW, -23, L.Z0, corrM, null, 0.055);
+    for (let z = -22; z < L.Z0 - 0.5; z += 2) floor(-0.25, 0.25, z, z + 0.9, trimM, null, 0.07);
     floor(-4.5, 4.5, L.boiler.z0, L.boiler.z1, B.tint(0x9aa1ab), null, 0.05);
     [-L.HW, L.HW].forEach(x => cyl(0.09, 0.1, 2.2, trimM, x, 1.1, L.boiler.z0, null, 8)); box(L.HW * 2 + 0.4, 0.3, 0.2, trimM, 0, 2.25, L.boiler.z0, null, 0.04); // arco d'ingresso, verso strada e reception
 
@@ -87,6 +88,7 @@
     // --- stanze ------------------------------------------------------------
     const rooms = L.rooms.map(def => {
       const g = group(false), ghost = G.box(L.ROOM_W - 0.2, 0.05, L.ROOM_D - 0.2, mats.ghost, def.cx, 0.03, (def.z0 + def.z1) / 2, null, 0.02); ghost.castShadow = false;
+      ghost.visible = def.row === 0;
       return { i: def.k, def, cx: def.cx, g, ghost, open: false, soap: 4, paper: 4, beds: def.beds.map(b => ({ x: b.x, z: b.z, guest: null })) };
     });
     function openRoom(r) {
@@ -118,9 +120,32 @@
       B.bake(g);
     }
 
+    // --- ampliamenti: corridoio e muro in fondo -------------------------------
+    // Le due stanze dell'ultima fila condividono il muro in basso, che passa anche davanti al corridoio e lo chiude.
+    const segments = [];
+    for (let k = 0; k < L.ROWS; k++) {
+      const g = group(k === 0), z0 = L.Z0 + k * L.ROOM_D;
+      floor(-L.HW, L.HW, z0, z0 + L.ROOM_D, corrM, g, 0.055);
+      for (let z = z0 + 0.5; z < z0 + L.ROOM_D - 0.8; z += 2) floor(-0.25, 0.25, z, z + 0.9, trimM, g, 0.07);
+      B.bake(g); segments.push(g);
+    }
+    const endG = group(true), half = L.HW + L.ROOM_W, endCol = [-half, half, 0, 0];
+    slab(half * 2 + 0.3, LOW + 0.03, TH + 0.06, wallM, 0, LOW / 2 + 0.06, 0, endG);
+    slab(half * 2 + 0.36, 0.09, TH + 0.12, trimM, 0, LOW + 0.11, 0, endG);
+    cols.push(endCol);
+    const wing = { rows: 1, end: 0 };
+    function expand(n) {
+      wing.rows = Math.max(wing.rows, Math.min(L.ROWS, n + 1));
+      wing.end = L.Z0 + wing.rows * L.ROOM_D;
+      endG.position.z = wing.end; endCol[2] = wing.end - TH / 2; endCol[3] = wing.end + TH / 2;
+      segments.forEach((g, k) => { g.visible = k < wing.rows; });
+      rooms.forEach(r => { r.ghost.visible = !r.open && r.def.row < wing.rows; });
+    }
+    expand(0);
+
     // --- mensa --------------------------------------------------------------
     const M = L.mensa, mensa = { g: group(false), ghost: null, open: false };
-    mensa.ghost = G.box(M.x1 - M.x0 - 0.2, 0.05, 7.8, mats.ghost, (M.x0 + M.x1) / 2, 0.03, 1, null, 0.02); mensa.ghost.castShadow = false;
+    mensa.ghost = G.box(M.x1 - M.x0 - 0.2, 0.05, 7.8, mats.ghost, (M.x0 + M.x1) / 2, 0.03, (M.z0 + M.z1) / 2, null, 0.02); mensa.ghost.castShadow = false;
     function openMensa() {
       if (mensa.open) return;
       mensa.open = true; mensa.g.visible = true; mensa.ghost.visible = false;
@@ -143,7 +168,7 @@
 
     // --- sala cinema ---------------------------------------------------------
     const CI = L.cinema, cinema = { g: group(false), ghost: null, open: false, screen: null };
-    cinema.ghost = G.box(CI.x1 - CI.x0 - 0.2, 0.05, 7.8, mats.ghost, (CI.x0 + CI.x1) / 2, 0.03, 1, null, 0.02); cinema.ghost.castShadow = false;
+    cinema.ghost = G.box(CI.x1 - CI.x0 - 0.2, 0.05, 7.8, mats.ghost, (CI.x0 + CI.x1) / 2, 0.03, (CI.z0 + CI.z1) / 2, null, 0.02); cinema.ghost.castShadow = false;
     function openCinema() {
       if (cinema.open) return;
       cinema.open = true; cinema.g.visible = true; cinema.ghost.visible = false;
@@ -161,6 +186,6 @@
     scene.children.slice().forEach(o => { if (o.isMesh && o.userData.build) fixed.add(o); });
     B.bake(fixed);
 
-    return { rooms, openRoom, mensa, openMensa, cinema, openCinema, flame, fireY };
+    return { rooms, openRoom, expand, wing, mensa, openMensa, cinema, openCinema, flame, fireY };
   };
 })(window.Rifugio);

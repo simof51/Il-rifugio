@@ -9,6 +9,15 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.34.0 · 2026-11-27 · Ampliamenti del corridoio
+
+- Si parte con **una stanza a sinistra**; la seconda si compra.
+- Il corridoio è **chiuso in fondo** da un muro comune alle due stanze dell'ultima fila.
+- Per i posti di altre due stanze serve l'**ampliamento** (riquadro davanti al muro, 90 / 220 / 380 monete): il muro scende di una fila.
+- **Mensa e cinema** passano in alto, fra caldaia/cucina e stanze, così sono sempre raggiungibili. I riquadri dei camerieri stanno accanto alla mensa.
+- 54 obiettivi e 32 sblocchi. Tolto il vialetto in fondo che finiva contro il muro.
+
+**Per tornare indietro:** `git checkout 5235e92 -- web tests Changelog rifugio-design.md`
 ## v0.33.0 · 2026-11-27 · Strada e reception in alto, campo unico recintato
 
 - La **strada** e la **reception** stanno tra il campo (o bosco) e le stanze; gli ospiti entrano dall'alto del corridoio.

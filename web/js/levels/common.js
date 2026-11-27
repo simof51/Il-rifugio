@@ -1,4 +1,4 @@
-// Pezzi in comune delle stagioni: elenco degli obiettivi (51) e degli sblocchi (29), con le parole che cambiano da stagione a stagione
+// Pezzi in comune delle stagioni: elenco degli obiettivi (54) e degli sblocchi (32), con le parole che cambiano da stagione a stagione
 // (e da città a città: cibi e bevande). Tutte le stagioni li usano: ogni stagione definisce il suo vocabolario "v".
 // Vocabolario v: wood, treeArt/trees (albero), guest/guests, guestEmoji, firstGuest, drinks (bevande al plurale), drink (singolare), stand, stand2,
 // standTitle, stand2Title, fire/fires, room (femminile), roomTitle, roomShort, helper (articolo + nome), helperTitle, bootsName, bootsTitle,
@@ -38,6 +38,7 @@
       S('collected', 100, '🪙 Raccogli 100 monete', 'pile'),
       B('axe', '🪓 Compra l\'attrezzo affilato: raccogli più in fretta'),
       S('cocoa', 10, `${v.foodEmoji} Servi 10 ${v.drinks}`, 'cocoa'),
+      B('wing1', '🏗️ Compra l\'ampliamento: posto per due stanze nuove'),
       room(3),
       S('restock', 14, '🧼 Porta 14 scorte ai bagni', 'bath'),
       room(4),
@@ -54,6 +55,7 @@
       B('sign', `🪧 ${v.signText}`),
       S('guests', 26, `🧑‍🤝‍🧑 Accogli 26 ${v.guests}`, ''),
       B('bag2', '🎒 Compra lo zaino gigante'),
+      B('wing2', '🏗️ Secondo ampliamento del corridoio'),
       room(5),
       S('collected', 450, '🪙 Raccogli 450 monete', 'pile'),
       B('cocoa2', `${v.foodEmoji} Compra ${v.stand2}`),
@@ -65,6 +67,7 @@
       B('waiter2', '🤵 Assumi il secondo cameriere'),
       B('helper3', '🧔 Assumi il terzo aiutante'),
       B('mascot', `${v.mascotEmoji} ${v.mascotText}`),
+      B('wing3', '🏗️ Ultimo ampliamento del corridoio'),
       room(7),
       B('waiter3', '🤵 Assumi il terzo cameriere'),
       room(8),
@@ -78,30 +81,32 @@
   // Compaiono a gradini: requires.purchases = quanti miglioramenti hai già comprato. c = moltiplicatore dei costi.
   R.makeUnlocks = function (v, c) {
     const k = x => Math.round(x * (c || 1)), P = n => ({ purchases: n }), r = R.RES[v.season] || R.RES.inverno;
-    const room = (n, cost, need) => ({ id: 'room' + n, title: `Stanza ${n + 1}`, cost: k(cost), pos: [(n % 2 ? 1 : -1) * 4.7, -23 + Math.floor(n / 2) * 5 + 2.5], requires: P(need), effect: 'room', room: n });
+    const room = (n, cost, need) => ({ id: 'room' + n, title: `Stanza ${n + 1}`, cost: k(cost), pos: [(n % 2 ? 1 : -1) * 4.7, -15 + Math.floor(n / 2) * 5 + 2.5], requires: P(need), effect: 'room', room: n, needWing: Math.floor(n / 2) });
+    // l'ampliamento sta in fondo al corridoio, davanti al muro che lo chiude: apre i riquadri delle due stanze della fila sotto
+    const ext = (n, cost, need) => ({ id: 'wing' + n, title: `Ampliamento ${n}`, cost: k(cost), pos: [0, -15 + n * 5 - 1.3], requires: P(need), effect: 'expand', wing: n, needWing: n - 1 });
     const help = (n, cost, need) => ({ id: n ? 'helper' + (n + 1) : 'helper', title: `${r.helper} ${n + 1}`, cost: k(cost), pos: [-12 + n * 2.4, -30.4], requires: P(need), effect: 'helper', room: n });
-    const wait = (n, cost, need) => ({ id: n ? 'waiter' + (n + 1) : 'waiter', title: `Cameriere ${n + 1}`, cost: k(cost), pos: [-10.8 + n * 2.3, 6.4], requires: P(need), effect: 'waiter', room: n, needMensa: true });
+    const wait = (n, cost, need) => ({ id: n ? 'waiter' + (n + 1) : 'waiter', title: `Cameriere ${n + 1}`, cost: k(cost), pos: [-14.2, -20.8 + n * 2.3], requires: P(need), effect: 'waiter', room: n, needMensa: true });
     return [
-      room(1, 42, 0),
+      room(1, 42, 0), ext(1, 90, 3), ext(2, 220, 8), ext(3, 380, 14),
       { id: 'bag', title: 'Zaino grande', cost: k(52), pos: [-12, -33.8], requires: P(0), effect: 'bag' },
       { id: 'boots', title: v.bootsTitle, cost: k(48), pos: [-7.2, -33.8], requires: P(0), effect: 'boots' },
-      { id: 'mensa', title: 'Sala mensa', cost: k(70), pos: [-6.8, 2.4], requires: P(1), effect: 'mensa' },
-      { id: 'cocoa', title: v.standTitle, cost: k(62), pos: [-9.6, -1.6], requires: P(2), effect: 'cocoa', needMensa: true },
+      { id: 'mensa', title: 'Sala mensa', cost: k(70), pos: [-6.8, -17.6], requires: P(1), effect: 'mensa' },
+      { id: 'cocoa', title: v.standTitle, cost: k(62), pos: [-9.6, -21.6], requires: P(2), effect: 'cocoa', needMensa: true },
       help(0, 155, 3),
       { id: 'axe', title: 'Attrezzo affilato', cost: k(72), pos: [8.6, -30.4], requires: P(3), effect: 'axe' },
       room(2, 110, 3), room(3, 170, 5),
       { id: 'cleaner', title: 'Addetto ai bagni', cost: k(180), pos: [10.6, -25], requires: P(6), effect: 'cleaner' },
       { id: 'insul', title: 'Impianto migliore', cost: k(92), pos: [3, -27], requires: P(4), effect: 'insul' },
-      { id: 'snack', title: 'Banco dolci', cost: k(140), pos: [-4.5, -1.6], requires: P(5), effect: 'snack', needMensa: true },
+      { id: 'snack', title: 'Banco dolci', cost: k(140), pos: [-4.5, -21.6], requires: P(5), effect: 'snack', needMensa: true },
       { id: 'lamps', title: 'Lanterne', cost: k(62), pos: [-2.6, -33.8], requires: P(5), effect: 'lamps' },
       { id: 'sign', title: v.signTitle, cost: k(112), pos: [-4.9, -33.8], requires: P(6), effect: 'sign' },
       { id: 'saw', title: 'Motosega', cost: k(225), pos: [11, -30.4], requires: P(6), effect: 'saw' },
       { id: 'bag2', title: 'Zaino gigante', cost: k(150), pos: [-9.6, -33.8], requires: P(6), effect: 'bag2' },
       { id: 'harvester', title: r.machine, cost: k(450), pos: [13.4, -30.4], requires: P(8), effect: 'harvester' },
-      { id: 'cocoa2', title: v.stand2Title, cost: k(102), pos: [-7.1, -1.6], requires: P(7), effect: 'cocoa2', needMensa: true },
+      { id: 'cocoa2', title: v.stand2Title, cost: k(102), pos: [-7.1, -21.6], requires: P(7), effect: 'cocoa2', needMensa: true },
       wait(0, 120, 7),
       room(4, 260, 8),
-      { id: 'cinema', title: 'Sala cinema', cost: k(350), pos: [6.1, 2.4], requires: P(10), effect: 'cinema' },
+      { id: 'cinema', title: 'Sala cinema', cost: k(350), pos: [6.1, -17.6], requires: P(10), effect: 'cinema' },
       help(1, 205, 7),
       { id: 'mascot', title: v.mascotName, cost: k(105), pos: [12.4, 8.6], requires: P(8), effect: 'mascot' },
       room(5, 360, 11),

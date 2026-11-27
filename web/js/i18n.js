@@ -373,6 +373,9 @@
     ["💡 Lampada", "💡 Lamp", "💡 Lámpara", "💡 Lampe", "💡 Lampe"],
     ["📚 Libreria", "📚 Bookshelf", "📚 Estantería", "📚 Bibliothèque", "📚 Bücherregal"],
     ["🧸 Orsetto", "🧸 Teddy bear", "🧸 Osito", "🧸 Nounours", "🧸 Teddybär"],
+    ["🏗️ Compra l'ampliamento: posto per due stanze nuove", "🏗️ Buy the extension: room for two new rooms", "🏗️ Compra la ampliación: sitio para dos habitaciones", "🏗️ Achète l'extension : place pour deux chambres", "🏗️ Kauf den Anbau: Platz für zwei Zimmer"],
+    ["🏗️ Secondo ampliamento del corridoio", "🏗️ Second corridor extension", "🏗️ Segunda ampliación del pasillo", "🏗️ Deuxième extension du couloir", "🏗️ Zweiter Anbau"],
+    ["🏗️ Ultimo ampliamento del corridoio", "🏗️ Last corridor extension", "🏗️ Última ampliación del pasillo", "🏗️ Dernière extension du couloir", "🏗️ Letzter Anbau"],
     ["Addetto ai bagni", "Bathroom attendant", "Encargado de baños", "Agent d'entretien", "Bad-Pfleger"],
     ["🧹 Assumi l'addetto che rifornisce i bagni", "🧹 Hire the bathroom attendant", "🧹 Contrata al encargado de los baños", "🧹 Embauche l'agent des salles de bain", "🧹 Stelle den Bad-Pfleger ein"],
     ["Sala mensa", "Dining hall", "Comedor", "Réfectoire", "Speisesaal"],
@@ -390,6 +393,7 @@
   ];
   // Frasi con numeri: [espressione, [en, es, fr, de]] con $1, $2…
   const RX = [
+    [/^Ampliamento (\d+)$/, ['Extension $1', 'Ampliación $1', 'Extension $1', 'Anbau $1']],
     [/^🚜 Scaricati (\d+) pezzi$/, ['🚜 Unloaded $1 pieces', '🚜 Descargadas $1 piezas', '🚜 $1 pièces déchargées', '🚜 $1 Stück abgeladen']],
     [/^(\S+) Sali nel campo: segui la freccia gialla$/, ['$1 Go up to the field: follow the yellow arrow', '$1 Sube al campo: sigue la flecha amarilla', '$1 Monte au champ : suis la flèche jaune', '$1 Geh ins Feld: Folge dem gelben Pfeil']],
     [/^(\S+) Fermati vicino: .+ si raccoglie da sé$/, ['$1 Stop nearby: it gets picked by itself', '$1 Párate cerca: se recoge solo', "$1 Arrête-toi à côté : ça se ramasse tout seul", '$1 Bleib daneben stehen: Es wird von selbst geerntet']],
