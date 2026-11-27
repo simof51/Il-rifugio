@@ -7,9 +7,9 @@
   // Cosa si raccoglie in ogni stagione, dove si porta e con quale macchinario.
   R.RES = {
     inverno: { kind: 'wood', e: '🪵', name: 'legna', the: 'la legna', many: 'abeti', verb: 'Taglia', fire: 'caldaia', theFire: 'la caldaia', toFire: 'alla caldaia', machine: 'Taglialegna', theMachine: 'il taglialegna', cols: [0xb07848, 0xe6b27a, 0x7a4a30], carry: 'pezzi di legna', helper: 'Boscaiolo' },
-    primavera: { kind: 'veg', e: '🥬', name: 'ortaggi', the: 'gli ortaggi', many: 'piante', verb: 'Raccogli', fire: 'cucina', theFire: 'la cucina', toFire: 'alla cucina', machine: 'Raccoglitrice', theMachine: 'la raccoglitrice', cols: [0x7ac943, 0x57c455, 0xff7a3d], carry: 'ortaggi', helper: 'Ortolano' },
-    estate: { kind: 'grain', e: '🌾', name: 'grano', the: 'il grano', many: 'covoni', verb: 'Raccogli', fire: 'forno', theFire: 'il forno', toFire: 'al forno', machine: 'Mietitrebbia', theMachine: 'la mietitrebbia', cols: [0xffd23a, 0xd9a93a, 0xfff2a8], carry: 'fasci di grano', helper: 'Contadino' },
-    autunno: { kind: 'pumpkin', e: '🎃', name: 'zucche', the: 'le zucche', many: 'piante di zucca', verb: 'Raccogli', fire: 'calderone', theFire: 'il calderone', toFire: 'al calderone', machine: 'Raccogli-zucche', theMachine: 'la raccogli-zucche', cols: [0xff8a1f, 0xffb347, 0x4a7a2a], carry: 'zucche', helper: 'Contadino' }
+    primavera: { kind: 'veg', e: '🥬', name: 'ortaggi', the: 'gli ortaggi', many: 'piante', verb: 'Raccogli', fire: 'dispensa', theFire: 'la dispensa', toFire: 'alla dispensa della mensa', machine: 'Raccoglitrice', theMachine: 'la raccoglitrice', cols: [0x7ac943, 0x57c455, 0xff7a3d], carry: 'ortaggi', helper: 'Ortolano' },
+    estate: { kind: 'grain', e: '🌾', name: 'grano', the: 'il grano', many: 'covoni', verb: 'Raccogli', fire: 'dispensa', theFire: 'la dispensa', toFire: 'alla dispensa della mensa', machine: 'Mietitrebbia', theMachine: 'la mietitrebbia', cols: [0xffd23a, 0xd9a93a, 0xfff2a8], carry: 'fasci di grano', helper: 'Contadino' },
+    autunno: { kind: 'pumpkin', e: '🎃', name: 'zucche', the: 'le zucche', many: 'piante di zucca', verb: 'Raccogli', fire: 'dispensa', theFire: 'la dispensa', toFire: 'alla dispensa della mensa', machine: 'Raccogli-zucche', theMachine: 'la raccogli-zucche', cols: [0xff8a1f, 0xffb347, 0x4a7a2a], carry: 'zucche', helper: 'Contadino' }
   };
 
   R.makeObjectives = function (v, rewardBase) {
@@ -73,8 +73,10 @@
       room(8),
       S('stars', 5, '⭐ Raggiungi 5 stelle di reputazione', '', 1)
     ];
-    o.forEach((x, i) => { x.reward = rewardBase + 5 * Math.floor(i / 13); });
-    return o;
+    // fuori dall'inverno la mensa (con la dispensa) è aperta da subito: niente obiettivo per comprarla
+    const list = r.kind === 'wood' ? o : o.filter(x => x.bought !== 'mensa');
+    list.forEach((x, i) => { x.reward = rewardBase + 5 * Math.floor(i / 13); });
+    return list;
   };
 
   // Sblocchi: stessi id in tutte le stagioni; le posizioni sono quelle della pianta normale (places.js le specchia dove serve).
@@ -86,23 +88,23 @@
     const ext = (n, cost, need) => ({ id: 'wing' + n, title: `Ampliamento ${n}`, cost: k(cost), pos: [0, -15 + n * 5 - 1.3], requires: P(need), effect: 'expand', wing: n, needWing: n - 1 });
     const help = (n, cost, need) => ({ id: n ? 'helper' + (n + 1) : 'helper', title: `${r.helper} ${n + 1}`, cost: k(cost), pos: [-12 + n * 2.4, -30.4], requires: P(need), effect: 'helper', room: n });
     const wait = (n, cost, need) => ({ id: n ? 'waiter' + (n + 1) : 'waiter', title: `Cameriere ${n + 1}`, cost: k(cost), pos: [-14.2, -20.8 + n * 2.3], requires: P(need), effect: 'waiter', room: n, needMensa: true });
-    return [
+    const all = [
       room(1, 42, 0), ext(1, 90, 3), ext(2, 220, 8), ext(3, 380, 14),
       { id: 'bag', title: 'Zaino grande', cost: k(52), pos: [-12, -33.8], requires: P(0), effect: 'bag' },
       { id: 'boots', title: v.bootsTitle, cost: k(48), pos: [-7.2, -33.8], requires: P(0), effect: 'boots' },
       { id: 'mensa', title: 'Sala mensa', cost: k(70), pos: [-6.8, -17.6], requires: P(1), effect: 'mensa' },
       { id: 'cocoa', title: v.standTitle, cost: k(62), pos: [-9.6, -21.6], requires: P(2), effect: 'cocoa', needMensa: true },
       help(0, 155, 3),
-      { id: 'axe', title: 'Attrezzo affilato', cost: k(72), pos: [8.6, -30.4], requires: P(3), effect: 'axe' },
+      { id: 'axe', title: 'Attrezzo affilato', cost: k(72), pos: [8.6, -30.4], requires: P(0), effect: 'axe', tool: true }, // attrezzi: un solo riquadro, uno dopo l'altro
       room(2, 110, 3), room(3, 170, 5),
       { id: 'cleaner', title: 'Addetto ai bagni', cost: k(180), pos: [10.6, -25], requires: P(6), effect: 'cleaner' },
       { id: 'insul', title: 'Impianto migliore', cost: k(92), pos: [3, -27], requires: P(4), effect: 'insul' },
       { id: 'snack', title: 'Banco dolci', cost: k(140), pos: [-4.5, -21.6], requires: P(5), effect: 'snack', needMensa: true },
       { id: 'lamps', title: 'Lanterne', cost: k(62), pos: [-2.6, -33.8], requires: P(5), effect: 'lamps' },
       { id: 'sign', title: v.signTitle, cost: k(112), pos: [-4.9, -33.8], requires: P(6), effect: 'sign' },
-      { id: 'saw', title: 'Motosega', cost: k(225), pos: [11, -30.4], requires: P(6), effect: 'saw' },
+      { id: 'saw', title: 'Motosega', cost: k(225), pos: [8.6, -30.4], requires: P(0), effect: 'saw', tool: true, needTool: 'axe' },
       { id: 'bag2', title: 'Zaino gigante', cost: k(150), pos: [-9.6, -33.8], requires: P(6), effect: 'bag2' },
-      { id: 'harvester', title: r.machine, cost: k(450), pos: [13.4, -30.4], requires: P(8), effect: 'harvester' },
+      { id: 'harvester', title: r.machine, cost: k(450), pos: [8.6, -30.4], requires: P(0), effect: 'harvester', tool: true, needTool: 'saw' },
       { id: 'cocoa2', title: v.stand2Title, cost: k(102), pos: [-7.1, -21.6], requires: P(7), effect: 'cocoa2', needMensa: true },
       wait(0, 120, 7),
       room(4, 260, 8),
@@ -116,6 +118,7 @@
       wait(2, 200, 11),
       room(7, 560, 16)
     ];
+    return r.kind === 'wood' ? all : all.filter(u => u.id !== 'mensa');
   };
   // Numeri di gioco di base (quelli dell'inverno); ogni stagione ne cambia qualcuno.
   R.baseTuning = function (over) {

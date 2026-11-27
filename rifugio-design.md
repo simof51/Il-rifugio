@@ -76,3 +76,8 @@ Il gioco è destinato al Google Play Store, con pubblicità e un eventuale shop 
 - Dall'alto: campo, strada, reception, caldaia/cucina e sgabuzzino, mensa e cinema, file di stanze.
 - Si parte con la stanza 1 (sinistra). Ogni fila ha due stanze; il muro in fondo chiude corridoio e fila.
 - Ampliamento 1/2/3: 90, 220, 380 monete (dopo 3, 8, 14 acquisti); ciascuno aggiunge una fila. 54 obiettivi, 32 sblocchi.
+
+## Attrezzi e dispensa (v0.35)
+
+- Attrezzo affilato, motosega e macchinario: stesso riquadro, senza requisito di acquisti, in sequenza.
+- Inverno: caldaia nel locale in cima. Altre stagioni: dispensa in mensa (aperta da subito, niente sblocco mensa); ogni porzione di banco o dolce consuma 0,5 di scorta.

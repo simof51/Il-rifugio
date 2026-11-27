@@ -10,6 +10,8 @@
     const CITYID = level.cityId || 'valle', SEASON_ID = level.season;
     const RES = R.RES[SEASON_ID] || R.RES.inverno;
     const L = R.parts.layout(CITYID);
+    const WINTER = RES.kind === 'wood'; // d'inverno c'è la caldaia; nelle altre stagioni il raccolto va alla dispensa della mensa
+    if (!WINTER) L.boiler.feed = L.pantry.feed.slice();
     const EX = R.extras; EX.bind(hud);
     const MT = R.meta; MT.bind(hud);
     const seasonNote = EX.applySeason(P, level);
@@ -29,15 +31,15 @@
     document.getElementById('game').appendChild(renderer.domElement);
     const scene = new T.Scene();
     scene.background = new T.Color(TH.sky);
-    scene.fog = new T.Fog(TH.sky, TH.fog[0], TH.fog[1]);
-    const cam = new T.PerspectiveCamera(45, 1, 4, 130);
+    scene.fog = new T.Fog(TH.sky, TH.fog[0] + 18, TH.fog[1] + 30); // nebbia più lontana: immagine più nitida
+    const cam = new T.PerspectiveCamera(45, 1, 4, 160);
     hud.setCamera(cam);
     const hemi = new T.HemisphereLight(TH.hemi[0], TH.hemi[1], TH.hemi[2]); scene.add(hemi);
     let env = null, fauna = null;
     const sun = new T.DirectionalLight(TH.sun[0], TH.sun[1]);
     sun.castShadow = Q.shadows !== 'off'; sun.shadow.mapSize.set(Q.map || 512, Q.map || 512);
     sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.03;
-    const sc = sun.shadow.camera; sc.left = -20; sc.right = 20; sc.top = 20; sc.bottom = -20; sc.near = 1; sc.far = 70;
+    const sc = sun.shadow.camera; sc.left = -17; sc.right = 17; sc.top = 17; sc.bottom = -17; sc.near = 1; sc.far = 70;
     scene.add(sun); scene.add(sun.target);
 
     const B = R.createBuilder(scene, Object.assign({}, TH, { resource: RES.kind })), mats = B.mats, box = B.box, cyl = B.cyl, ball = B.ball, add = B.add;
@@ -110,7 +112,7 @@
       const forest = [], blob = new T.SphereGeometry(1, 7, 5), trunk = new T.CylinderGeometry(0.15, 0.25, 1.4, 5).translate(0, 0.7, 0), cone = new T.ConeGeometry(1, 1, 8);
       const leafs = TH.leafCols || [0x57c455, 0x34a448];
       for (let i = 0, n = 0; i < 400 && n < Math.round(70 * Q.density); i++) {
-        const x = bx0 - 1 + rnd() * (bx1 - bx0 + 2), z = bz0 + rnd() * (bz1 - bz0);
+        const x = (rnd() < 0.5 ? -1 : 1) * (bx1 + 0.3 + rnd() * 3), z = bz0 + rnd() * (bz1 - bz0); // solo oltre il bordo percorribile
         if (nearPad(x, z, 2.4) || nearRoad(x, z, 2.4) || inLake(x, z, 1.6) || inLM(x, z, 1.5)) continue;
         const s = 0.8 + rnd() * 0.5; n++;
         forest.push({ geo: trunk, x, y: 0, z, s, color: 0x7a4a30 });
@@ -130,7 +132,7 @@
         const dx = p.x - qx, dz = p.z - qz, d = Math.hypot(dx, dz);
         if (d < 0.3) { if (d > 1e-4) { p.x = qx + dx / d * 0.3; p.z = qz + dz / d * 0.3; } else p.z = c[3] + 0.3; }
       }
-      p.x = Math.max(P.world_min[0], Math.min(P.world_max[0], p.x)); p.z = Math.max(P.world_min[1], Math.min(P.world_max[1], p.z));
+      p.x = Math.max(-L.walk.x, Math.min(L.walk.x, p.x)); p.z = Math.max(L.walk.z0, Math.min(L.walk.z1, p.z));
     }
 
     // --- edificio -------------------------------------------------------------
@@ -213,13 +215,15 @@
     }
 
     // --- caldaia / cucina: un solo serbatoio per tutte le stanze -------------
-    const boiler = { fuel: Math.min(P.fuel_max, S.boiler || 0), pend: 0, flare: 0, el: hud.label('fuel', '<i></i>'), fire: new T.Vector3(L.boiler.fire[0], BLD.fireY, L.boiler.fire[1] + 0.8) };
+    const boiler = { fuel: Math.min(P.fuel_max, S.boiler || 0), pend: 0, flare: 0, el: hud.label('fuel', '<i></i>'), fire: WINTER ? new T.Vector3(L.boiler.fire[0], BLD.fireY, L.boiler.fire[1] + 0.8) : new T.Vector3(L.pantry.pos[0], BLD.fireY, L.pantry.pos[1] + 0.4) };
+    // fuori dall'inverno banchi e dolci cucinano con le scorte della dispensa
+    const useStock = () => { if (WINTER) return true; if (boiler.fuel < 0.5) return false; boiler.fuel -= 0.5; return true; };
     boiler.bar = boiler.el.firstChild;
     const fireLight = new T.PointLight(0xff8a3d, 0, 9); fireLight.position.set(boiler.fire.x, 1.4, boiler.fire.z + 0.6); scene.add(fireLight);
     boiler.glow = makeGlow(0xff9a3d, boiler.fire.x, boiler.fire.y + 0.1, boiler.fire.z + 0.3);
     function landLog() {
       boiler.pend--; boiler.fuel = Math.min(P.fuel_max, boiler.fuel + 1); S.fed++; boiler.flare = 1; A.sfx('log'); EX.ev('log');
-      burst(boiler.fire.x, boiler.fire.y + 0.2, boiler.fire.z + 0.2, 4, [0xffa233, 0xffd23a, 0xff6a2a], 1.6, 4, 0.55, 0.09, 6);
+      burst(boiler.fire.x, boiler.fire.y + 0.2, boiler.fire.z + 0.2, 4, WINTER ? [0xffa233, 0xffd23a, 0xff6a2a] : RES.cols, 1.6, 4, 0.55, 0.09, 6);
     }
     function feedOne(from, delay) { boiler.pend++; fly('log', from, o => o.copy(boiler.fire), 0.38, 0.9, landLog, delay); }
     function feedMany(n) { for (let k = 0; k < n; k++) { _v.set(0, 1.4, -31); feedOne(_v, k * 0.04); } }
@@ -264,7 +268,7 @@
 
     // --- attività in più e della città ---------------------------------------
     let GU = null;
-    const G2 = { T, scene, B, mats, box, cyl, ball, hud, A, P, S, L, level, player, rooms, guests, carry, cols, fly, burst, _v, CONFETTI, RECEP, EX, MT, CITYID, SEASON_ID, SEA_Z, boiler, feedOne, refreshStack, cocoaMax, cocoaInterval, cupCap, stars,
+    const G2 = { T, scene, B, mats, box, cyl, ball, hud, A, P, S, L, level, player, rooms, guests, carry, cols, fly, burst, _v, CONFETTI, RECEP, EX, MT, CITYID, SEASON_ID, SEA_Z, boiler, feedOne, refreshStack, cocoaMax, cocoaInterval, cupCap, stars, useStock,
       spawnGuest: (kind, path) => GU.spawn(kind, path), later: after, env: () => env, restock: () => { if (cocoa.open) cocoa.cups = Math.min(cocoaMax(), cocoa.cups + 1); } };
     const ACT = R.parts.activities(G2), CITY = R.parts.city(G2);
 
@@ -310,6 +314,7 @@
     function padShown(pd) {
       if (pd.needMensa && !mensa.open) return false;
       if (pd.needWing && wing.rows <= pd.needWing) return false; // serve prima l'ampliamento
+      if (pd.needTool && !state.isBought(pd.needTool)) return false; // gli attrezzi stanno sullo stesso riquadro, uno dopo l'altro
       if (pd.effect === 'waiter' && !state.isBought('cocoa')) return false;
       const need = pd.requires && pd.requires.purchases;
       return !need || Object.keys(S.bought).length >= need;
@@ -336,6 +341,7 @@
       if (!pd || state.isBought(pd.id)) return;
       if (pd.needMensa) buyPad(pads.find(p => p.id === 'mensa'));
       if (pd.needWing) buyPad(pads.find(p => p.id === 'wing' + pd.needWing));
+      if (pd.needTool) buyPad(pads.find(p => p.id === pd.needTool));
       if (pd.effect === 'waiter') buyPad(pads.find(p => p.id === 'cocoa'));
       S.paid[pd.id] = pd.cost; S.bought[pd.id] = true; applyEffect(pd);
     }
@@ -347,6 +353,7 @@
     }
 
     openRoom(rooms[0]);
+    if (!WINTER) openMensa(); // la dispensa è in mensa: fuori dall'inverno è aperta da subito
     // Partite iniziate prima degli ampliamenti: le stanze già comprate hanno anche il loro ampliamento.
     for (let k = 2; k < 8; k++) if (S.bought['room' + k]) for (let w = 1; w <= Math.floor(k / 2); w++) S.bought['wing' + w] = true;
     // Partite iniziate prima della mensa: se i banchi erano già comprati, la mensa è data.
@@ -521,7 +528,7 @@
         }
       }
       if (cocoa.open) {
-        cocoa.t += dt; if (cocoa.t > cocoaInterval() && cocoa.cups < cocoaMax()) { cocoa.cups++; cocoa.t = 0; }
+        cocoa.t += dt; if (cocoa.t > cocoaInterval() && cocoa.cups < cocoaMax() && useStock()) { cocoa.cups++; cocoa.t = 0; }
         if (!driving && cocoa.cups > 0 && carry.cups < cupCap() && cupCd <= 0 && Math.hypot(p.x - cocoa.pick[0], p.z - cocoa.pick[1]) < 1.4) {
           cupCd = 0.22; cocoa.cups--; carry.cups++; inCups++; changed = true; A.sfx('pickup');
           _v.set(-0.45 + Math.min(5, cocoa.cups) * 0.28, 1.3, 0.25); cocoa.g.localToWorld(_v);
@@ -536,13 +543,14 @@
       }
       for (const pd of pads) {
         if (driving || state.isBought(pd.id) || !padShown(pd)) continue;
+        if (pd.hold) { if (Math.hypot(p.x - pd.x, p.z - pd.z) > 1.4) pd.hold = false; else continue; } // il prossimo attrezzo si paga solo dopo essere usciti dal riquadro
         pd.cd -= dt;
         if (S.coins > 0 && pd.cd <= 0 && Math.hypot(p.x - pd.x, p.z - pd.z) < 1.0) {
           pd.cd = 0.04;
           const paid = state.paid(pd.id), step = Math.min(S.coins, Math.max(1, Math.ceil(pd.cost / 40)), pd.cost - paid);
           S.coins -= step; S.paid[pd.id] = paid + step;
           if (S.paid[pd.id] >= pd.cost) {
-            S.bought[pd.id] = true; applyEffect(pd); hud.toast(pd.title + ' sbloccato! ✨'); save(); ring(pd.x, pd.z, 0xffd23a); after(0.18, () => ring(pd.x, pd.z, 0x4cd964)); B.wave(player, 1.4);
+            S.bought[pd.id] = true; applyEffect(pd); pads.forEach(x => { if (x.needTool === pd.id) x.hold = true; }); hud.toast(pd.title + ' sbloccato! ✨'); save(); ring(pd.x, pd.z, 0xffd23a); after(0.18, () => ring(pd.x, pd.z, 0x4cd964)); B.wave(player, 1.4);
             burst(pd.x, 0.8, pd.z, 26, CONFETTI, 4, 7, 1.1, 0.16); hopT = 0.5; A.sfx('buy');
           }
         }
@@ -551,7 +559,7 @@
 
       boiler.fuel = Math.max(0, boiler.fuel - burnRate() * dt);
       smokeT -= dt;
-      if (boiler.fuel > 0 && smokeT <= 0) { smokeT = 0.5; burst(boiler.fire.x, 2.6, boiler.fire.z - 1, 1, [0xeef1f5, 0xd5dbe3], 0.2, 0.9, 2, 0.2, -0.25); }
+      if (WINTER && boiler.fuel > 0 && smokeT <= 0) { smokeT = 0.5; burst(boiler.fire.x, 2.6, boiler.fire.z - 1, 1, [0xeef1f5, 0xd5dbe3], 0.2, 0.9, 2, 0.2, -0.25); }
       dustT -= dt;
       if (moving && dustT <= 0) { dustT = 0.17; burst(p.x - Math.sin(player.rotation.y) * 0.18, 0.15, p.z - Math.cos(player.rotation.y) * 0.18, 1, [TH.dust || 0xffffff, 0xffffff], 0.3, 0.7, 0.45, 0.11, 2.5); }
       RES_M.update(dt);
@@ -584,7 +592,8 @@
     function anim(dt) {
       tt += dt; const p = player.position;
       boiler.flare = Math.max(0, boiler.flare - dt * 3);
-      const lit = boiler.fuel > 0, s = lit ? 0.5 + boiler.fuel / P.fuel_max * 0.8 + boiler.flare * 0.35 : 0, night = env ? env.night : 0;
+      const lit = WINTER && boiler.fuel > 0, s = lit ? 0.5 + boiler.fuel / P.fuel_max * 0.8 + boiler.flare * 0.35 : 0, night = env ? env.night : 0;
+      BLD.glass.color.setRGB(0.75 + 0.25 * night, 0.9 - 0.1 * night, 1 - 0.62 * night); // vetri: azzurri di giorno, caldi la sera
       BLD.flame.visible = lit; BLD.flame.scale.set(s, s * (1 + 0.18 * Math.sin(tt * 13)), s);
       fireLight.intensity = lit ? (0.7 + 0.15 * Math.sin(tt * 17) + boiler.flare * 0.8) * (1 - night * 0.35) : 0;
       boiler.glow.visible = lit; if (lit) { const gs = 1.6 + s * 1.4; boiler.glow.scale.set(gs, gs, 1); boiler.glow.material.opacity = 0.3 + night * 0.3 + boiler.flare * 0.3; }
@@ -630,7 +639,7 @@
       for (const b of bobbers) { const base = b.base == null ? 0.05 : b.base, amp = b.amp == null ? 0.05 : b.amp; b.g.position.y = base + Math.sin(tt * 1.6 + b.ph) * amp; }
       updateLamps();
       const asp = innerWidth / innerHeight, k = asp < 0.8 ? 1.85 : asp < 1.2 ? 1.3 : 1.05;
-      camGoal.set(p.x * 0.4, 15 * k, p.z + 12 * k); // il rifugio è stretto e alto: la camera segue soprattutto in verticale
+      camGoal.set(p.x, 15 * k, p.z + 12 * k); // l'omino resta sempre al centro, anche ai bordi della mappa
       cam.position.lerp(camGoal, Math.min(1, dt * 5));
       cam.lookAt(cam.position.x, 0, cam.position.z - 12 * k - 1);
       sunDir.set(-10, 22, 8).normalize(); sunX.set(0, 1, 0).cross(sunDir).normalize(); sunY.copy(sunDir).cross(sunX);
@@ -652,7 +661,7 @@
       }
       if (recep.shown !== recep.n) { recep.shown = recep.n; recep.el.textContent = recep.n > 0 ? '💰 ' + recep.n : ''; }
       hud.put(recep.el, RECEP.x + 0.95, 2.1, RECEP.z + 0.1, recep.n > 0);
-      hud.put(boiler.el, boiler.fire.x, 3.0, boiler.fire.z - 0.8, true);
+      hud.put(boiler.el, boiler.fire.x, WINTER ? 3.0 : 2.3, boiler.fire.z - 0.8, true);
       const w = (boiler.fuel / P.fuel_max * 100).toFixed(1) + '%'; if (boiler.bar._w !== w) { boiler.bar._w = w; boiler.bar.style.width = w; }
       pads.forEach(pd => {
         const v = pd.m.visible;
@@ -669,7 +678,7 @@
       hud.updateFloats(dt);
     }
 
-    const MINIMAP = R.parts.minimap({ L, wing, player, rooms, guests, boiler, mensa, cinema, recep: () => ({ x: RECEP.x, z: RECEP.z, n: recep.n }),
+    const MINIMAP = R.parts.minimap({ L, wing, winter: WINTER, player, rooms, guests, boiler, mensa, cinema, recep: () => ({ x: RECEP.x, z: RECEP.z, n: recep.n }),
       stands: () => (cocoa.open ? [L.stands.cocoa] : []).concat(ACT.snack.open ? [L.stands.snack] : []),
       pads: () => pads.filter(pd => !state.isBought(pd.id) && padShown(pd) && S.coins >= pd.cost - state.paid(pd.id)).map(pd => [pd.x, pd.z]),
       spots: () => ACT.spots().concat(CITY.spots()) });
@@ -681,7 +690,8 @@
       const raw = (now - last) / 1000, dt = Math.min(0.05, raw); last = now;
       if (running && !paused && raw < 0.5) {
         perfT += raw; if (raw > 0.04) perfSlow += raw;
-        if (perfT >= 8 && perfSlow / perfT > 0.6 && pixelRatio > 1.05) { pixelRatio = Math.max(1, pixelRatio - 0.25); renderer.setPixelRatio(pixelRatio); resize(); }
+        const minRatio = Q.ratio >= 3 ? 1.75 : 1; // in Alta non si scende sotto 1,75 per non sgranare
+        if (perfT >= 8 && perfSlow / perfT > 0.6 && pixelRatio > minRatio + 0.05) { pixelRatio = Math.max(minRatio, pixelRatio - 0.25); renderer.setPixelRatio(pixelRatio); resize(); }
         if (perfT >= 8) { if (perfSlow / perfT > 0.6 && R.settings.get('quality') !== 'low' && R.settings.tip('perf')) hud.toast('🐢 Il gioco va a scatti? Prova la qualità Media o Bassa: menu ☰ → Impostazioni'); perfT = 0; perfSlow = 0; }
       }
       if (fpsOn) { fpsN++; fpsT += raw; if (fpsT >= 0.5) { fpsEl.textContent = Math.round(fpsN / fpsT) + ' fps'; fpsN = 0; fpsT = 0; } }

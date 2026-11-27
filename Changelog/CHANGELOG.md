@@ -9,6 +9,16 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.35.0 · 2026-11-27 · Muri alti, finestre, attrezzi su un riquadro, dispensa in mensa
+
+- **Pareti** alte il doppio; **finestre con tende semiaperte** nelle stanze.
+- **Corridoio** tinta unita marrone scuro.
+- **Attrezzi** (affilato, motosega, macchinario): un solo riquadro, disponibile da subito, che mostra il prossimo. Per pagarlo bisogna uscire e rientrare.
+- **Grafica più nitida**: risoluzione fino a 3x in Alta (2x in Media), ombre più fini, nebbia più lontana.
+- **Camera**: l'omino resta al centro; ai bordi non finisce più sotto le chiome.
+- **Primavera, estate, autunno**: il raccolto va nella **dispensa della mensa** (aperta da subito); banchi e dolci cucinano con le scorte. Niente più cucina, forno o calderone. In quelle stagioni gli obiettivi sono 53.
+
+**Per tornare indietro:** `git checkout 5560a2c -- web tests Changelog rifugio-design.md`
 ## v0.34.0 · 2026-11-27 · Ampliamenti del corridoio
 
 - Si parte con **una stanza a sinistra**; la seconda si compra.

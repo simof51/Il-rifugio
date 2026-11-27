@@ -12,8 +12,21 @@
     const STYLE = PL.style || 'alpine';
     const wallM = PL.walls != null ? B.tint(PL.walls) : mats.wood, trimM = PL.trim != null ? B.tint(PL.trim) : mats.plank;
     const floorM = PL.floor != null ? B.tint(PL.floor) : mats.plank, rugM = PL.rug != null ? B.tint(PL.rug) : mats.red;
-    const corrM = B.tint(STYLE === 'harbor' ? 0x6d86a8 : STYLE === 'dutch' ? 0xc98a5a : 0xa8514a), tileM = B.tint(0xd8eef2), porcM = mats.white;
-    const LOW = 0.85, TALL = 1.5, TH = 0.22;
+    const corrM = B.tint(0x6b4a33), tileM = B.tint(0xd8eef2), porcM = mats.white, porc = mats.white, rod = B.tint(0xc9962e);
+    const LOW = 1.7, TALL = 3.0, TH = 0.22;
+    const glassM = new T.MeshBasicMaterial({ color: 0xbfe6ff });
+    // Finestra sul muro in fondo alla stanza (faccia rivolta a chi guarda), con due tende semiaperte e il bastone.
+    function window_(x, z, curtain, g) {
+      slab(1.2, 0.82, 0.05, porc, x, 1.18, z, g);
+      const gl = new T.Mesh(B.cached('glassN', () => new T.BoxGeometry(1.04, 0.66, 0.04)), glassM); gl.position.set(x, 1.18, z + 0.025); g.add(gl);
+      slab(1.04, 0.05, 0.05, porc, x, 1.18, z + 0.045, g); slab(0.05, 0.66, 0.05, porc, x, 1.18, z + 0.045, g);
+      slab(1.5, 0.06, 0.08, rod, x, 1.66, z + 0.08, g);
+      [-1, 1].forEach(s => {
+        slab(0.3, 0.86, 0.07, curtain, x + s * 0.55, 1.2, z + 0.09, g);        // telo raccolto di lato
+        slab(0.14, 0.86, 0.1, curtain, x + s * 0.66, 1.2, z + 0.095, g);       // piega
+        slab(0.34, 0.07, 0.11, rod, x + s * 0.56, 1.0, z + 0.1, g);            // fascetta che lo tiene aperto
+      });
+    }
 
     // Muro lungo x o lungo z (con ostacolo). Restituisce la mesh e l'ostacolo.
     function wall(x0, z0, x1, z1, h, parent, noCol) {
@@ -45,7 +58,6 @@
     // --- corridoio centrale e ingresso ------------------------------------
     // il tratto tra mensa e cinema c'è sempre; quello fra le stanze si allunga di una fila a ogni ampliamento
     floor(-L.HW, L.HW, -23, L.Z0, corrM, null, 0.055);
-    for (let z = -22; z < L.Z0 - 0.5; z += 2) floor(-0.25, 0.25, z, z + 0.9, trimM, null, 0.07);
     floor(-4.5, 4.5, L.boiler.z0, L.boiler.z1, B.tint(0x9aa1ab), null, 0.05);
     [-L.HW, L.HW].forEach(x => cyl(0.09, 0.1, 2.2, trimM, x, 1.1, L.boiler.z0, null, 8)); box(L.HW * 2 + 0.4, 0.3, 0.2, trimM, 0, 2.25, L.boiler.z0, null, 0.04); // arco d'ingresso, verso strada e reception
 
@@ -55,23 +67,22 @@
     wall(-4.5, bz1 - TH / 2, -L.HW, bz1 + TH / 2, LOW); wall(L.HW, bz1 - TH / 2, 4.5, bz1 + TH / 2, LOW);
     if (closetLeft) { wall(4.5 - TH / 2, bz0, 4.5 + TH / 2, bz1, TALL); doorWallZ(-4.5, bz0, bz1, -25.6, 1.9, TALL); }
     else { wall(-4.5 - TH / 2, bz0, -4.5 + TH / 2, bz1, TALL); doorWallZ(4.5, bz0, bz1, -25.6, 1.9, TALL); }
-    const [fx, fz] = L.boiler.fire;
-    let flame, fireY;
-    if (RES.kind === 'wood') { // caldaia: corpo di ghisa con sportello e tubo
+    const [fx, fz] = L.boiler.fire, winter = RES.kind === 'wood';
+    let flame, fireY = 1.2;
+    if (winter) { // caldaia: corpo di ghisa con sportello e tubo (solo d'inverno)
       cyl(0.85, 0.95, 1.5, mats.dark, fx, 0.8, fz, null, 18); cyl(0.9, 0.9, 0.12, mats.steel, fx, 1.58, fz, null, 18);
       cyl(0.18, 0.18, 1.6, mats.steel, fx, 2.4, fz - 0.4, null, 10); box(0.8, 0.6, 0.2, B.tint(0x5a3320), fx, 0.7, fz + 0.9, null, 0.05); fireY = 0.65;
-    } else if (RES.kind === 'grain') { // forno a cupola
-      box(2.0, 0.8, 1.5, mats.stone, fx, 0.45, fz, null, 0.08); const d = ball(0.95, B.tint(0xc9714a), fx, 0.85, fz, null, 18, 12); d.scale.set(1.05, 0.85, 0.8);
-      box(0.8, 0.5, 0.2, mats.dark, fx, 1.05, fz + 0.7, null, 0.08); cyl(0.16, 0.18, 1.0, mats.stone, fx, 2.0, fz - 0.2, null, 8); fireY = 1.0;
-    } else { // cucina (ortaggi) o calderone (zucche)
-      box(2.3, 0.9, 1.2, mats.stone, fx, 0.5, fz, null, 0.08);
-      const p = ball(0.7, RES.kind === 'veg' ? mats.steel : mats.dark, fx, 1.4, fz, null, 18, 12); p.scale.set(1, 0.7, 1);
-      cyl(0.66, 0.66, 0.06, B.tint(RES.kind === 'veg' ? 0x7ac943 : 0xff9a2a), fx, 1.66, fz, null, 18); fireY = 0.85;
+      cols.push([fx - 1.15, fx + 1.15, fz - 0.8, fz + 0.9]);
+    } else { // nelle altre stagioni il raccolto va nella dispensa della mensa: scaffali con ceste del raccolto
+      const [px, pz] = L.pantry.pos, food = B.tint(RES.cols[0]), food2 = B.tint(RES.cols[1]);
+      [0.45, 1.05, 1.65].forEach(y => box(1.7, 0.08, 0.6, mats.plank, px, y, pz, null, 0.02));
+      [-0.85, 0.85].forEach(dx => box(0.08, 1.8, 0.6, mats.wood, px + dx, 0.9, pz, null, 0.02));
+      for (let i = 0; i < 8; i++) { const x = px - 0.6 + (i % 4) * 0.4, y = i < 4 ? 0.65 : 1.25; box(0.32, 0.18, 0.4, mats.wood, x, y - 0.06, pz, null, 0.03); ball(0.14, i % 2 ? food : food2, x, y + 0.08, pz, null, 8, 6); }
+      cols.push([px - 0.9, px + 0.9, pz - 0.35, pz + 0.35]);
     }
-    cols.push([fx - 1.15, fx + 1.15, fz - 0.8, fz + 0.9]);
-    flame = new T.Mesh(new T.ConeGeometry(0.3, 0.65, 14), mats.flame); flame.position.set(fx, fireY, fz + (RES.kind === 'wood' ? 1.05 : 0.85)); scene.add(flame);
+    flame = new T.Mesh(new T.ConeGeometry(0.3, 0.65, 14), mats.flame); flame.position.set(fx, fireY, fz + 1.05); flame.visible = false; scene.add(flame);
     // tappeto dove si consegna
-    floor(L.boiler.feed[0] - 0.9, L.boiler.feed[0] + 0.9, L.boiler.feed[1] - 0.7, L.boiler.feed[1] + 0.7, B.tint(0xffd23a), null, 0.1);
+    floor(L.boiler.feed[0] - 0.9, L.boiler.feed[0] + 0.9, L.boiler.feed[1] - 0.7, L.boiler.feed[1] + 0.7, B.tint(0xffd23a), null, 0.14);
 
     // --- sgabuzzino --------------------------------------------------------
     const C = L.closet;
@@ -100,11 +111,12 @@
       wall(outer - TH / 2, d.z0, outer + TH / 2, d.z1, TALL, g);
       doorWallZ(d.doorX, d.z0, d.z1, d.doorZ, 1.9, LOW, g);
       // finestra sul muro esterno
-      box(0.1, 0.55, 1.3, B.tint(0xbfe6ff), outer - s * 0.12, 0.95, d.z0 + 1.4, g, 0.02);
+      box(0.1, 0.75, 1.3, B.tint(0xbfe6ff), outer - s * 0.12, 1.35, d.z0 + 1.4, g, 0.02);
+      r.beds.forEach((b, k) => window_(b.x, d.z0 + TH / 2 + 0.03, B.tint(TOWELS[(d.k + k * 3 + 1) % TOWELS.length]), g));
       // due letti con testata a nord e comodino
       r.beds.forEach((b, k) => {
         box(1.1, 0.4, 2.1, mats.bed, b.x, 0.35, b.z, g); box(1.12, 0.1, 1.3, B.tint(TOWELS[(d.k * 2 + k) % TOWELS.length]), b.x, 0.57, b.z + 0.4, g);
-        box(0.8, 0.14, 0.45, porcM, b.x, 0.61, b.z - 0.75, g); box(1.2, 0.7, 0.12, trimM, b.x, 0.5, b.z - 1.08, g, 0.04);
+        box(0.8, 0.14, 0.45, porcM, b.x, 0.61, b.z - 0.75, g); box(1.2, 0.7, 0.12, trimM, b.x, 0.42, b.z - 1.0, g, 0.04);
         cols.push([b.x - 0.55, b.x + 0.55, b.z - 1.1, b.z + 1.05]);
       });
       box(1.4, 0.03, 0.9, rugM, ax(3.0), 0.125, d.z0 + 3.4, g, 0.01);
@@ -126,7 +138,6 @@
     for (let k = 0; k < L.ROWS; k++) {
       const g = group(k === 0), z0 = L.Z0 + k * L.ROOM_D;
       floor(-L.HW, L.HW, z0, z0 + L.ROOM_D, corrM, g, 0.055);
-      for (let z = z0 + 0.5; z < z0 + L.ROOM_D - 0.8; z += 2) floor(-0.25, 0.25, z, z + 0.9, trimM, g, 0.07);
       B.bake(g); segments.push(g);
     }
     const endG = group(true), half = L.HW + L.ROOM_W, endCol = [-half, half, 0, 0];
@@ -151,7 +162,7 @@
       mensa.open = true; mensa.g.visible = true; mensa.ghost.visible = false;
       const g = mensa.g, outer = L.m > 0 ? M.x0 : M.x1;
       floor(M.x0, M.x1, M.z0, M.z1, B.tint(0xf2dcae), g, 0.06);
-      wall(M.x0, M.z0 - TH / 2, M.x1, M.z0 + TH / 2, TALL, g); wall(M.x0, M.z1 - TH / 2, M.x1, M.z1 + TH / 2, 0.45, g);
+      wall(M.x0, M.z0 - TH / 2, M.x1, M.z0 + TH / 2, TALL, g); wall(M.x0, M.z1 - TH / 2, M.x1, M.z1 + TH / 2, 0.9, g);
       wall(outer - TH / 2, M.z0, outer + TH / 2, M.z1, TALL, g); doorWallZ(M.doorX, M.z0, M.z1, M.doorZ, 2.2, LOW, g);
       const done = {};
       L.seats.forEach(s => {
@@ -174,7 +185,7 @@
       cinema.open = true; cinema.g.visible = true; cinema.ghost.visible = false;
       const g = cinema.g, outer = L.m > 0 ? CI.x1 : CI.x0;
       floor(CI.x0, CI.x1, CI.z0, CI.z1, B.tint(0x4a3a5c), g, 0.06);
-      wall(CI.x0, CI.z0 - TH / 2, CI.x1, CI.z0 + TH / 2, TALL, g); wall(CI.x0, CI.z1 - TH / 2, CI.x1, CI.z1 + TH / 2, 0.45, g);
+      wall(CI.x0, CI.z0 - TH / 2, CI.x1, CI.z0 + TH / 2, TALL, g); wall(CI.x0, CI.z1 - TH / 2, CI.x1, CI.z1 + TH / 2, 0.9, g);
       wall(outer - TH / 2, CI.z0, outer + TH / 2, CI.z1, TALL, g); doorWallZ(CI.doorX, CI.z0, CI.z1, CI.doorZ, 2.2, LOW, g);
       box(6.4, 2.2, 0.18, mats.dark, CI.cx, 1.8, CI.z0 + 0.25, g, 0.04);
       cinema.screen = new T.Mesh(new T.PlaneGeometry(6.0, 1.85), new T.MeshBasicMaterial({ color: 0x9fd3ff })); cinema.screen.position.set(CI.cx, 1.8, CI.z0 + 0.36); g.add(cinema.screen);
@@ -186,6 +197,6 @@
     scene.children.slice().forEach(o => { if (o.isMesh && o.userData.build) fixed.add(o); });
     B.bake(fixed);
 
-    return { rooms, openRoom, expand, wing, mensa, openMensa, cinema, openCinema, flame, fireY };
+    return { glass: glassM, rooms, openRoom, expand, wing, mensa, openMensa, cinema, openCinema, flame, fireY };
   };
 })(window.Rifugio);

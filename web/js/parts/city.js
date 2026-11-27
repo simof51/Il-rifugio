@@ -56,7 +56,7 @@
       };
       overlays = () => { const t = ready() ? `${winter ? '🛷' : '🛒'} ${S.shed}/${MAX}` : ''; if (el.textContent !== t) el.textContent = t; hud.put(el, X, 2.4, Z, !!t); };
       spots = () => [[X, Z, '#a0713d']];
-      if (R.settings.tip('city-valle')) G.later(8, () => hud.toast(`🪵 Lascia legna alla legnaia: la ${cart} la porta ai fuochi`));
+      if (R.settings.tip('city-valle')) G.later(8, () => hud.toast(winter ? `🪵 Lascia legna alla legnaia: la ${cart} la porta ai fuochi` : '🧺 Lascia il raccolto al deposito: il carretto lo porta in dispensa'));
     } else if (CITYID === 'mulini') {
       // --- orto: le piante crescono, quando sono mature si raccolgono passandoci sopra (monete e una scorta per il banco) ---
       const GROW = 24, col = { inverno: 0x7fc8a0, primavera: 0xff5d8f, estate: 0xffd23a, autunno: 0xff8a1f }[SEASON_ID];

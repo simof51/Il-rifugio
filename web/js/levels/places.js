@@ -41,7 +41,7 @@
   function texts(season) {
     const r = R.RES[season], hungry = season !== 'inverno';
     return {
-      intro: `Un rifugio che cresce in verticale. ${r.verb} ${r.the} nel campo in cima, tieni in funzione ${r.theFire}, rifornisci i bagni e dai da mangiare agli ospiti in mensa.`,
+      intro: `Un rifugio che cresce in verticale. ${r.verb} ${r.the} nel campo in cima, ${hungry ? 'tieni piena' : 'tieni in funzione'} ${r.theFire}, rifornisci i bagni e dai da mangiare agli ospiti in mensa.`,
       help: [
         'Trascina il dito sullo schermo per muoverti (o WASD e frecce).',
         `${r.verb} ${r.the} nel campo in cima e porta tutto ${r.toFire}.`,
@@ -64,5 +64,6 @@
     lv.lake = season === 'inverno' ? null : { x: -22, z: -3, r: 5 };
     lv.unlocks = lv.unlocks.map(u => Object.assign({}, u, { pos: [u.pos[0] * m, u.pos[1]] }));
     const sn = lv.unlocks.find(u => u.id === 'snack'); if (sn) sn.title = { inverno: 'Torte calde', primavera: 'Pasticcini', estate: 'Gelati', autunno: 'Caldarroste' }[season];
+    if (season !== 'inverno') { const ins = lv.unlocks.find(u => u.id === 'insul'); if (ins) ins.title = 'Dispensa migliore'; }
   });
 })(window.Rifugio);

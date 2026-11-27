@@ -86,7 +86,7 @@ R.order.forEach(id => {
   const ps = l.unlocks;
   for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++) {
     const d = Math.hypot(ps[i].pos[0] - ps[j].pos[0], ps[i].pos[1] - ps[j].pos[1]);
-    ok(d >= 1.8, id + ': riquadri troppo vicini: ' + ps[i].id + ' e ' + ps[j].id + ' (' + d.toFixed(1) + ')');
+    if (!(ps[i].tool && ps[j].tool)) ok(d >= 1.8, id + ': riquadri troppo vicini: ' + ps[i].id + ' e ' + ps[j].id + ' (' + d.toFixed(1) + ')');
   }
   ok(ps.every(u => u.pos[0] > L.world.min[0] && u.pos[0] < L.world.max[0] && u.pos[1] > L.world.min[1] && u.pos[1] < L.world.max[1]), id + ': riquadri dentro la mappa');
   ok(L.rooms.length === 8 && L.rooms.filter(r => r.cx < 0).length === 4 && L.rooms.every(r => r.beds.length === 2 && r.bath && r.restock), id + ': 8 stanze, 4 per lato, due letti e bagno');
@@ -97,7 +97,8 @@ R.order.forEach(id => {
     ok(!!u, id + ': sblocco esistente ' + o.bought);
     if (!u) return;
     ok((u.requires.purchases || 0) <= bought, id + ': ' + o.bought + ' è visibile quando serve (' + u.requires.purchases + ' > ' + bought + ')');
-    ok(!u.needMensa || seen.has('mensa'), id + ': la mensa viene prima di ' + o.bought);
+    ok(!u.needMensa || !ps.some(x => x.id === 'mensa') || seen.has('mensa'), id + ': la mensa viene prima di ' + o.bought);
+    ok(!u.needTool || seen.has(u.needTool), id + ': l\'attrezzo precedente viene prima di ' + o.bought);
     ok(u.effect !== 'waiter' || seen.has('cocoa'), id + ': il banco viene prima del cameriere');
     ok(!u.needWing || seen.has('wing' + u.needWing), id + ': l\'ampliamento viene prima di ' + o.bought);
     seen.add(o.bought); bought++;

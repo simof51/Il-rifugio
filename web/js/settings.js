@@ -23,8 +23,8 @@
   function save() { try { const j = JSON.stringify(data); localStorage.setItem(KEY, j); localStorage.setItem(KEY + '-bak', j); } catch (e) { /* ignorato */ } }
   // Livelli di qualità grafica: risoluzione massima, ombre, e quanta roba decorativa mostrare (alberi di bordo, fiori, neve, animali).
   const QUALITY = {
-    high: { label: 'Alta', ratio: 2, aa: true, shadows: 'pcf', map: 1024, density: 1 },
-    med: { label: 'Media', ratio: 1.5, aa: true, shadows: 'pcf', map: 512, density: 0.6 },
+    high: { label: 'Alta', ratio: 3, aa: true, shadows: 'pcf', map: 2048, density: 1 },
+    med: { label: 'Media', ratio: 2, aa: true, shadows: 'pcf', map: 1024, density: 0.6 },
     low: { label: 'Bassa', ratio: 1, aa: false, shadows: 'off', map: 0, density: 0.35 }
   };
 

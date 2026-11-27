@@ -69,7 +69,7 @@
       const open = rooms.filter(r => r.open);
       kind = kind || ['storm', 'party', 'pipe'][Math.floor(Math.random() * 3)];
       evt.kind = kind; evt.bad = false; evt.fix = 0;
-      if (kind === 'storm') { evt.t = 25; if (G.env()) G.env().setWeather(season === 'inverno' ? 'snow' : 'storm'); hud.toast('🌨️ Bufera! Tieni tutti i fuochi accesi'); A.sfx('thunder'); }
+      if (kind === 'storm') { evt.t = 25; if (G.env()) G.env().setWeather(season === 'inverno' ? 'snow' : 'storm'); hud.toast(season === 'inverno' ? '🌨️ Bufera! Tieni tutti i fuochi accesi' : '⛈️ Temporale! Tieni piena la dispensa'); A.sfx('thunder'); }
       else if (kind === 'party') { evt.t = 30; hud.toast('🎉 Festa al rifugio: gli ospiti pagano il doppio!'); A.sfx('goal'); }
       else { evt.t = 35; evt.room = open[Math.floor(Math.random() * open.length)]; puddle.position.set(Math.sign(evt.room.cx) * 0.8, 0, evt.room.def.doorZ); puddle.visible = true; hud.toast('🔧 Tubo rotto! Corri a ripararlo'); A.sfx('cold'); }
     }
@@ -124,7 +124,7 @@
 
     function update(dt) {
       if (snack.open) {
-        snack.t += dt; if (snack.t > G.cocoaInterval() * 1.4 && snack.n < snackMax()) { snack.n++; snack.t = 0; }
+        snack.t += dt; if (snack.t > G.cocoaInterval() * 1.4 && snack.n < snackMax() && G.useStock()) { snack.n++; snack.t = 0; }
         if (snack.n > 0 && carry.snacks < G.cupCap() && near(PICK[0], PICK[1], 1.4)) {
           snack.cd = (snack.cd || 0) - dt;
           if (snack.cd <= 0) { snack.cd = 0.22; snack.n--; carry.snacks++; A.sfx('pickup'); _v.set(SX, 1.2, SZ + 0.2); fly('cup', _v, o => o.set(player.position.x, 1.2, player.position.z), 0.35, 0.8); }

@@ -390,6 +390,9 @@
     ["🚽 Bagno senza scorte: prendile nello sgabuzzino", "🚽 Bathroom out of supplies: get them from the storeroom", "🚽 Baño sin existencias: cógelas en el trastero", "🚽 Salle de bain vide : va au débarras", "🚽 Bad ohne Vorrat: Hol ihn aus der Kammer"],
     ["🚜 Guida nel campo; esci dal cancello per scaricare", "🚜 Drive in the field; leave by the gate to unload", "🚜 Conduce en el campo; sal por la puerta para descargar", "🚜 Conduis dans le champ ; sors par le portail pour décharger", "🚜 Fahr im Feld; zum Abladen durchs Tor"],
     ["Prendi sapone e carta igienica nello sgabuzzino e rifornisci i bagni.", "Take soap and toilet paper from the storeroom and restock the bathrooms.", "Coge jabón y papel del trastero y repón los baños.", "Prends savon et papier au débarras et réapprovisionne les salles de bain.", "Hol Seife und Toilettenpapier aus der Kammer und fülle die Bäder auf."],
+    ["Dispensa migliore", "Better pantry", "Mejor despensa", "Meilleur garde-manger", "Bessere Vorratskammer"],
+    ["⛈️ Temporale! Tieni piena la dispensa", "⛈️ Storm! Keep the pantry full", "⛈️ ¡Tormenta! Mantén llena la despensa", "⛈️ Orage ! Garde le garde-manger plein", "⛈️ Gewitter! Halte die Vorratskammer voll"],
+    ["🧺 Lascia il raccolto al deposito: il carretto lo porta in dispensa", "🧺 Leave the harvest at the depot: the cart takes it to the pantry", "🧺 Deja la cosecha en el depósito: el carro la lleva a la despensa", "🧺 Dépose la récolte au dépôt : le chariot la porte au garde-manger", "🧺 Leg die Ernte ins Lager: Der Karren bringt sie in die Vorratskammer"],
   ];
   // Frasi con numeri: [espressione, [en, es, fr, de]] con $1, $2…
   const RX = [
