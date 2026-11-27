@@ -28,12 +28,52 @@
       }
       return B.mergeParts(parts);
     }
-    const geo = isTree ? null : cropGeo(), soil = isTree ? null : B.tint(0x7a5535);
-    const beds = new T.Group(); scene.add(beds); // terra sotto le piante: fusa in un pezzo solo
+    const geo = isTree ? null : cropGeo(), F = L.field;
+    // Il campo (o il bosco abbattibile) è un solo appezzamento con gli angoli tondi: distanza dal bordo, positiva dentro.
+    function inside(x, z) {
+      const cx = (F.x0 + F.x1) / 2, cz = (F.z0 + F.z1) / 2, hx = (F.x1 - F.x0) / 2 - F.r, hz = (F.z1 - F.z0) / 2 - F.r;
+      const dx = Math.abs(x - cx) - hx, dz = Math.abs(z - cz) - hz;
+      return F.r - (Math.hypot(Math.max(dx, 0), Math.max(dz, 0)) + Math.min(Math.max(dx, dz), 0));
+    }
+    // contorno del rettangolo stondato, in senso orario, partendo dal cancello (lato sud)
+    function outline() {
+      const pts = [], r = F.r, arc = (cx, cz, a0) => { for (let i = 0; i <= 8; i++) { const a = a0 + i / 8 * Math.PI / 2; pts.push([cx + Math.cos(a) * r, cz + Math.sin(a) * r]); } };
+      pts.push([-F.gate, F.z1]);
+      arc(F.x0 + r, F.z1 - r, Math.PI / 2); arc(F.x0 + r, F.z0 + r, Math.PI); arc(F.x1 - r, F.z0 + r, Math.PI * 1.5); arc(F.x1 - r, F.z1 - r, 0);
+      pts.push([F.gate, F.z1]);
+      return pts;
+    }
+    const edge = outline();
+    if (!isTree) { // terra: un pezzo solo, con i solchi
+      const shape = new T.Shape(edge.map(([x, z]) => new T.Vector2(x, -z)));
+      const land = new T.Mesh(new T.ShapeGeometry(shape).rotateX(-Math.PI / 2), B.tint(0x8a6238)); land.position.y = 0.035; land.receiveShadow = true; scene.add(land);
+      const dark = B.tint(0x75512e), furrows = new T.Group(); scene.add(furrows);
+      for (let z = F.z0 + 1.6; z < F.z1 - 1; z += 1.9) {
+        let x0 = F.x0 + 0.4; while (inside(x0, z) < 0.5) x0 += 0.2;
+        const m = new T.Mesh(new T.PlaneGeometry(-x0 * 2, 0.45).rotateX(-Math.PI / 2), dark); m.position.set(0, 0.05, z + 0.95); m.receiveShadow = true; furrows.add(m);
+      }
+      B.bake(furrows);
+    }
+    { // staccionata: pali e due traverse lungo tutto il bordo (aperta solo al cancello), con ostacolo
+      const parts = [], post = new T.BoxGeometry(0.18, 1, 0.18), rail = new T.BoxGeometry(1, 0.1, 0.07), wood = 0x9a6a45;
+      const addPost = (x, z, h) => parts.push({ geo: post, x, y: h / 2, z, s: [1, h, 1], color: wood });
+      for (let i = 0; i < edge.length - 1; i++) {
+        const [ax, az] = edge[i], [bx, bz] = edge[i + 1], len = Math.hypot(bx - ax, bz - az);
+        if (len < 0.05) continue;
+        const n = Math.max(1, Math.ceil(len / 1.5));
+        for (let k = 0; k < n; k++) {
+          const x0 = ax + (bx - ax) * k / n, z0 = az + (bz - az) * k / n, x1 = ax + (bx - ax) * (k + 1) / n, z1 = az + (bz - az) * (k + 1) / n, l = len / n;
+          addPost(x0, z0, 0.9);
+          [0.42, 0.72].forEach(y => parts.push({ geo: rail, x: (x0 + x1) / 2, y, z: (z0 + z1) / 2, s: [l, 1, 1], ry: Math.atan2(-(z1 - z0), x1 - x0), color: 0xb8845a }));
+          cols.push([Math.min(x0, x1) - 0.1, Math.max(x0, x1) + 0.1, Math.min(z0, z1) - 0.1, Math.max(z0, z1) + 0.1]);
+        }
+      }
+      [-F.gate, F.gate].forEach(x => { addPost(x, F.z1, 1.5); parts.push({ geo: post, x, y: 1.55, z: F.z1, s: [1.6, 0.14, 1.6], color: 0xf4f1e6 }); }); // pali del cancello
+      const fence = new T.Mesh(B.mergeParts(parts), mats.accent); fence.castShadow = true; scene.add(fence);
+    }
     function cropMesh(x, z) {
       const g = new T.Group(); g.position.set(x, 0, z); scene.add(g);
-      const bed = new T.Mesh(B.cached('soil', () => new T.PlaneGeometry(1.5, 1.5).rotateX(-Math.PI / 2)), soil); bed.position.set(x, 0.05, z); bed.receiveShadow = true; beds.add(bed);
-      const stump = new T.Mesh(B.cached('stub', () => new T.BoxGeometry(0.6, 0.12, 0.6)), soil); stump.position.y = 0.1; g.add(stump); stump.visible = false;
+      const stump = new T.Group(); g.add(stump); // dopo il raccolto resta solo la terra
       const fall = new T.Group(); g.add(fall); fall.add(new T.Mesh(geo, mats.accent));
       return { g, fall, stump, mats: [] };
     }
@@ -49,24 +89,32 @@
       nodes.push(t);
       return t;
     }
-    // Campo coltivato a file, con corridoi per passare; la fila centrale resta libera.
-    const F = L.field, dx = isTree ? 2.7 : 2.1, dz = isTree ? 2.7 : 2.1;
-    for (let z = F.z1 - 0.6, row = 0; z > F.z0; z -= dz, row++) {
-      for (let x = F.x0 + 0.8; x < F.x1; x += dx) {
-        if (Math.abs(x) < 1.3) continue;
-        const j = isTree ? 0.5 : 0.08;
-        plant(x + (rnd() - 0.5) * j + (isTree && row % 2 ? 0.9 : 0), z + (rnd() - 0.5) * j, 1);
+    // Piante a file dentro il recinto; resta libero il posto del macchinario (nel bosco anche il viale dal cancello).
+    const dx = isTree ? 2.6 : 1.95, dz = isTree ? 2.6 : 1.9, edgeGap = isTree ? 1.2 : 0.9;
+    for (let z = F.z1 - 1.5, row = 0; z > F.z0; z -= dz, row++) {
+      for (let x = F.x0 + 0.9; x < F.x1; x += dx) {
+        const j = isTree ? 0.4 : 0.1, px = x + (rnd() - 0.5) * j + (isTree && row % 2 ? 0.8 : 0), pz = z + (rnd() - 0.5) * j;
+        if (inside(px, pz) < edgeGap || Math.hypot(px - L.park[0], pz - L.park[1]) < 2.4) continue;
+        if (Math.abs(px) < (isTree ? 1.4 : 1.1) && (isTree || pz > F.z1 - 2.5)) continue;
+        plant(px, pz, 1);
       }
     }
 
-    B.bake(beds);
     function setCol(t, felled) {
       const h = t.half, c = t.col;
       if (!isTree) return;
       if (felled) { c[0] = c[1] = c[2] = c[3] = 1e6; return; }
       c[0] = t.x - h; c[1] = t.x + h; c[2] = t.z - h; c[3] = t.z + h;
     }
-    function near(p, maxD) {
+    // Il macchinario resta dentro il recinto (angoli tondi compresi) ed esce solo dal cancello.
+    function keepInside(p) {
+      const m = 1.2;
+      if (Math.abs(p.x) <= F.gate - m && p.z > F.z1 - m - 0.5) return;
+      const cx = Math.max(F.x0 + F.r, Math.min(F.x1 - F.r, p.x)), cz = Math.max(F.z0 + F.r, Math.min(F.z1 - F.r, p.z));
+      p.x = Math.max(F.x0 + m, Math.min(F.x1 - m, p.x)); p.z = Math.max(F.z0 + m, Math.min(F.z1 - m, p.z));
+      const d = Math.hypot(p.x - cx, p.z - cz);
+      if (d > F.r - m && Math.abs(p.x - cx) > 0 && Math.abs(p.z - cz) > 0) { p.x = cx + (p.x - cx) / d * (F.r - m); p.z = cz + (p.z - cz) / d * (F.r - m); }
+    }    function near(p, maxD) {
       let best = null, bd = maxD;
       for (const t of nodes) { if (t.logs <= 0) continue; const d = Math.hypot(t.x - p.x, t.z - p.z); if (d < bd) { bd = d; best = t; } }
       return best;
@@ -147,11 +195,11 @@
       const p = player.position;
       if (!machine.driving) {
         if (machine.cool <= 0 && Math.hypot(p.x - L.park[0], p.z - L.park[1]) < 1.6) {
-          machine.driving = true; player.visible = false; p.z = L.park[1] - 1.2; A.sfx('saw'); hud.toast('🚜 Guida nel campo; torna giù per scaricare');
+          machine.driving = true; player.visible = false; p.x = L.park[0]; p.z = L.park[1] - 0.8; A.sfx('saw'); hud.toast('🚜 Guida nel campo; esci dal cancello per scaricare');
         }
         return;
       }
-      if (p.z > -30.4) { dismount(); return; }
+      if (p.z > F.z1 + 0.6) { dismount(); return; }
       const g = machine.g;
       const moved = Math.hypot(p.x - g.position.x, p.z - g.position.z);
       g.position.set(p.x, 0, p.z); g.rotation.y = player.rotation.y; machine.reel.rotation.x += dt * (4 + moved * 40);
@@ -170,6 +218,6 @@
       if (machine.el.textContent !== txt) machine.el.textContent = txt;
       hud.put(machine.el, machine.g.position.x, 2.8, machine.g.position.z, !!txt);
     }
-    return { nodes, near, chop, update, fade, machine, buy, dismount, overlays };
+    return { nodes, near, chop, update, fade, machine, buy, dismount, overlays, keepInside, inside };
   };
 })(window.Rifugio);

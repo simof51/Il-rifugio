@@ -9,6 +9,14 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.33.0 · 2026-11-27 · Strada e reception in alto, campo unico recintato
+
+- La **strada** e la **reception** stanno tra il campo (o bosco) e le stanze; gli ospiti entrano dall'alto del corridoio.
+- Il **campo** è un solo appezzamento con solchi e **angoli tondi**, chiuso da una staccionata con cancello; anche il **bosco abbattibile** è recintato.
+- Il macchinario resta nel recinto ed esce solo dal cancello (lì scarica).
+- Riquadri spostati vicino alla strada (zaini, scarponi, cartello, lanterne, aiutanti, attrezzi).
+
+**Per tornare indietro:** `git checkout e2c2977 -- web tests Changelog rifugio-design.md`
 ## v0.32.0 · 2026-11-27 · Addetto ai bagni
 
 - Nuovo aiutante assumibile (riquadro da 180 monete accanto allo sgabuzzino): prende sapone e carta igienica e rifornisce i bagni da solo.

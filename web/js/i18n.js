@@ -385,7 +385,7 @@
     ["Raccogli-zucche", "Pumpkin picker", "Recogedora de calabazas", "Ramasseuse de citrouilles", "Kürbisernter"],
     ["🧻 I bagni finiscono le scorte: prendile nello sgabuzzino (tappeto blu)", "🧻 Bathrooms run out: get supplies from the storeroom (blue mat)", "🧻 Los baños se quedan sin: cógelo en el trastero (alfombra azul)", "🧻 Les salles de bain se vident : prends les stocks au débarras (tapis bleu)", "🧻 Die Bäder werden leer: Hol Vorrat aus der Kammer (blaue Matte)"],
     ["🚽 Bagno senza scorte: prendile nello sgabuzzino", "🚽 Bathroom out of supplies: get them from the storeroom", "🚽 Baño sin existencias: cógelas en el trastero", "🚽 Salle de bain vide : va au débarras", "🚽 Bad ohne Vorrat: Hol ihn aus der Kammer"],
-    ["🚜 Guida nel campo; torna giù per scaricare", "🚜 Drive in the field; come back down to unload", "🚜 Conduce en el campo; baja para descargar", "🚜 Conduis dans le champ ; redescends pour décharger", "🚜 Fahr ins Feld; komm zum Abladen zurück"],
+    ["🚜 Guida nel campo; esci dal cancello per scaricare", "🚜 Drive in the field; leave by the gate to unload", "🚜 Conduce en el campo; sal por la puerta para descargar", "🚜 Conduis dans le champ ; sors par le portail pour décharger", "🚜 Fahr im Feld; zum Abladen durchs Tor"],
     ["Prendi sapone e carta igienica nello sgabuzzino e rifornisci i bagni.", "Take soap and toilet paper from the storeroom and restock the bathrooms.", "Coge jabón y papel del trastero y repón los baños.", "Prends savon et papier au débarras et réapprovisionne les salles de bain.", "Hol Seife und Toilettenpapier aus der Kammer und fülle die Bäder auf."],
   ];
   // Frasi con numeri: [espressione, [en, es, fr, de]] con $1, $2…

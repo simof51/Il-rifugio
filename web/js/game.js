@@ -60,14 +60,14 @@
     PADS.push(...(R.parts.city.RESERVE[CITYID] || []));
     // "nearPad" tiene libere anche tutta la zona costruita e il campo.
     const F = L.field;
-    const nearPad = (x, z, r) => L.built(x, z, r * 0.4) || (x > F.x0 - r && x < F.x1 + r && z > F.z0 - r && z < F.z1 + r) || PADS.some(p => Math.hypot(p[0] - x, p[1] - z) < r);
+    const nearPad = (x, z, r) => L.built(x, z, r * 0.4) || (x > F.x0 - r * 0.6 && x < F.x1 + r * 0.6 && z > F.z0 - r * 0.6 && z < F.z1 + r * 0.6) || PADS.some(p => Math.hypot(p[0] - x, p[1] - z) < r);
     const snowy = TH.fall === 'snow';
 
     // --- terreno e strada ---------------------------------------------------
     const ground = new T.Mesh(new T.PlaneGeometry(160, 160), mats.ground); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
     mats.path.polygonOffset = true; mats.path.polygonOffsetFactor = -1; mats.path.polygonOffsetUnits = -1;
     const roadPts = [];
-    // Strada d'arrivo davanti all'ingresso, da ovest a est; un sentiero porta dal locale caldaia/cucina al campo.
+    // Strada d'arrivo tra il campo e il rifugio, da ovest a est; vialetti verso il cancello del campo, l'ingresso e il giardino.
     function road(x0, z0, x1, z1, w) {
       const len = Math.hypot(x1 - x0, z1 - z0), geo = new T.PlaneGeometry(len, w).rotateX(-Math.PI / 2), uv = geo.attributes.uv;
       for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * len / 2.4, uv.getY(i) * w / 2.4);
@@ -75,7 +75,7 @@
       for (let i = 0; i <= len; i += 1.4) roadPts.push([x0 + (x1 - x0) * i / len, z0 + (z1 - z0) * i / len]);
     }
     const ROAD_W = 2;
-    road(-34, L.roadZ, 34, L.roadZ, ROAD_W); road(0, 5.8, 0, L.roadZ, 2.4); road(0, -32, 0, -29, 2.4); road(0, -46, 0, -32, 1.8);
+    road(-34, L.roadZ, 34, L.roadZ, ROAD_W); road(0, F.z1, 0, L.roadZ, 2.4); road(0, L.roadZ, 0, -29, 2.4); road(0, 5.5, 0, 10, 2.4);
     const nearRoad = (x, z, r) => roadPts.some(p => Math.hypot(p[0] - x, p[1] - z) < r);
     const walkP0 = []; for (let x = -16; x <= 16; x += 0.5) walkP0.push({ x, z: L.roadZ });
 
@@ -221,7 +221,7 @@
       burst(boiler.fire.x, boiler.fire.y + 0.2, boiler.fire.z + 0.2, 4, [0xffa233, 0xffd23a, 0xff6a2a], 1.6, 4, 0.55, 0.09, 6);
     }
     function feedOne(from, delay) { boiler.pend++; fly('log', from, o => o.copy(boiler.fire), 0.38, 0.9, landLog, delay); }
-    function feedMany(n) { for (let k = 0; k < n; k++) { _v.set(0, 1.4, -30); feedOne(_v, k * 0.04); } }
+    function feedMany(n) { for (let k = 0; k < n; k++) { _v.set(0, 1.4, -31); feedOne(_v, k * 0.04); } }
     const busyRooms = () => rooms.reduce((n, r) => n + (r.open && r.beds.some(b => b.guest) ? 1 : 0), 0);
     const burnRate = () => (0.06 + 0.075 * busyRooms()) * (3.2 / P.burn_busy) * (hasEffect('insul') ? 1 / P.insul_mul : 1);
 
@@ -356,7 +356,7 @@
     const gaHead = new T.Mesh(new T.ConeGeometry(0.26, 0.55, 14).rotateX(Math.PI / 2), gaMat); gaHead.position.z = 0.35;
     guideArrow.add(gaShaft, gaHead); guideArrow.scale.setScalar(1.3); guideArrow.visible = false; scene.add(guideArrow);
     const leafy = TH.fall === 'leaves', NS = Math.round((snowy ? 500 : leafy ? 110 : 200) * Math.max(0.4, Q.density)), snowPos = new Float32Array(NS * 3), fallSpeed = snowy ? 1.3 : leafy ? 0.9 : 0.7;
-    for (let i = 0; i < NS; i++) { snowPos[i * 3] = -20 + Math.random() * 40; snowPos[i * 3 + 1] = Math.random() * 14; snowPos[i * 3 + 2] = -40 + Math.random() * 55; }
+    for (let i = 0; i < NS; i++) { snowPos[i * 3] = -20 + Math.random() * 40; snowPos[i * 3 + 1] = Math.random() * 14; snowPos[i * 3 + 2] = -55 + Math.random() * 70; }
     const snowGeo = new T.BufferGeometry(); snowGeo.setAttribute('position', new T.BufferAttribute(snowPos, 3));
     const fallPts = new T.Points(snowGeo, new T.PointsMaterial(snowy ? { color: 0xffffff, size: 0.16, transparent: true, opacity: 0.9 } : { color: TH.fallColor || 0xff9ec7, size: leafy ? 0.27 : 0.17, transparent: true, opacity: 0.95 }));
     fallPts.frustumCulled = false; scene.add(fallPts);
@@ -365,7 +365,7 @@
       const BCOL = [0xff7ac6, 0xffd23a, 0x4fc3f7, 0xff9a2a, 0xa066ff];
       for (let i = 0; i < 8; i++) {
         const m = new T.Mesh(B.cached('wing', () => new T.PlaneGeometry(0.42, 0.3)), new T.MeshBasicMaterial({ color: BCOL[i % BCOL.length], side: T.DoubleSide }));
-        scene.add(m); flies.push({ m, cx: -15 + rnd() * 30, cz: -45 + rnd() * 55, r: 1.5 + rnd() * 3, ph: rnd() * 6.28, sp: 0.35 + rnd() * 0.3 });
+        scene.add(m); flies.push({ m, cx: -15 + rnd() * 30, cz: -54 + rnd() * 64, r: 1.5 + rnd() * 3, ph: rnd() * 6.28, sp: 0.35 + rnd() * 0.3 });
       }
     }
 
@@ -476,7 +476,7 @@
       const len = Math.hypot(mx, mz), moving = len > 0.15;
       if (moving) { const k = Math.min(1, len) / len; p.x += mx * k * speed() * dt; p.z += mz * k * speed() * dt; player.rotation.y = Math.atan2(mx, mz); }
       B.walk(player, moving, dt);
-      if (driving) { p.x = Math.max(P.world_min[0] + 1, Math.min(P.world_max[0] - 1, p.x)); p.z = Math.max(P.world_min[1] + 1, p.z); }
+      if (driving) RES_M.keepInside(p); // il macchinario resta nel recinto ed esce solo dal cancello
       else collide(p);
 
       let changed = false;
@@ -709,8 +709,8 @@
         go(where) {
           if (where === 'casetta') this.tp(0, -15);
           else if (where === 'banco') this.tp(cocoa.pick[0], cocoa.pick[1]);
-          else if (where === 'sentiero') this.tp(0, 9);
-          else if (where === 'bosco') this.tp(0, -34);
+          else if (where === 'sentiero') this.tp(0, L.roadZ);
+          else if (where === 'bosco') this.tp(0, -42);
           else if (where === 'lago' && lake) this.tp(-16, lake.z);
         },
         skip(n) { for (let k = 0; k < (n || 1); k++) satisfy(objectives[S.done + k]); },

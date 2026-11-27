@@ -10,6 +10,7 @@
     const { scene, B, hud, A, P, S, L, PL, TX, RES, EX, MT, rooms, mensa, cinema, boiler, guests, recep, fly, burst, _v, outfit, snackE } = G;
     const pick = a => a[Math.floor(Math.random() * a.length)];
     let spawnT = 2;
+    const ENTRY = -30; // ingresso del rifugio, in cima al corridoio
 
     // Percorso passando dal corridoio: dalla posizione attuale (con la porta del posto in cui si trova) alla porta di arrivo.
     const door = d => ({ x: d.doorX, z: d.doorZ });
@@ -33,7 +34,7 @@
       const g = B.person(look ? look.coat : pick(pool), look ? look.hat : pick(HATS), false, outfit, Object.assign({ shorts: pick(SHORTS), shoes: Math.random() < 0.5 ? 0xffffff : 0x3d8bff }, look ? look.opt : hatOpt));
       g.scale.setScalar(kind === 'vip' || kind === 'host' ? 1 : 0.88);
       g.traverse(m => { if (m.isMesh) m.castShadow = false; }); // niente ombre vere sugli ospiti: sono tanti
-      const side = Math.random() < 0.5 ? -1 : 1, road = path || [[side * 30, L.roadZ], [side * 14, L.roadZ], [recep.x, L.roadZ]];
+      const side = Math.random() < 0.5 ? -1 : 1, road = path || [[side * 30, L.roadZ], [side * 14, L.roadZ], [recep.x, L.roadZ]]; // la strada passa tra il campo e il rifugio
       g.position.set(road[0][0], 0, road[0][1]);
       const gu = { g, r, b, state: 'road', path: road.slice(1).map(p => p.slice()), stay: P.guest_stay * (kind === 'vip' ? 1.4 : 1), cold: 0, want: false, served: false, el: hud.label('pill', ''), vip: kind === 'vip', boat: kind === 'boat', scout: kind === 'scout', rush: kind === 'rush' ? 40 : 0, taken: false, seat: null, chair: null, extra: 0, dirty: false };
       b.guest = gu; guests.push(gu);
@@ -93,7 +94,7 @@
       free(gu);
       const pay = Math.round((P.pay + (gu.served ? P.tip : 0) + gu.extra) * (gu.vip ? 3 : gu.host ? 4 : gu.scout ? 1.5 : 1) * (R.shop.has('boost') ? 1.5 : 1) * MT.payMul() * G.payBonus(gu) * (gu.dirty ? 0.65 : 1));
       gu.pay = pay; gu.state = 'out'; gu.place = null;
-      gu.path = via(from, null, [[0, from.doorZ], [0, 6.4], [recep.x + 0.7, recep.z + 1.35]]);
+      gu.path = via(from, null, [[0, from.doorZ], [0, ENTRY], [recep.x + 0.7, recep.z + 1.35]]);
       B.wave(gu.g, 1.6);
       S.happy++; S.guests++; EX.ev('guest'); if (gu.vip) { EX.ev('vip'); MT.vipServed(gu.persona); }
       if (gu.host) { R.settings.addGems(1); hud.toast(`${gu.host.e} ${gu.host.name}: «${gu.host.line}» +1 💎`); }
@@ -104,7 +105,7 @@
     function leaveAngry(gu) {
       const from = gu.place || roomPlace(gu.r);
       stand(gu, ...G.exitPoint(gu)); free(gu);
-      gu.state = 'out'; gu.pay = 0; gu.place = null; gu.path = via(from, null, [[0, 6.4], [Math.sign(recep.x) * 3, L.roadZ], [30, L.roadZ]]);
+      gu.state = 'out'; gu.pay = 0; gu.place = null; gu.path = via(from, null, [[0, ENTRY], [Math.sign(recep.x) * 3, L.roadZ], [30, L.roadZ]]);
       S.happy = Math.max(0, S.happy - P.cold_penalty); hud.toast(TX.coldLeave); A.sfx('cold');
     }
 
@@ -136,12 +137,12 @@
         const gu = guests[i];
         if (gu.state === 'road') { if (B.follow(gu.g, gu.path, 3.6, dt)) gu.state = 'queue'; }
         else if (gu.state === 'queue') {
-          const k = queue.indexOf(gu); gu.path = [[recep.x - 0.55, recep.z + 1.45 + k * 0.7]];
+          const k = queue.indexOf(gu); gu.path = [[recep.x - 0.55 + Math.sign(recep.x) * k * 0.65, recep.z + 1.5]]; // la fila si allunga di lato, lontano dall'ingresso
           if (B.follow(gu.g, gu.path, 3, dt)) {
             gu.g.rotation.y = Math.PI;
             if (k === 0) {
               gu.wait = (gu.wait || 0) + dt;
-              if (gu.wait > 0.8) { gu.wait = 0; recep.hop = 0.4; A.sfx('click'); gu.state = 'in'; const d = gu.r.def; gu.path = [[0, 6.4]].concat(via(null, d, [[gu.b.x, d.z0 + 3.1]])); }
+              if (gu.wait > 0.8) { gu.wait = 0; recep.hop = 0.4; A.sfx('click'); gu.state = 'in'; const d = gu.r.def; gu.path = [[0, ENTRY]].concat(via(null, d, [[gu.b.x, d.z0 + 3.1]])); }
             }
           } else gu.wait = 0;
         } else if (gu.state === 'in') {

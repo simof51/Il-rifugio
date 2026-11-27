@@ -94,7 +94,7 @@
           if (k >= 1) {
             phase = 'moored'; t = 0; let n = 0;
             for (let i = 0; i < 3; i++) {
-              const gu = G.spawnGuest('boat', [[7 + i * 0.3, SEA_Z + 2], [7, SEA_Z - 1], [7.2, L.roadZ], [L.recep.x + 0.6, L.roadZ - 0.4]]);
+              const gu = G.spawnGuest('boat', [[7 + i * 0.3, SEA_Z + 2], [7, SEA_Z - 1], [14.5, 12 - i * 0.5], [14.5, L.roadZ], [L.recep.x + 0.6, L.roadZ + 0.3]]);
               if (gu) n++;
             }
             if (n) done(7, SEA_Z - 2);

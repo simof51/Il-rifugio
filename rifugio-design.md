@@ -65,3 +65,8 @@ Il gioco è destinato al Google Play Store, con pubblicità e un eventuale shop 
 - Mensa: tutti i banchi; 12 posti; all'inizio serve il giocatore, poi fino a 3 camerieri.
 - 51 obiettivi, 29 sblocchi.
 - Addetto ai bagni (180, dopo 6 acquisti): porta fino a 8 saponi e 8 rotoli per volta dallo sgabuzzino ai bagni che ne hanno meno.
+
+## Ordine della mappa (v0.33) - sostituisce quello della v0.31
+
+- Dall'alto: campo recintato, strada, reception, locale caldaia/cucina e sgabuzzino, corridoio con le stanze, mensa e cinema, giardino.
+- Campo (o bosco): un solo appezzamento 30 x 15 con angoli tondi (raggio 3,5), staccionata e cancello a sud largo 4,8; il macchinario scarica uscendo dal cancello.

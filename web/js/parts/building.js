@@ -46,7 +46,7 @@
     floor(-L.HW, L.HW, -23, 6, corrM, null, 0.055);
     for (let z = -22; z < 6; z += 2) floor(-0.25, 0.25, z, z + 0.9, trimM, null, 0.07);
     floor(-4.5, 4.5, L.boiler.z0, L.boiler.z1, B.tint(0x9aa1ab), null, 0.05);
-    [-L.HW, L.HW].forEach(x => cyl(0.09, 0.1, 2.2, trimM, x, 1.1, 6, null, 8)); box(L.HW * 2 + 0.4, 0.3, 0.2, trimM, 0, 2.25, 6, null, 0.04); // arco d'ingresso
+    [-L.HW, L.HW].forEach(x => cyl(0.09, 0.1, 2.2, trimM, x, 1.1, L.boiler.z0, null, 8)); box(L.HW * 2 + 0.4, 0.3, 0.2, trimM, 0, 2.25, L.boiler.z0, null, 0.04); // arco d'ingresso, verso strada e reception
 
     // --- locale caldaia / cucina ------------------------------------------
     const bz0 = L.boiler.z0, bz1 = L.boiler.z1, closetLeft = L.closet.x1 < 0;

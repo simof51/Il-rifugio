@@ -5,7 +5,7 @@
     const { L, player, rooms, guests, boiler, mensa, cinema } = G;
     const cv = document.createElement('canvas'); cv.id = 'minimap'; cv.width = 128; cv.height = 230; document.body.appendChild(cv);
     const g = cv.getContext('2d');
-    const X0 = -17, X1 = 17, Z0 = -47, Z1 = 14;
+    const X0 = -17, X1 = 17, Z0 = -57, Z1 = 12;
     const px = x => Math.max(4, Math.min(124, (x - X0) / (X1 - X0) * 128)), pz = z => Math.max(4, Math.min(226, (z - Z0) / (Z1 - Z0) * 230));
     const dot = (x, z, col, r) => { g.fillStyle = col; g.beginPath(); g.arc(px(x), pz(z), r, 0, 7); g.fill(); };
     const rect = (x0, x1, z0, z1, col) => { g.fillStyle = col; g.fillRect(px(x0), pz(z0), px(x1) - px(x0), pz(z1) - pz(z0)); };
@@ -18,6 +18,7 @@
       const task = document.getElementById('task'); if (task) { const y = Math.ceil(task.getBoundingClientRect().bottom) + 8 + 'px'; if (cv.style.top !== y) cv.style.top = y; } // sempre sotto la scheda dell'obiettivo
       g.clearRect(0, 0, 128, 230);
       rect(L.field.x0, L.field.x1, L.field.z0, L.field.z1, 'rgba(110,180,80,.35)');
+      rect(X0, X1, L.roadZ - 1, L.roadZ + 1, '#b9b4a8');
       rect(-L.HW, L.HW, -23, 6, '#d9b7a0');
       rect(L.boiler.x0, L.boiler.x1, L.boiler.z0, L.boiler.z1, boiler.fuel <= 0 ? (blink ? '#ff3b30' : '#ffb3ae') : boiler.fuel < 12 ? '#ffb02e' : '#9aa1ab');
       rect(L.closet.x0, L.closet.x1, L.closet.z0, L.closet.z1, '#4fa3ff');
