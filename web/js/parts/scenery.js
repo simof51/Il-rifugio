@@ -5,8 +5,9 @@
     const { T, scene, B, mats, box, cyl, ball, PL, P, trees, cols, ROAD_W, SEA_Z, CANAL, FARMS, CHAPEL, SEASON_ID, nearPad, nearRoad, inLake, inLM } = G;
     // --- strutture del posto: ogni città e stagione ha le sue (fontana, barca, fienili, bancarelle, tulipani…) ---
     const structPlaced = [];
-    const SLOTS = [[-15, 10], [-10, 9.5], [-5, 11.5], [1, 11], [7, 11.5], [13, 10.5], [19, 8.5], [22.5, 3], [22.5, -3.5], [-20, 3], [-20.5, -4], [16.5, 14]];
+    const SLOTS = [[-15.5, -3], [15.5, -3], [-15.5, -18], [15.5, -18], [-15.5, -11], [15.5, -26], [-15.5, 6], [15.5, 7], [-15.5, -26], [-21, 7], [21, -3], [21, 6]];
     const STRUCT = {
+      picnic(g) { [[-1, 0], [1.2, 0.6]].forEach(([x, z]) => { cyl(0.6, 0.6, 0.07, B.tint(0xffa6c9), x, 0.7, z, g, 14); cyl(0.07, 0.07, 0.65, mats.white, x, 0.36, z, g, 8); [-0.8, 0.8].forEach(d => box(0.4, 0.4, 0.4, mats.wood, x + d, 0.2, z, g, 0.04)); }); return 1.6; },
       signpost(g) { cyl(0.07, 0.08, 2.1, mats.wood, 0, 1.05, 0, g, 6); [[0.55, 1.75, 0.15], [-0.5, 1.4, -0.2]].forEach(([dx, y, rz]) => { box(1.1, 0.3, 0.06, mats.plank, dx, y, 0, g, 0.01).rotation.z = rz; }); return 0.5; },
       bench(g) { box(1.5, 0.1, 0.5, mats.plank, 0, 0.5, 0, g, 0.02); box(1.5, 0.45, 0.08, mats.plank, 0, 0.8, -0.24, g, 0.02); [-0.6, 0.6].forEach(x => box(0.1, 0.5, 0.45, mats.wood, x, 0.25, 0, g)); return 0.9; },
       fountain(g) { cyl(1.2, 1.3, 0.45, mats.stone, 0, 0.22, 0, g, 18); cyl(1.0, 1.0, 0.06, B.tint(0x7ad0ff), 0, 0.46, 0, g, 18); cyl(0.16, 0.22, 1.1, mats.stone, 0, 0.9, 0, g, 8); ball(0.28, mats.stone, 0, 1.5, 0, g, 10, 8); return 1.35; },
@@ -38,7 +39,7 @@
       hay(g) { [[0, 0], [1.0, 0.2], [0.5, -0.85]].forEach(([x, z], i) => { const b = cyl(0.55, 0.55, 0.95, B.tint(0xd9b45b), x, 0.55, z, g, 12); b.rotation.z = Math.PI / 2; b.rotation.y = i * 0.7; }); return 1.5; },
       pumpkins(g) { [[0, 0, 0.5], [0.9, 0.3, 0.4], [-0.7, 0.6, 0.35], [0.3, -0.8, 0.45], [-0.4, -0.5, 0.3]].forEach(([x, z, r]) => { ball(r, B.tint(0xff8a1f), x, r * 0.8, z, g, 10, 8).scale.y = 0.8; cyl(0.05, 0.06, 0.18, B.tint(0x4a7a2a), x, r * 1.6, z, g, 5); }); return 0; }
     };
-    PL.structs.forEach((kind, i) => {
+    (SEASON_ID === 'primavera' || SEASON_ID === 'estate' ? PL.structs.concat(['picnic']) : PL.structs).forEach((kind, i) => {
       const fn = STRUCT[kind]; if (!fn) return;
       for (let t = 0; t < SLOTS.length; t++) {
         const [x, z] = SLOTS[(i * 3 + t) % SLOTS.length];

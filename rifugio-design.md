@@ -54,3 +54,13 @@ Il gioco è destinato al Google Play Store, con pubblicità e un eventuale shop 
 - Paga: +4% per stella intera, +4% per mobile della stanza (mobili 60-300 monete).
 - Missioni settimanali 3 x 6 gemme; medaglie 2 gemme; album 3 gemme ogni 5 figurine.
 - Ruota: monete 60/120/180/300, gemme 2/4/8, super premio 40.
+
+## Pianta verticale (v0.31) - sostituisce la disposizione e la stanza unica a fila
+
+- Dall'alto: campo di raccolta, locale caldaia/cucina con sgabuzzino, corridoio con 4 stanze per lato (2 letti e bagno), mensa e cinema, reception e strada. Ai Mulini la pianta è specchiata.
+- Raccolta: inverno legna (caldaia), primavera ortaggi (cucina), estate grano (forno), autunno zucche (calderone). Serbatoio unico da 60; consumo 0,06 + 0,075 per stanza occupata al secondo.
+- Macchinario (450): si guida nel campo, tramoggia 80, scarica scendendo.
+- Bagni: 4 saponi e 4 rotoli; ogni ospite ne usa uno; senza scorte paga il 35% in meno. Sgabuzzino: 8 / 12 / 18 per tipo.
+- Ospite: reception, letto, mensa (se aperta), cinema (+60% della paga base), reception, uscita.
+- Mensa: tutti i banchi; 12 posti; all'inizio serve il giocatore, poi fino a 3 camerieri.
+- 50 obiettivi, 28 sblocchi.

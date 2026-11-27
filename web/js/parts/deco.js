@@ -2,7 +2,7 @@
 (function (R) {
   'use strict';
   (R.parts = R.parts || {}).deco = function (G) {
-    const { T, scene, B, mats, cyl, ball, TH, walkP0, ROAD_W, nearPad, nearRoad, STAND, cols, bobbers, makeDuck } = G;
+    const { T, scene, B, mats, box, cyl, ball, TH, walkP0, ROAD_W, nearPad, nearRoad, STAND, cols, bobbers, makeDuck } = G;
     // Decorazioni acquistabili: lanterne colorate lungo i sentieri e la mascotte del livello.
     // Lanterne: palo di ferro, lanterna con telaio, vetro colorato che brilla, tettuccio; di notte un alone, una macchia di luce a terra
     // e (per le 4 più vicine all'omino) una vera luce che illumina i dintorni.

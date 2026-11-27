@@ -8,9 +8,9 @@
   // --- missioni: 3 al giorno, scelte in base alla data (le stesse per tutta la giornata) ---
   const MISSIONS = [
     { id: 'guest', ev: 'guest', n: [6, 10], text: n => `Accogli ${n} ospiti` },
-    { id: 'cup', ev: 'cup', n: [5, 8], text: n => `Servi ${n} bevande` },
-    { id: 'wood', ev: 'wood', n: [20, 35], text: n => `Taglia ${n} pezzi di legna` },
-    { id: 'log', ev: 'log', n: [15, 25], text: n => `Porta ${n} legna ai fuochi` },
+    { id: 'cup', ev: 'cup', n: [5, 8], text: n => `Servi ${n} ordinazioni in mensa` },
+    { id: 'wood', ev: 'wood', n: [20, 35], text: n => `Raccogli ${n} pezzi nel campo` },
+    { id: 'log', ev: 'log', n: [15, 25], text: n => `Consegna ${n} pezzi raccolti` },
     { id: 'goal', ev: 'goal', n: [1, 2], text: n => `Completa ${n} obiettivo${n > 1 ? 'i' : ''}` },
     { id: 'vip', ev: 'vip', n: [1, 1], text: () => 'Servi un ospite VIP' },
     { id: 'rush', ev: 'rush', n: [1, 1], text: () => 'Fai un servizio lampo' },
@@ -21,7 +21,7 @@
   const WEEKLY = [
     { id: 'w_guest', ev: 'guest', n: 80, text: n => `Accogli ${n} ospiti in settimana` },
     { id: 'w_cup', ev: 'cup', n: 50, text: n => `Servi ${n} ordinazioni in settimana` },
-    { id: 'w_wood', ev: 'wood', n: 300, text: n => `Taglia ${n} legna in settimana` },
+    { id: 'w_wood', ev: 'wood', n: 300, text: n => `Raccogli ${n} pezzi in settimana` },
     { id: 'w_req', ev: 'req', n: 10, text: n => `Esaudisci ${n} richieste in settimana` },
     { id: 'w_goal', ev: 'goal', n: 15, text: n => `Completa ${n} obiettivi in settimana` },
     { id: 'w_city', ev: 'city', n: 20, text: n => `Usa ${n} volte l'attività della città` }

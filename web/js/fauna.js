@@ -58,7 +58,7 @@
       const bx0 = ctx.bounds[0], bx1 = ctx.bounds[1], bz0 = ctx.bounds[2], bz1 = ctx.bounds[3];
       for (let k = 0; k < 40; k++) {
         const x = bx0 + 2 + rnd() * (bx1 - bx0 - 4), z = bz0 + 2 + rnd() * (bz1 - bz0 - 4);
-        if (ctx.inLake(x, z, 2.5) || ctx.inLM(x, z, 2) || (x > -17 && x < 19 && z > -10.5 && z < 5.5)) continue;
+        if (ctx.inLake(x, z, 2.5) || ctx.inLM(x, z, 2) ) continue;
         if (ctx.trees.some(t => Math.hypot(t.x - x, t.z - z) < 1.2)) continue;
         return [x, z];
       }

@@ -3,7 +3,8 @@
 // Obiettivi e sblocchi sono generati da common.js (a gradini, non legati agli obiettivi).
 (function (R) {
   const v = {
-    wood: 'legna', tree: 'albero', treeArt: 'un albero', trees: 'alberi', fire: 'barbecue', fires: 'barbecue', room: 'area pranzo', roomTitle: 'Area pranzo', roomShort: 'area',
+    season: 'estate',
+    wood: 'legna', tree: 'albero', treeArt: 'un albero', trees: 'alberi', fire: 'barbecue', fires: 'barbecue', room: 'stanza', roomTitle: 'Stanza', roomShort: 'stanza',
     guest: 'bagnante', guests: 'bagnanti', guestEmoji: '🏖️', firstGuest: 'il primo bagnante',
     drink: 'limonata', drinkOne: 'limonata', drinks: 'limonate', foodEmoji: '🍋', stand: 'il chiosco della limonata', stand2: 'il chiosco limonata veloce', standTitle: 'Chiosco limonata', stand2Title: 'Limonata veloce',
     helper: 'un aiutante', helperTitle: 'Aiutante area', bootsName: 'le scarpe da corsa', bootsTitle: 'Scarpe da corsa',

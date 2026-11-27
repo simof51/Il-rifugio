@@ -2,7 +2,8 @@
 // Numeri, testi e aspetto di questa stagione stanno qui; obiettivi e sblocchi sono generati da common.js.
 (function (R) {
   const v = {
-    wood: 'legna', tree: 'albero', treeArt: 'un albero', trees: 'alberi', fire: 'barbecue', fires: 'barbecue', room: 'area picnic', roomTitle: 'Area picnic', roomShort: 'area',
+    season: 'primavera',
+    wood: 'legna', tree: 'albero', treeArt: 'un albero', trees: 'alberi', fire: 'barbecue', fires: 'barbecue', room: 'stanza', roomTitle: 'Stanza', roomShort: 'stanza',
     guest: 'ospite', guests: 'ospiti', guestEmoji: '🧺', firstGuest: 'il primo ospite',
     drink: 'spremuta', drinkOne: 'spremuta', drinks: 'spremute', foodEmoji: '🍊', stand: 'il chiosco delle spremute', stand2: 'il chiosco spremute veloce', standTitle: 'Chiosco spremute', stand2Title: 'Spremute veloci', thanks: 'Che fresca! 😋',
     helper: 'un giardiniere', helperTitle: 'Giardiniere area', bootsName: 'le scarpe da corsa', bootsTitle: 'Scarpe da corsa',

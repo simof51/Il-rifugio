@@ -2,6 +2,7 @@
 // Numeri, testi e aspetto stanno qui; obiettivi e sblocchi sono generati da common.js (a gradini, non legati agli obiettivi).
 (function (R) {
   const v = {
+    season: 'inverno',
     wood: 'legna', tree: 'abete', treeArt: 'un abete', trees: 'abeti', fire: 'camino', fires: 'camini', room: 'stanza', roomTitle: 'Stanza', roomShort: 'stanza',
     guest: 'escursionista', guests: 'escursionisti', guestEmoji: '🧑', firstGuest: 'il primo escursionista',
     drink: 'cioccolata', drinkOne: 'cioccolata', drinks: 'cioccolate', foodEmoji: '☕', stand: 'il banco della cioccolata calda', stand2: 'il banco cioccolata veloce', standTitle: 'Cioccolata calda', stand2Title: 'Cioccolata veloce',

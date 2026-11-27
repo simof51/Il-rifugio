@@ -19,7 +19,7 @@ const ctx = {
 };
 ctx.window = ctx; vm.createContext(ctx);
 const load = f => vm.runInContext(fs.readFileSync(path.join(WEB, f), 'utf8'), ctx, { filename: f });
-['js/namespace.js', 'js/levels/common.js', 'js/levels/inverno.js', 'js/levels/primavera.js', 'js/levels/estate.js', 'js/levels/autunno.js', 'js/levels/cities.js', 'js/levels/places.js', 'js/settings.js', 'js/i18n.js', 'js/extras.js', 'js/meta.js', 'js/state.js', 'js/parts/city.js', 'js/parts/activities.js'].forEach(load);
+['js/namespace.js', 'js/levels/common.js', 'js/levels/inverno.js', 'js/levels/primavera.js', 'js/levels/estate.js', 'js/levels/autunno.js', 'js/levels/cities.js', 'js/levels/places.js', 'js/settings.js', 'js/i18n.js', 'js/extras.js', 'js/meta.js', 'js/state.js', 'js/parts/layout.js', 'js/parts/city.js', 'js/parts/activities.js'].forEach(load);
 const R = ctx.Rifugio;
 
 // 1. Ogni tappa ha i dati che servono, senza duplicati e con numeri sensati.
@@ -77,9 +77,10 @@ R.extras.ev('guest', 50);
 ok(!!(R.settings.get('medals') || {}).m2, 'medaglia Albergatore a 50 ospiti');
 ok(R.extras.missionsHtml().indexOf('Medaglie') >= 0, 'la pagina delle missioni si costruisce');
 
-// 4a. Ogni tappa ha un posto personalizzato (strutture, ospite speciale, disposizione) e i riquadri non si sovrappongono.
+// 4a. Ogni tappa ha un posto personalizzato; la pianta è verticale, i riquadri non si sovrappongono
+//     e ogni obiettivo di acquisto si può davvero comprare quando arriva.
 R.order.forEach(id => {
-  const l = R.levels[id], pl = l.place;
+  const l = R.levels[id], pl = l.place, L = R.parts.layout(l.cityId);
   ok(pl && pl.structs.length === 4 && pl.host && pl.host.name && pl.layout, id + ': posto personalizzato');
   if (!pl) return;
   const ps = l.unlocks;
@@ -87,11 +88,25 @@ R.order.forEach(id => {
     const d = Math.hypot(ps[i].pos[0] - ps[j].pos[0], ps[i].pos[1] - ps[j].pos[1]);
     ok(d >= 1.8, id + ': riquadri troppo vicini: ' + ps[i].id + ' e ' + ps[j].id + ' (' + d.toFixed(1) + ')');
   }
-  ps.forEach(u => { const dx = Math.max(Math.abs(u.pos[0] - pl.layout.stand) - 1.25, 0), dz = Math.max(Math.abs(u.pos[1] - 0.2) - 0.65, 0); ok(Math.hypot(dx, dz) >= 1.1, id + ': riquadro addosso al banco: ' + u.id); });
+  ok(ps.every(u => u.pos[0] > L.world.min[0] && u.pos[0] < L.world.max[0] && u.pos[1] > L.world.min[1] && u.pos[1] < L.world.max[1]), id + ': riquadri dentro la mappa');
+  ok(L.rooms.length === 8 && L.rooms.filter(r => r.cx < 0).length === 4 && L.rooms.every(r => r.beds.length === 2 && r.bath && r.restock), id + ': 8 stanze, 4 per lato, due letti e bagno');
+  ok(L.rooms.every(r => { const u = ps.find(x => x.id === 'room' + r.k); return r.k === 0 || (u && u.pos[0] > r.x0 && u.pos[0] < r.x1 && u.pos[1] > r.z0 && u.pos[1] < r.z1); }), id + ': il riquadro di ogni stanza sta dentro la stanza');
+  let bought = 0; const seen = new Set();
+  l.objectives.filter(o => o.bought).forEach(o => {
+    const u = ps.find(x => x.id === o.bought);
+    ok(!!u, id + ': sblocco esistente ' + o.bought);
+    if (!u) return;
+    ok((u.requires.purchases || 0) <= bought, id + ': ' + o.bought + ' è visibile quando serve (' + u.requires.purchases + ' > ' + bought + ')');
+    ok(!u.needMensa || seen.has('mensa'), id + ': la mensa viene prima di ' + o.bought);
+    ok(u.effect !== 'waiter' || seen.has('cocoa'), id + ': il banco viene prima del cameriere');
+    seen.add(o.bought); bought++;
+  });
+  ok(bought === ps.length, id + ': ogni sblocco ha il suo obiettivo (' + bought + '/' + ps.length + ')');
+  ok(!!R.RES[l.season] && l.objectives.every(o => o.text.indexOf('undefined') < 0), id + ': testi della stagione completi');
 });
-ok(new Set(['inverno', 'mulini-inverno', 'porto-inverno'].map(id => R.levels[id].place.layout.stand)).size === 3, 'le tre città hanno il banco in posti diversi');
+ok(new Set(Object.keys(R.RES).map(k => R.RES[k].kind)).size === 4, 'ogni stagione raccoglie una cosa diversa');
+ok(R.parts.layout('mulini').mensa.x0 > 0 && R.parts.layout('valle').mensa.x0 < 0, 'ai Mulini la pianta è specchiata');
 ok(new Set(R.order.map(id => R.levels[id].place.host.name)).size === 12, 'ogni posto ha il suo ospite speciale');
-
 // 4b. Premio giornaliero, mystery box, album, guadagno da assenti, prestigio e decorazioni.
 {
   const MT = R.meta, g0b = R.settings.get('gems');
@@ -129,7 +144,7 @@ ok(new Set(R.order.map(id => R.levels[id].place.host.name)).size === 12, 'ogni p
   ok(EX.claimMedal('m9') === 0, 'una medaglia non vinta non dà premi');
   MT.ALBUM.slice(0, 10).forEach(a => MT.see(a.id)); const n = MT.albumReady(), g1 = R.settings.get('gems');
   ok(n >= 2 && MT.claimAlbum() === n * 3 && MT.claimAlbum() === 0 && R.settings.get('gems') === g1 + n * 3, 'i premi dell\'album si ritirano una volta');
-  R.order.forEach(id => { const l = R.levels[id], s = l.unlocks.find(u => u.id === 'snack'); ok(!!s && s.pos[0] === l.place.layout.snack && s.title !== 'Banco dolci', id + ': banco dei dolci al suo posto'); });
+  R.order.forEach(id => { const s = R.levels[id].unlocks.find(u => u.id === 'snack'); ok(!!s && s.needMensa && s.title !== 'Banco dolci', id + ': banco dei dolci in mensa'); });
   ok(R.parts.activities.FURN.every(f => f.cost > 0) && new Set(R.parts.activities.FURN.map(f => f.id)).size === R.parts.activities.FURN.length, 'arredo con id unici e prezzi');
   ['valle', 'mulini', 'porto'].forEach(c => ok(Array.isArray(R.parts.city.RESERVE[c]), c + ': zone dell\'attività'));
   R.order.forEach(id => { const l = R.levels[id]; (R.parts.city.RESERVE[l.cityId] || []).forEach(([x, z]) => ok(l.unlocks.every(u => Math.hypot(u.pos[0] - x, u.pos[1] - z) >= 2), id + ': attività della città lontana dai riquadri')); });

@@ -62,7 +62,7 @@
     function roundBoxGeo(w, h, d, r) {
       r = Math.max(0.002, Math.min(r, w / 2 - 0.001, h / 2 - 0.001, d / 2 - 0.001));
       return cached(`rb${w}_${h}_${d}_${r.toFixed(3)}`, () => {
-        const m = 2, S = 2 * m + 1, half = [w / 2, h / 2, d / 2];
+        const m = 1, S = 2 * m + 1, half = [w / 2, h / 2, d / 2];
         const g = new T.BoxGeometry(1, 1, 1, S, S, S);
         const pos = g.attributes.position, nor = g.attributes.normal;
         const v = [0, 0, 0], inner = [0, 0, 0];
@@ -115,6 +115,26 @@
       m.setAttribute('color', new T.Float32BufferAttribute(col, 3)); m.setIndex(idx);
       return m;
     }
+
+    // Fonde le mesh fisse di un gruppo che hanno lo stesso materiale: meno oggetti da disegnare (il telefono va più veloce).
+    function bake(group) {
+      const by = new Map();
+      group.children.slice().forEach(m => {
+        if (!m.isMesh || !m.geometry.index || m.material.vertexColors || m.material.transparent || m.userData.keep) return;
+        const k = m.material.uuid + (m.castShadow ? 's' : '') + (m.receiveShadow ? 'r' : '');
+        if (!by.has(k)) by.set(k, []);
+        by.get(k).push(m);
+      });
+      by.forEach(list => {
+        if (list.length < 2) return;
+        const geos = list.map(m => { m.updateMatrix(); return { geo: m.geometry.clone().applyMatrix4(m.matrix) }; });
+        const geo = mergeParts(geos); geos.forEach(g => g.geo.dispose()); geo.userData.baked = true;
+        const out = new T.Mesh(geo, list[0].material); out.castShadow = list[0].castShadow; out.receiveShadow = list[0].receiveShadow;
+        list.forEach(m => group.remove(m)); group.add(out);
+      });
+    }
+    // Libera la memoria delle geometrie fuse di un oggetto che si toglie dalla scena.
+    function release(o) { o.traverse(m => { if (m.isMesh && m.geometry.userData.baked) m.geometry.dispose(); }); }
 
     // --- alberi -------------------------------------------------------------
     // "fall" contiene tronco e chioma e può inclinarsi o cadere ruotando attorno alla base;
@@ -321,6 +341,7 @@
         tray, trayCups, hold: false, hb: 0,
         ph: 0, t: Math.random() * 6, mv: 0, chopT: 0, chopDur: 1, ck: 1, cb: 0, tossT: 0, tossDur: 1, tk: 1, tb: 0
       });
+      [up, ...legs, ...arms.map(a => a.sh), ...arms.map(a => a.el), lids].forEach(bake);
       scene.add(g);
       return g;
     }
@@ -425,14 +446,17 @@
       return !path.length;
     }
 
-    const logGeo = new T.CylinderGeometry(0.09, 0.09, 0.55, 14);
+    // Il carico dipende dalla stagione: tronchetti, ceste di ortaggi, fasci di grano o zucche.
+    const kind = theme.resource || 'wood';
+    const logGeo = kind === 'veg' ? new T.SphereGeometry(0.13, 10, 8) : kind === 'grain' ? new T.CylinderGeometry(0.07, 0.11, 0.55, 8) : kind === 'pumpkin' ? new T.SphereGeometry(0.14, 10, 8).scale(1, 0.8, 1) : new T.CylinderGeometry(0.09, 0.09, 0.55, 14);
+    const logMat = kind === 'veg' ? M(0x7ac943) : kind === 'grain' ? M(0xffd23a) : kind === 'pumpkin' ? M(0xff8a1f) : mats.wood;
     const cupGeo = new T.CylinderGeometry(0.11, 0.08, 0.2, 16);
     const coinGeo = new T.CylinderGeometry(0.17, 0.17, 0.06, 24);
     // Carico sulla schiena: legna a strati di 3 tronchi, tazze sopra a file di 3.
     function drawStack(g, logs, cups) {
       clear(g);
       for (let i = 0; i < logs; i++) {
-        const m = new T.Mesh(logGeo, mats.wood); m.rotation.z = Math.PI / 2;
+        const m = new T.Mesh(logGeo, logMat); m.rotation.z = Math.PI / 2;
         m.position.set(0, Math.floor(i / 3) * 0.19, -(i % 3) * 0.19); add(m, g);
       }
       const base = Math.ceil(logs / 3) * 0.19;
@@ -442,6 +466,6 @@
       }
     }
 
-    return { T, M, mats, tint, add, box, cyl, ball, clear, tree, person, setTool, setTray, walk, wave, swing, toss, HIT_AT, moveTo, follow, drawStack, cupGeo, coinGeo, logGeo, mergeParts, cached, sm };
+    return { T, M, mats, tint, add, box, cyl, ball, clear, tree, person, setTool, setTray, walk, wave, swing, toss, HIT_AT, moveTo, follow, drawStack, cupGeo, coinGeo, logGeo, logMat, bake, release, mergeParts, cached, sm };
   };
 })(window.Rifugio);

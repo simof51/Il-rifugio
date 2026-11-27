@@ -2,6 +2,7 @@
 // Numeri, testi e aspetto di questa stagione stanno qui; obiettivi e sblocchi sono generati da common.js.
 (function (R) {
   const v = {
+    season: 'autunno',
     wood: 'legna', tree: 'albero', treeArt: 'un albero', trees: 'alberi', fire: 'camino', fires: 'camini', room: 'stanza', roomTitle: 'Stanza', roomShort: 'stanza',
     guest: 'escursionista', guests: 'escursionisti', guestEmoji: '🍂', firstGuest: 'il primo escursionista',
     drink: 'sidro', drinkOne: 'sidro', drinks: 'sidri caldi', foodEmoji: '🍎', stand: 'il banco del sidro caldo', stand2: 'il banco sidro veloce', standTitle: 'Sidro caldo', stand2Title: 'Sidro veloce', thanks: 'Che buono! 😋',

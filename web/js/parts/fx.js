@@ -9,7 +9,7 @@
     const after = (sec, fn) => later.push({ t: sec, fn });
     // Oggetti che volano da un punto a un altro (legna, tazze, monete): non spariscono, viaggiano ad arco e poi atterrano.
     const flyers = [], flyFree = { log: [], cup: [], coin: [] };
-    const flyDef = { log: [B.logGeo, mats.wood], cup: [B.cupGeo, mats.cup], coin: [B.coinGeo, mats.gold] };
+    const flyDef = { log: [B.logGeo, B.logMat], cup: [B.cupGeo, mats.cup], coin: [B.coinGeo, mats.gold] };
     function fly(kind, from, to, dur, arc, done, delay) {
       let m = flyFree[kind].pop();
       if (!m) { m = new T.Mesh(flyDef[kind][0], flyDef[kind][1]); scene.add(m); }

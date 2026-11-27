@@ -2,10 +2,10 @@
 (function (R) {
   'use strict';
   // Zone da tenere libere (niente alberi o decorazioni): si aggiungono ai riquadri prima di costruire il paesaggio.
-  const RESERVE = { valle: [[13.5, 8.8], [12.2, 8.8], [14.8, 8.8]], mulini: [[13.4, 8.6], [16, 8.6], [13.4, 11], [16, 11]], porto: [] };
+  const RESERVE = { valle: [[-14.6, -26.5], [-14.6, -24.5]], mulini: [[13.6, -14], [15.9, -14], [13.6, -11.2], [15.9, -11.2]], porto: [] };
 
   const create = function (G) {
-    const { T, scene, B, mats, box, cyl, ball, hud, A, P, S, player, rooms, guests, carry, burst, fly, _v, CITYID, SEASON_ID, SEA_Z } = G;
+    const { T, scene, B, mats, box, cyl, ball, hud, A, P, S, L, player, rooms, guests, carry, burst, fly, _v, CITYID, SEASON_ID, SEA_Z, boiler } = G;
     const winter = SEASON_ID === 'inverno';
     const near = (x, z, r) => Math.hypot(player.position.x - x, player.position.z - z) < r;
     const ready = () => S.done >= 2 && S.fed > 0;
@@ -15,7 +15,7 @@
 
     if (CITYID === 'valle') {
       // --- legnaia e slitta: si deposita la legna, la slitta la porta da sola ai fuochi che si stanno spegnendo ---
-      const X = 13.5, Z = 8.8, MAX = 30, LOAD = 5, cart = winter ? 'slitta' : 'carretto';
+      const X = -14.6, Z = -25.8, MAX = 30, LOAD = 10, cart = winter ? 'slitta' : 'carretto';
       const shed = new T.Group(); shed.position.set(X, 0, Z); scene.add(shed);
       [-1.2, 1.2].forEach(x => [-0.7, 0.7].forEach(z => cyl(0.08, 0.08, 1.7, mats.wood, x, 0.85, z, shed, 6)));
       box(2.9, 0.14, 1.9, B.tint(0x7a3b2a), 0, 1.78, 0, shed, 0.03).rotation.x = 0.12;
@@ -26,9 +26,9 @@
       if (winter) [-0.3, 0.3].forEach(z => box(1.5, 0.07, 0.08, mats.dark, 0, 0.14, z, sled));
       else [-0.45, 0.45].forEach(x => [-0.4, 0.4].forEach(z => { cyl(0.2, 0.2, 0.1, mats.dark, x, 0.2, z, sled, 10).rotation.x = Math.PI / 2; }));
       const load = new T.Group(); load.position.y = 0.5; sled.add(load);
-      const HOME = [X - 0.2, Z - 1.7]; sled.position.set(HOME[0], 0, HOME[1]);
+      const HOME = [X + 0.2, Z - 2.2]; sled.position.set(HOME[0], 0, HOME[1]);
       const logsIn = (g, n, w) => { B.clear(g); for (let i = 0; i < n; i++) { const c = new T.Mesh(B.logGeo, mats.wood); c.position.set((i % w) * 0.28 - (w - 1) * 0.14, 0.12 + Math.floor(i / w) * 0.2, 0); c.rotation.y = Math.PI / 2; g.add(c); } };
-      let path = null, target = null, back = false, carryN = 0, giveCd = 0;
+      let path = null, back = false, carryN = 0, giveCd = 0;
       if (S.shed == null) S.shed = 0;
       logsIn(stack, Math.min(S.shed, 24), 6);
       const el = hud.label('pill', '');
@@ -40,18 +40,17 @@
           A.sfx('log');
         }
         if (!path && S.shed >= LOAD) {
-          const r = rooms.filter(r => r.open && r.fuel + r.pend < 5).sort((a, b) => a.fuel - b.fuel)[0];
-          if (r) { target = r; back = false; carryN = LOAD; S.shed -= LOAD; logsIn(stack, Math.min(S.shed, 24), 6); logsIn(load, LOAD, 3); path = [[13, 6], [11, 0], [10, -2.9], [r.cx, -3]]; }
+          if (boiler.fuel + boiler.pend < P.fuel_max * 0.4) { back = false; carryN = LOAD; S.shed -= LOAD; logsIn(stack, Math.min(S.shed, 24), 6); logsIn(load, LOAD, 3); path = [[-9, -30.2], [0, -30.2], [0, -27.5]]; }
         }
         if (path) {
           if (path.length) {
             const [tx, tz] = path[0], p = sled.position, d = Math.hypot(tx - p.x, tz - p.z), step = 6 * dt;
             if (d <= step) { p.set(tx, 0, tz); path.shift(); } else { p.x += (tx - p.x) / d * step; p.z += (tz - p.z) / d * step; sled.rotation.y = Math.atan2(tz - p.z, p.x - tx); }
           } else if (!back) {
-            const n = Math.min(carryN, P.fuel_max - Math.ceil(target.fuel + target.pend));
-            for (let k = 0; k < n; k++) { target.pend++; _v.set(sled.position.x, 0.8, sled.position.z); fly('log', _v, G.firePos(target, new T.Vector3()), 0.45, 1.4, () => G.landLog(target), k * 0.1); }
-            S.shed += carryN - Math.max(0, n); carryN = 0; logsIn(load, 0, 3); logsIn(stack, Math.min(S.shed, 24), 6);
-            back = true; path = [[10, -2.9], [11, 0], [13, 6], HOME]; done(target.cx, -3);
+            const n = Math.max(0, Math.min(carryN, Math.floor(P.fuel_max - boiler.fuel - boiler.pend)));
+            for (let k = 0; k < n; k++) { _v.set(sled.position.x, 0.8, sled.position.z); G.feedOne(_v, k * 0.08); }
+            S.shed += carryN - n; carryN = 0; logsIn(load, 0, 3); logsIn(stack, Math.min(S.shed, 24), 6);
+            back = true; path = [[0, -30.2], [-9, -30.2], HOME]; done(0, -27.5);
           } else path = null;
         }
       };
@@ -62,7 +61,7 @@
       // --- orto: le piante crescono, quando sono mature si raccolgono passandoci sopra (monete e una scorta per il banco) ---
       const GROW = 24, col = { inverno: 0x7fc8a0, primavera: 0xff5d8f, estate: 0xffd23a, autunno: 0xff8a1f }[SEASON_ID];
       const plots = [];
-      [13.2, 14.7, 16.2].forEach((x, i) => [8.6, 10.3].forEach((z, k) => {
+      [13.4, 14.9, 16.4].forEach((x, i) => [-13.6, -11.9].forEach((z, k) => {
         box(1.2, 0.12, 1.2, B.tint(0x6b4a2f), x, 0.07, z, null, 0.02);
         const g = new T.Group(); g.position.set(x, 0.1, z); scene.add(g);
         [[-0.25, -0.25], [0.28, -0.1], [-0.05, 0.3]].forEach(([dx, dz]) => { cyl(0.04, 0.05, 0.4, B.tint(0x3f9c4e), dx, 0.2, dz, g, 5); ball(0.16, B.tint(col), dx, 0.46, dz, g, 8, 6); });
@@ -81,7 +80,7 @@
       if (R.settings.tip('city-mulini')) G.later(8, () => hud.toast('🌷 Raccogli le piante mature nell\'orto: monete e scorte per il banco'));
     } else {
       // --- battello: ogni tanto attracca al molo e sbarca un gruppo di viaggiatori che paga di più ---
-      const z = SEA_Z + 5, boat = new T.Group(); boat.position.set(-34, 0.05, z); boat.visible = false; scene.add(boat);
+      const z = SEA_Z + 4, boat = new T.Group(); boat.position.set(-34, 0.05, z); boat.visible = false; scene.add(boat);
       box(4.6, 0.8, 1.8, B.tint(0xd9433b), 0, 0.4, 0, boat, 0.2); box(4.0, 0.14, 1.5, mats.plank, 0, 0.86, 0, boat, 0.03);
       box(1.4, 0.9, 1.1, mats.white, -0.8, 1.35, 0, boat, 0.1); cyl(0.2, 0.25, 0.8, mats.dark, -0.8, 2.1, 0, boat, 10);
       let wait = 45, phase = 'away', t = 0;
@@ -95,16 +94,16 @@
           if (k >= 1) {
             phase = 'moored'; t = 0; let n = 0;
             for (let i = 0; i < 3; i++) {
-              const gu = G.spawnGuest('boat', [[7 + i * 0.3, SEA_Z + 3], [7, SEA_Z - 1], [13.5, 13.5 - i * 0.4], [15.5, 8], [15, 0.5], [11, -2.9], [0, -2.9], [G.RECEP.x + 0.5, -2.9]]);
+              const gu = G.spawnGuest('boat', [[7 + i * 0.3, SEA_Z + 2], [7, SEA_Z - 1], [7.2, L.roadZ], [L.recep.x + 0.6, L.roadZ - 0.4]]);
               if (gu) n++;
             }
-            if (n) done(7, SEA_Z - 1);
+            if (n) done(7, SEA_Z - 2);
           }
         } else if (phase === 'moored') { t += dt; if (t > 8) { phase = 'out'; t = 0; } }
         else { t += dt / 7; boat.position.x = 9.6 + 26 * t * t; if (t >= 1) { phase = 'away'; boat.visible = false; wait = 80 + Math.random() * 40; } }
         boat.position.y = 0.05 + Math.sin(performance.now() / 500) * 0.04;
       };
-      spots = () => phase === 'away' ? [] : [[7, SEA_Z, '#3d8bff']];
+      spots = () => phase === 'away' ? [] : [[7, SEA_Z - 2, '#3d8bff']];
       now = () => { wait = 0; }; // per le prove
       if (R.settings.tip('city-porto')) G.later(8, () => hud.toast('🚢 Il battello porta viaggiatori che pagano di più'));
     }

@@ -9,6 +9,19 @@ Le voci più recenti stanno in cima.
 
 ---
 
+## v0.31.0 · 2026-11-27 · Rifugio in verticale
+
+- **Mappa alta e stretta**: campo in cima, locale caldaia/cucina e sgabuzzino, corridoio centrale con **8 stanze** (4 per lato, 2 letti e bagno), **sala mensa** e **sala cinema**, reception in basso.
+- **Raccolta per stagione**: legna, ortaggi, grano, zucche; si consegna a un locale unico.
+- **Macchinario da guidare** (taglialegna, raccoglitrice, mietitrebbia, raccogli-zucche).
+- **Bagni** da rifornire con sapone e carta igienica dallo sgabuzzino.
+- **Mensa**: i banchi del cibo stanno lì; si serve a mano finché non si assumono i camerieri.
+- 50 obiettivi e 28 sblocchi. Le stanze con tavoli all'aperto e le strade a curve non ci sono più; la reception è fissa all'ingresso.
+- Corretto lo spaventapasseri d'autunno, che dava errore dalla v0.28.0.
+- Grafica alleggerita (muri e pavimenti fusi).
+- Le partite salvate restano, ma il numero dell'obiettivo può non corrispondere a prima.
+
+**Per tornare indietro:** `git checkout e9bc502 -- web tests Changelog rifugio-design.md`
 ## v0.30.0 · 2026-11-26 · Missioni, arredo, animazioni, musica per città, traduzioni
 
 - **Missioni della settimana** (6 💎 l'una), barre di avanzamento, 3 medaglie nuove; premi da ritirare per medaglie (2 💎) e album (3 💎 ogni 5 figurine, 3 figurine nuove).

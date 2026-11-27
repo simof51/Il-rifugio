@@ -30,7 +30,7 @@
       // Foresta fitta di bordo: tre file di alberi tondi (solo decorazione), più qualche collina verde dietro.
       const blob = new T.SphereGeometry(1, 7, 5), trunk = new T.CylinderGeometry(0.15, 0.25, 1.4, 5).translate(0, 0.7, 0), forest = [[], [], [], []];
       const BL = [[0, 2.45, 0, 1.2], [0.75, 2.15, 0.3, 0.85], [-0.7, 2.2, -0.2, 0.9]]; // tre palloni per albero di bordo: da lontano non si vede la differenza
-      [[1, 2.4, 1.6], [4.5, 2.6, 2], [8.5, 2.9, 2.4]].slice(0, Q.density < 0.5 ? 1 : Q.density < 1 ? 2 : 3).forEach(([off, step, sc0]) => ringPoints(off, step, 1.6).forEach(([side, x, z]) => {
+      [[1, 2.4, 1.6], [4.5, 2.6, 2], [8.5, 2.9, 2.4]].slice(0, Q.density < 1 ? 1 : 2).forEach(([off, step, sc0]) => ringPoints(off, step, 1.6).forEach(([side, x, z]) => {
         if (SEA_Z != null && side === 1) return; // il mare non ha alberi
         const sc =sc0 * (0.85 + rnd() * 0.5) / 1.6 + 0.4;
         forest[side].push({ geo: trunk, x, y: 0, z, s: sc, color: 0x7a4a30 });
@@ -42,8 +42,7 @@
     const moundGeo = new T.SphereGeometry(1, 14, 8);
     for (let i = 0; i < 14; i++) {
       const s = new T.Mesh(moundGeo, mats.ground);
-      s.scale.set(1 + rnd() * 1.5, 0.35, 1 + rnd()); s.position.set(-16 + rnd() * 32, 0, -12 + rnd() * 28);
-      if (Math.abs(s.position.z + 6) < 4 && Math.abs(s.position.x) < 13) continue;
+      s.scale.set(1 + rnd() * 1.5, 0.35, 1 + rnd()); s.position.set(-26 + rnd() * 52, 0, -44 + rnd() * 58);
       if (nearPad(s.position.x, s.position.z, Math.max(s.scale.x, s.scale.z) + 1.5)) continue; // niente cumuli di neve sopra i riquadri
       if (nearRoad(s.position.x, s.position.z, Math.max(s.scale.x, s.scale.z) + ROAD_W / 2 + 0.6)) continue; // né sulle strade
       if (inLake(s.position.x, s.position.z, 3)) continue;
@@ -54,8 +53,8 @@
       const FL = [0xffffff, 0xffd23a, 0xff7ac6, 0xff4d4d, 0xa066ff, 0xff9a2a], petal = B.cached('petal', () => new T.CylinderGeometry(0.13, 0.13, 0.03, 8)), heart = B.cached('flc', () => new T.CylinderGeometry(0.06, 0.06, 0.05, 8));
       const parts = [];
       for (let i = 0, nf = Math.round((TH.flowerCount || 170) * Q.density); i < nf; i++) {
-        const x = -30 + rnd() * 60, z = -20 + rnd() * 46;
-        if (inLake(x, z, 2.2) || nearRoad(x, z, ROAD_W / 2 + 0.3) || (x > -3 && x < 18 && z > -3.8 && z < 2.2) || (x > -8 && x < 8 && z < -3.6 && z > -9.4) || (x > 8 && x < 13 && z > -8 && z < -3)) continue;
+        const x = -30 + rnd() * 60, z = -48 + rnd() * 68;
+        if (inLake(x, z, 2.2) || nearRoad(x, z, ROAD_W / 2 + 0.3) || nearPad(x, z, 0.4)) continue;
         const c = FL[Math.floor(rnd() * FL.length)];
         parts.push({ geo: petal, x, y: 0.05, z, s: 0.8 + rnd() * 0.6, color: c }, { geo: heart, x, y: 0.07, z, color: c === 0xffd23a ? 0xff9a2a : 0xffd23a });
       }
@@ -67,7 +66,7 @@
       const spot = () => {
         for (let k = 0; k < 25; k++) {
           const x = bx0 + 1 + rnd() * (bx1 - bx0 - 2), z = bz0 + 1 + rnd() * (bz1 - bz0 - 2);
-          if (!(inLake(x, z, 2.4) || inLM(x, z, 1.8) || nearPad(x, z, 2.2) || nearRoad(x, z, ROAD_W / 2 + 1.1) || (x > -17 && x < 19 && z > -10.5 && z < 5.5))) return [x, z];
+          if (!(inLake(x, z, 2.4) || inLM(x, z, 1.8) || nearPad(x, z, 2.2) || nearRoad(x, z, ROAD_W / 2 + 1.1))) return [x, z];
         }
         return null;
       };
